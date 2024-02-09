@@ -1,14 +1,14 @@
 import useStore from '@store/store';
-import { ChatInterface } from '@type/chat';
+import { DocumentInterface } from '@type/document';
 
 const useUpdateHistory = () => {
-  const setChats = useStore((state) => state.setChats);
-  const currentChatIndex = useStore((state) => state.currentChatIndex);
-  const chats = useStore.getState().chats;
+  const setChats = useStore((state) => state.setDocuments);
+  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+  const chats = useStore.getState().documents;
 
   const updateHistory = () => {
      if (chats) {
-       const updatedChats: ChatInterface[] = JSON.parse(JSON.stringify(chats));
+       const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
        const currentMessage = updatedChats[currentChatIndex].messageCurrent;
        const messageHistory = updatedChats[currentChatIndex].messageHistory;
        // Search message history and see if there is a match by ID

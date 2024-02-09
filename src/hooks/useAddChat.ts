@@ -1,18 +1,18 @@
 import useStore from '@store/store';
 import { generateDefaultChat } from '@constants/chat';
-import { ChatInterface } from '@type/chat';
+import { DocumentInterface } from '@type/document';
 
 const useAddChat = () => {
-  const setChats = useStore((state) => state.setChats);
-  const setCurrentChatIndex = useStore((state) => state.setCurrentChatIndex);
-  const setEditorRefresh = useStore((state) => state.setEditorRefresh);
+  const setChats = useStore((state) => state.setDocuments);
+  const setCurrentChatIndex = useStore((state) => state.setCurrentDocumentIndex);
+  const setEditorRefresh = useStore((state) => state.setForceEditorRefresh);
 
   const addChat = (folder?:string) => {
     
-     const chats = useStore.getState().chats;
+     const chats = useStore.getState().documents;
     
      if (chats) {
-       const updatedChats: ChatInterface[] = JSON.parse(JSON.stringify(chats));
+       const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
        let titleIndex = 1;
        let title = `New Document ${titleIndex}`;
 
@@ -25,7 +25,7 @@ const useAddChat = () => {
        setChats(updatedChats);
        setCurrentChatIndex(0);
 
-       setEditorRefresh(!useStore.getState().editorRefresh);
+       setEditorRefresh(!useStore.getState().forceEditorRefresh);
      }
   };
 

@@ -1,6 +1,6 @@
 import useStore from '@store/store';
 import { useTranslation } from 'react-i18next';
-import { ChatInterface, ConfigInterface, MessageInterface } from '@type/chat';
+import { DocumentInterface, ConfigInterface, MessageInterface } from '@type/document';
 import { getChatCompletion, getChatCompletionStream } from '@api/api';
 import { parseEventSource } from '@api/helper';
 import { limitMessageTokens, updateTotalTokenUsed } from '@utils/messageUtils';
@@ -17,8 +17,8 @@ const useSubmitPromptAdjust = () => {
   const apiKey = useStore((state) => state.apiKey);
   const setGenerating = useStore((state) => state.setGenerating);
   const generating = useStore((state) => state.generating);
-  const currentChatIndex = useStore((state) => state.currentChatIndex);
-  const setChats = useStore((state) => state.setChats);
+  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+  const setChats = useStore((state) => state.setDocuments);
 
 //   const chatMessages: MessageInterface[] = [
 //     {
@@ -56,7 +56,7 @@ const useSubmitPromptAdjust = () => {
   };
 
   const handleSubmit = async ({prompt, includeSelection, modifiedConfig}:{prompt: string, includeSelection: boolean, modifiedConfig?: ConfigInterface}) => {
-    const chats = useStore.getState().chats;
+    const chats = useStore.getState().documents;
     const currentSelection = useStore.getState().currentSelection;
     const defaultChatConfig = useStore.getState().defaultChatConfig;
     if(modifiedConfig == null || modifiedConfig == undefined){
@@ -90,7 +90,7 @@ const useSubmitPromptAdjust = () => {
         }
     ];
 
-    let resetChats = useStore.getState().chats;
+    let resetChats = useStore.getState().documents;
     if(resetChats){
       resetChats[currentChatIndex].messageCurrent = generateDefaultMessage(modifiedConfig, chatMessages);
       setChats(resetChats);
@@ -98,7 +98,7 @@ const useSubmitPromptAdjust = () => {
 
     if (generating || !chats) return;
 
-    const updatedChats: ChatInterface[] = JSON.parse(JSON.stringify(chats));
+    const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
 
     updatedChats[currentChatIndex].messageCurrent.messages.push({
       role: 'assistant',
@@ -179,8 +179,8 @@ const useSubmitPromptAdjust = () => {
               return output;
             }, '');
 
-            const updatedChats: ChatInterface[] = JSON.parse(
-              JSON.stringify(useStore.getState().chats)
+            const updatedChats: DocumentInterface[] = JSON.parse(
+              JSON.stringify(useStore.getState().documents)
             );
 
             const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
@@ -217,7 +217,7 @@ const useSubmitPromptAdjust = () => {
       }
 
       // update tokens used in chatting
-      const currChats = useStore.getState().chats;
+      const currChats = useStore.getState().documents;
       const countTotalTokens = useStore.getState().countTotalTokens;
 
       if (currChats && countTotalTokens) {
@@ -251,8 +251,8 @@ const useSubmitPromptAdjust = () => {
         if (title.startsWith('"') && title.endsWith('"')) {
           title = title.slice(1, -1);
         }
-        const updatedChats: ChatInterface[] = JSON.parse(
-          JSON.stringify(useStore.getState().chats)
+        const updatedChats: DocumentInterface[] = JSON.parse(
+          JSON.stringify(useStore.getState().documents)
         );
         updatedChats[currentChatIndex].title = title;
         updatedChats[currentChatIndex].titleSet = true;

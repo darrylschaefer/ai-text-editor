@@ -1,6 +1,6 @@
 import useStore from '@store/store';
 import { useTranslation } from 'react-i18next';
-import { ChatInterface, MessageInterface } from '@type/chat';
+import { DocumentInterface, MessageInterface } from '@type/document';
 import { getChatCompletion, getChatCompletionStream } from '@api/api';
 import { parseEventSource } from '@api/helper';
 import { limitMessageTokens, updateTotalTokenUsed } from '@utils/messageUtils';
@@ -16,8 +16,8 @@ const useSubmit = () => {
   const apiKey = useStore((state) => state.apiKey);
   const setGenerating = useStore((state) => state.setGenerating);
   const generating = useStore((state) => state.generating);
-  const currentChatIndex = useStore((state) => state.currentChatIndex);
-  const setChats = useStore((state) => state.setChats);
+  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+  const setChats = useStore((state) => state.setDocuments);
 
   const generateTitle = async (
     message: MessageInterface[]
@@ -48,10 +48,10 @@ const useSubmit = () => {
   };
 
   const handleSubmit = async () => {
-    const chats = useStore.getState().chats;
+    const chats = useStore.getState().documents;
     if (generating || !chats) return;
 
-    const updatedChats: ChatInterface[] = JSON.parse(JSON.stringify(chats));
+    const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
     const defaultChatConfig = useStore.getState().defaultChatConfig;
 
     const config = updatedChats[currentChatIndex].messageCurrent.config ? updatedChats[currentChatIndex].messageCurrent.config : defaultChatConfig;
@@ -132,8 +132,8 @@ const useSubmit = () => {
               return output;
             }, '');
 
-            const updatedChats: ChatInterface[] = JSON.parse(
-              JSON.stringify(useStore.getState().chats)
+            const updatedChats: DocumentInterface[] = JSON.parse(
+              JSON.stringify(useStore.getState().documents)
             );
 
             // Check the history to see if it matches the current message
@@ -173,7 +173,7 @@ const useSubmit = () => {
 
 
       // update tokens used in chatting
-      const currChats = useStore.getState().chats;
+      const currChats = useStore.getState().documents;
       const countTotalTokens = useStore.getState().countTotalTokens;
 
       if (currChats && countTotalTokens) {
@@ -207,8 +207,8 @@ const useSubmit = () => {
         if (title.startsWith('"') && title.endsWith('"')) {
           title = title.slice(1, -1);
         }
-        const updatedChats: ChatInterface[] = JSON.parse(
-          JSON.stringify(useStore.getState().chats)
+        const updatedChats: DocumentInterface[] = JSON.parse(
+          JSON.stringify(useStore.getState().documents)
         );
         updatedChats[currentChatIndex].title = title;
         updatedChats[currentChatIndex].titleSet = true;

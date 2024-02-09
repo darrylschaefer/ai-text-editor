@@ -1,14 +1,14 @@
 import useStore from '@store/store';
-import { ChatInterface, MessageCurrent } from '@type/chat';
+import { DocumentInterface, DocumentCurrent } from '@type/document';
 
 const useReplaceHistory = () => {
-  const setChats = useStore((state) => state.setChats);
-  const currentChatIndex = useStore((state) => state.currentChatIndex);
-  const chats = useStore.getState().chats;
+  const setChats = useStore((state) => state.setDocuments);
+  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+  const chats = useStore.getState().documents;
 
-  const replaceHistory = (oldMessage: MessageCurrent) => {
+  const replaceHistory = (oldMessage: DocumentCurrent) => {
      if (chats) {
-         const updatedChats: ChatInterface[] = JSON.parse(JSON.stringify(chats));
+         const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
          updatedChats[currentChatIndex].messageCurrent = oldMessage;
 
         setChats(updatedChats);

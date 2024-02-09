@@ -1,15 +1,15 @@
 import useStore from '@store/store';
 import { generateDefaultMessage } from '@constants/chat';
-import { ChatInterface } from '@type/chat';
+import { DocumentInterface } from '@type/document';
 
 const useClearChat = () => {
-  const setChats = useStore((state) => state.setChats);
-  const currentChatIndex = useStore((state) => state.currentChatIndex);
+  const setChats = useStore((state) => state.setDocuments);
+  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
 
   const clearChat = () => {
-     const chats = useStore.getState().chats;
+     const chats = useStore.getState().documents;
       if (chats) {
-      const updatedChats: ChatInterface[] = JSON.parse(JSON.stringify(chats));
+      const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
        const temp = generateDefaultMessage();
        updatedChats[currentChatIndex].messageCurrent = temp;
        setChats(updatedChats);

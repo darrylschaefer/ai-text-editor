@@ -1,4 +1,4 @@
-import { ConfigInterface, MessageInterface } from '@type/chat';
+import { ConfigInterface, MessageInterface } from '@type/document';
 import { isAzureEndpoint } from '@utils/api';
 
 export const getChatCompletion = async (

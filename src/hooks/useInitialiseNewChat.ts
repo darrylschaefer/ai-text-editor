@@ -2,10 +2,10 @@ import useStore from '@store/store';
 import { generateWelcomeChat } from '@constants/chat';
 
 const useInitialiseNewChat = () => {
-  const setChats = useStore((state) => state.setChats);
-  const setCurrentChatIndex = useStore((state) => state.setCurrentChatIndex);
-  const editorRefresh = useStore((state) => state.editorRefresh);
-  const setEditorRefresh = useStore((state) => state.setEditorRefresh);
+  const setChats = useStore((state) => state.setDocuments);
+  const setCurrentChatIndex = useStore((state) => state.setCurrentDocumentIndex);
+  const editorRefresh = useStore((state) => state.forceEditorRefresh);
+  const setEditorRefresh = useStore((state) => state.setForceEditorRefresh);
 
   const initialiseNewChat = () => {
     setChats([generateWelcomeChat({})]);

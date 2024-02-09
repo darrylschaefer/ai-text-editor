@@ -1,15 +1,15 @@
 import useStore from '@store/store';
 import { generateDefaultChat } from '@constants/chat';
-import { ChatInterface } from '@type/chat';
+import { DocumentInterface } from '@type/document';
 
 const useClearChatPrompt = () => {
-  const setChats = useStore((state) => state.setChats);
-  const currentChatIndex = useStore((state) => state.currentChatIndex);
+  const setChats = useStore((state) => state.setDocuments);
+  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
 
   const clearChat = (prompt: any) => {
-     const chats = useStore.getState().chats;
+     const chats = useStore.getState().documents;
      if (chats) {
-       const updatedChats: ChatInterface[] = JSON.parse(JSON.stringify(chats));
+       const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
        let titleIndex = 1;
        let title = `New Chat ${titleIndex}`;
 
