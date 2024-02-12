@@ -1,84 +1,94 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
+import useSubmitPromptAdjust from '@hooks/useSubmitPromptAdjust';
+import { MagicWand } from '@carbon/icons-react';
 import useStore from '@store/store';
-
-import { useTranslation } from 'react-i18next';
-import { matchSorter } from 'match-sorter';
-import { Prompt } from '@type/prompt';
-import { TableOfContents } from '@carbon/icons-react';
-import useHideOnOutsideClick from '@hooks/useHideOnOutsideClick';
 import useClearChatPrompt from '@hooks/useClearChatPrompt';
+import { PromptButtonConfig } from '@components/Menu/AIMenu/PromptLibrary/PromptButton/Config';
 
-const AIPromptMenu = () => {
-  const { t } = useTranslation();
-  const prompts = useStore((state) => state.prompts);
-  const [_prompts, _setPrompts] = useState<Prompt[]>(prompts);
-  const [input, setInput] = useState<string>('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const useClearChat = useClearChatPrompt();
-
-  const [dropDown, setDropDown, dropDownRef] = useHideOnOutsideClick();
-
-  function clickHandler(e: any){
-    useClearChat(e);
-  };
-
-  useEffect(() => {
-    if (dropDown && inputRef.current) {
-      // When dropdown is visible, focus the input
-      inputRef.current.focus();
-    }
-  }, [dropDown]);
+const PromptButton = ({prompt, index, activeMenu, setActiveMenu}: {
+  prompt: any;
+  index: number;
+  activeMenu: string;
+  setActiveMenu: React.Dispatch<React.SetStateAction<string>>;
+}) => {
   
-  useEffect(() => {
-    const filteredPrompts = matchSorter(useStore.getState().prompts, input, {
-      keys: ['name'],
-    });
-    _setPrompts(filteredPrompts);
-  }, [input]);
+  const setHideSideAIMenu = useStore((state) => state.setHideSideAIMenu);
 
-  useEffect(() => {
-    _setPrompts(prompts);
-    setInput('');
-  }, [prompts]);
+  const chats = useStore((state) => state.documents);
+  const setChats = useStore((state) => state.setDocuments);
+  const useClearChat = useClearChatPrompt();
+  const { handleSubmit } = useSubmitPromptAdjust();
+  const editorSettings = useStore((state) => state.editorSettings);
+  const setEditorSettings = useStore((state) => state.setEditorSettings);
+  const generating = useStore.getState().generating;
+  const setGenerating = useStore.getState().setGenerating;
+  const [_promptName, _setPromptName] = useState(prompt.name);
+
+  const handleClickPlay = (e: any) => {
+    e.stopPropagation();
+    if(generating){
+      setGenerating(false);
+    }
+
+    // Check if the prompt has a custom configuration, otherwise pass null
+
+    handleSubmit({prompt: prompt.prompt, includeSelection: prompt.includeSelection, modifiedConfig: prompt.config});
+
+    setHideSideAIMenu(false);
+    if(chats){
+      let tempChats = chats;
+      editorSettings.activeMenu = 'chat';
+      setChats(tempChats);
+      setActiveMenu('chat');
+    }
+  }
+
+  const mouseDown = (e: any) => {
+    e.preventDefault();
+  }
+
+  const handleClickButton = (e: any) => {
+    e.stopPropagation();
+    useClearChat(prompt.prompt);
+    setHideSideAIMenu(false);
+    if(chats){
+      let tempSettings = editorSettings;
+      tempSettings.activeMenu = 'chat';
+      setEditorSettings(tempSettings);
+      setActiveMenu('chat');
+    }
+  }
 
   return (
-    <div className='' ref={dropDownRef}>
-      <button
-        className='flex py-3 px-3 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white text-sm mb-2 flex-shrink-0 border border-white/10 cursor-pointer opacity-100'
-        onClick={() => setDropDown(!dropDown)}
-      >
-        <TableOfContents size={16} />
-      </button>
+    <div
+      className='flex py-2 pr-2 border border-transparent pl-3 items-center gap-3 relative bg-gray-800/30 hover:bg-gray-850 break-all hover:pr-4 group transition-opacity cursor-pointer opacity-100'>
+      <div className='flex-1 text-ellipsis max-h-5 overflow-hidden break-all relative capitalize'
+             onClick={handleClickButton}
+             >
+        {prompt.name.length > 0 ? (
+          <div>{_promptName}</div>
+        ) : (
+          <div>No prompt name</div>
+        )}
+        </div>
+      <div className='absolute flex right-2 z-10 text-gray-300 visible'>
       <div
-        className={`${
-          dropDown ? '' : 'hidden'
-        } absolute top-16 bottom-100 right-2 z-10 bg-white rounded-lg shadow-xl border-b border-black/10 dark:border-gray-900/50 text-gray-800 dark:text-gray-100 group dark:bg-gray-800`}
+      className='p-1 hover:text-white'
       >
-        <div className='text-sm px-4 py-2 w-max'>{t('promptLibrary')}</div>
-        <input
-          ref={inputRef}
-          type='text'
-          className='text-gray-800 dark:text-white p-3 text-sm border-none bg-gray-200 dark:bg-gray-600 m-0 w-full mr-0 h-8 focus:outline-none'
-          value={input}
-          placeholder={t('search') as string}
-          onChange={(e) => {
-            setInput(e.target.value);
-          }}
-        />
-        <ul className='text-sm text-gray-700 dark:text-gray-200 p-0 m-0 max-h-32 overflow-auto'>
-          {_prompts.map((cp) => (
-            <li
-              className='px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer text-start w-full'
-              onClick={() => { clickHandler(cp); }}
-              key={cp.id}
-            >
-              {cp.name}
-            </li>
-          ))}
-        </ul>
+        <PromptButtonConfig prompt={prompt} _promptName={_promptName} _setPromptName={_setPromptName} index={index} />
+      </div>
+      <div className=
+        'p-1 hover:text-white' 
+        onClick={handleClickPlay}
+        onMouseDown={mouseDown}
+        >
+      <MagicWand size={16} /> 
+      </div>
+
       </div>
     </div>
   );
-};
+}
 
-export default AIPromptMenu;
+
+export default PromptButton;

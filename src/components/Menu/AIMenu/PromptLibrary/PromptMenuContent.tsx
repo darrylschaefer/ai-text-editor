@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import useStore from '@store/store';
-import PromptButton from './Prompts';
+import PromptButton from './PromptButton';
 import { useTranslation } from 'react-i18next';
 import { matchSorter } from 'match-sorter';
 import { Prompt } from '@type/prompt';
