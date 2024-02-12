@@ -4,7 +4,7 @@ import useStore from '@store/store';
 import useCloudAuthStore from '@store/cloud-auth-store';
 
 import PopupModal from '@components/PopupModal';
-import { Settings as SettingIcon } from '@carbon/icons-react';
+import { Settings } from '@carbon/icons-react';
 import ThemeSwitcher from '@components/FooterMenu/ThemeSwitcher';
 import LanguageSelector from '@components/LanguageSelector';
 import AutoTitleToggle from './AutoTitleToggle';
@@ -12,11 +12,11 @@ import AdvancedModeToggle from './AdvencedModeToggle';
 import InlineLatexToggle from './InlineLatexToggle';
 
 import PromptLibraryMenu from '@components/PromptLibraryMenu';
-import ChatConfigMenu from '@components/ChatConfigMenu';
+import Config from '@components/FooterMenu/SettingsMenu/Config';
 import EnterToSubmitToggle from './EnterToSubmitToggle';
 import TotalTokenCost, { TotalTokenCostToggle } from './TotalTokenCost';
 import ClearConversation from '@components/FooterMenu/ClearConversation';
-import FineTuneMenu from '@components/SettingsMenu/FineTuneMenu';
+import FineTuneMenu from '@components/FooterMenu/SettingsMenu/FineTuneMenu/FineTuneMenu';
 
 const SettingsMenu = () => {
   const { t } = useTranslation();
@@ -35,7 +35,7 @@ const SettingsMenu = () => {
           setIsModalOpen(true);
         }}
       >
-        <SettingIcon className='w-4 h-4' /> {t('setting') as string}
+        <Settings className='w-4 h-4' /> {t('setting') as string}
       </a>
       {isModalOpen && (
         <PopupModal
@@ -55,7 +55,7 @@ const SettingsMenu = () => {
             </div>
             <ClearConversation />
             <PromptLibraryMenu />
-            <ChatConfigMenu />
+            <Config />
             <FineTuneMenu />
             {/* <TotalTokenCost /> */}
           </div>
