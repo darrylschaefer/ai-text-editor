@@ -51,14 +51,14 @@ export interface ConfigInterface {
   // notes: string[] | null;
 }
 
-export interface ChatHistoryInterface {
+export interface DocumentHistoryInterface {
   title: string;
   index: number;
   id: string;
 }
 
-export interface ChatHistoryFolderInterface {
-  [folderId: string]: ChatHistoryInterface[];
+export interface DocumentHistoryFolderInterface {
+  [folderId: string]: DocumentHistoryInterface[];
 }
 
 export interface FolderCollection {

@@ -3,7 +3,7 @@ import useStore from '@store/store';
 import { Add } from '@carbon/icons-react';
 
 import { DocumentInterface } from '@type/document';
-import { generateDefaultChat } from '@constants/chat';
+import { generateDefaultDocument } from '@constants/chat';
 
 const NewMessageButton = React.memo(
   ({ messageIndex }: { messageIndex: number }) => {
@@ -23,7 +23,7 @@ const NewMessageButton = React.memo(
           title = `New Chat ${titleIndex}`;
         }
 
-         updatedChats.unshift(generateDefaultChat({title: title}));
+         updatedChats.unshift(generateDefaultDocument({title: title}));
          setChats(updatedChats);
          setCurrentChatIndex(0);
       }

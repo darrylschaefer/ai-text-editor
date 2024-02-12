@@ -1,5 +1,5 @@
 import useStore from '@store/store';
-import { generateWelcomeChat } from '@constants/chat';
+import { generateWelcomeDocument } from '@constants/chat';
 
 const useInitialiseNewChat = () => {
   const setChats = useStore((state) => state.setDocuments);
@@ -8,7 +8,7 @@ const useInitialiseNewChat = () => {
   const setEditorRefresh = useStore((state) => state.setForceEditorRefresh);
 
   const initialiseNewChat = () => {
-    setChats([generateWelcomeChat({})]);
+    setChats([generateWelcomeDocument({})]);
     setCurrentChatIndex(0);
     setEditorRefresh(!editorRefresh);
   };

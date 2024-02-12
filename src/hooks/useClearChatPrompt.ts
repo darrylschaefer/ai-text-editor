@@ -1,5 +1,5 @@
 import useStore from '@store/store';
-import { generateDefaultChat } from '@constants/chat';
+import { generateDefaultDocument } from '@constants/chat';
 import { DocumentInterface } from '@type/document';
 
 const useClearChatPrompt = () => {
@@ -18,7 +18,7 @@ const useClearChatPrompt = () => {
          title = `New Chat ${titleIndex}`;
        }
 
-       const temp = generateDefaultChat({title: title, folder: "", prompt: prompt});
+       const temp = generateDefaultDocument({title: title, folder: "", prompt: prompt});
        updatedChats[currentChatIndex].messageCurrent.messages = temp.messageCurrent.messages;
        setChats(updatedChats);
      }
