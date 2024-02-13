@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import useInitialiseNewChat from '@hooks/useInitialiseNewChat';
+import useInitialiseNewDocument from '@hooks/useInitialiseNewDocument';
 
 import { Document, TrashCan, Close, Edit, Checkmark } from '@carbon/icons-react';
 import useStore from '@store/store';
@@ -19,7 +19,7 @@ const DocumentButtonClass = {
 
 const DocumentButton = React.memo(
   ({ title, chatIndex: documentIndex }: { title: string; chatIndex: number }) => {
-    const initialiseNewChat = useInitialiseNewChat();
+    const initialiseNewChat = useInitialiseNewDocument();
     const setCurrentDocumentIndex = useStore((state) => state.setCurrentDocumentIndex);
     const setDocuments = useStore((state) => state.setDocuments);
     const documents = useStore((state) => state.documents);

@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import useStore from '@store/store';
 
 import PopupModal from '@components/PopupModal';
-import useInitialiseNewChat from '@hooks/useInitialiseNewChat';
+import useInitialiseNewDocument from '@hooks/useInitialiseNewDocument';
 
 const ClearConversation = () => {
   const { t } = useTranslation();
 
-  const initialiseNewChat = useInitialiseNewChat();
+  const initialiseNewChat = useInitialiseNewDocument();
   const setFolders = useStore((state) => state.setFolders);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
