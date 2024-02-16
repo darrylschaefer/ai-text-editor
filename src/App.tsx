@@ -15,7 +15,7 @@ import { Theme } from '@type/theme';
 import ApiPopup from '@components/FooterMenu/Api/ApiPopup';
 import Toast from '@components/Toast';
 import { set } from 'lodash';
-import FAQs from '@components/FAQs/Faqs';
+import FAQs from '@components/FAQs/FAQs';
 
 function App() {
   const initialiseNewDocument = useInitialiseNewDocument();

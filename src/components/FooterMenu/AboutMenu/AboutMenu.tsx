@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import PopupModal from '@components/PopupModal';
-import { Information } from '@carbon/icons-react';
+import { Information, LogoGithub, FavoriteFilled } from '@carbon/icons-react';
 import useStore from '@store/store';
 import { set } from 'lodash';
 import logoImage from './LogoImage';
@@ -20,6 +20,10 @@ const AboutMenu = () => {
       setIsModalOpen(true);
     }
   }, [firstVisit]);
+
+  function onGithubClick(){
+    window.location.href = "https://github.com/darrylschaefer/fthr-write";
+  }
 
   return (
     <>
@@ -51,6 +55,11 @@ const AboutMenu = () => {
                 <li>{t('aboutBulletFive')}</li>
                 <li>{t('aboutBulletSix')}</li>
               </ul>
+              <div>
+                <button onClick={onGithubClick} className="btn btn-neutral w-fit px-4 mt-1 mb-1">
+                  <LogoGithub size={16} /> <span className="pl-2 flex items-center justify-center">{t('aboutGithub')} <span className="pl-1 text-rose-500"><FavoriteFilled size={16}/></span></span>
+                </button>
+              </div>
               <div>
                 <p>This application does not collect any data from the user, nor does it store any data on our servers. All data is stored locally on your computer.</p>
               </div>

@@ -1,0 +1,28 @@
+{
+  "configuration": "Configuration",
+  "model": "Model",
+  "token": {
+    "label": "Max Token",
+    "description": "The number of tokens that will be used to generate the chat completion."
+  },
+  "default": "Default",
+  "temperature": {
+    "label": "Temperature",
+    "description": "Increasing the value will make the output less deterministic."
+  },
+  "presencePenalty": {
+    "label": "Presence Penalty",
+    "description": "Penalizes tokens based on whether they've already appeared in the text."
+  },
+  "topP": {
+    "label": "Top-p",
+    "description": "Considers the results of tokens within the Top-p probability mass."
+  },
+  "frequencyPenalty": {
+    "label": "Frequency Penalty",
+    "description": "Penalizes tokens based on their existing frequency within the text."
+  },
+  "defaultChatConfig": "Default Chat Config",
+  "defaultSystemMessage": "Default System Message",
+  "resetToDefault": "Reset To Default"
+}
