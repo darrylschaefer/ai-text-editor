@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '@store/store';
-import { Sun, Moon } from '@carbon/icons-react';}
+import { Sun, Moon } from '@carbon/icons-react';
 import { Theme } from '@type/theme';
 
 const getOppositeTheme = (theme: Theme): Theme => {
