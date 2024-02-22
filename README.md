@@ -1,8 +1,8 @@
-# <p align="center">FTHR-Write</p>
+# <p align="center">FTHR-Text</p>
 
 <p align="center"><img src="https://github.com/darrylschaefer/fthr-write/assets/119073511/9b97e65f-5571-4172-a0d2-9d7ebfdf4cce" style="width:60px;" align="center"></p>
 
-<p align="center"><i>FTHR-Write</i> is a modern, AI-powered word processor designed to streamline your writing workflow. Manage documents, collaborate seamlessly with AI models, and utilize powerful macros for unmatched productivity.</p>
+<p align="center"><i>FTHR-Text</i> is an AI-powered text editor designed to streamline your writing workflow. Manage documents, collaborate seamlessly with AI models, and utilize powerful macros for unmatched productivity.</p>
 <br>
 <p align="center"><img style="width:550px;" src="https://github.com/darrylschaefer/fthr-write/assets/119073511/0066e259-557c-4c40-b303-503ecd5cd67d"></p>
 
@@ -37,13 +37,13 @@ To begin using FTHR Write, you can visit our [website](http://fthr.app/) to acce
 1. **Clone the repository:**
 
 ```
-git clone https://github.com/darrylschaefer/fthr-write
+git clone https://github.com/darrylschaefer/fthr-text
 ```
 
 2. **Change directory:**
 
 ```
-cd fthr-write
+cd fthr-text
 ```
 
 3. **Install dependencies:**
@@ -64,11 +64,11 @@ npm run build
 npm start
 ```
 
-6. **Open your browser:** Navigate to http://localhost:5173 to start working with FTHR Write on your local machine.
+6. **Open your browser:** Navigate to http://localhost:5173 to start working with fthr-text on your local machine.
 
 ### **Support and Contributions**
 
-We welcome contributions and feedback to make FTHR Write even better. Whether it's feature requests, bug reports, or code contributions, please feel free to reach out or open an issue in our repository.
+We welcome contributions and feedback to make fthr-text even better. Whether it's feature requests, bug reports, or code contributions, please feel free to reach out or open an issue in our repository.
 
 ### **Privacy and Security**
 
@@ -76,7 +76,7 @@ All data, including documents and your API key, remain stored locally on your br
 
 ### **Mobile/Desktop Version**
 
-FTHR Write supports both mobile and desktop access, ensuring you can continue your work seamlessly across devices. For the best experience, it's recommended to use the latest version of Chrome.
+Fthr-text supports both mobile and desktop access, ensuring you can continue your work seamlessly across devices. For the best experience, it's recommended to use the latest version of Chrome.
 
 ### **Backup and Data Management**
 
