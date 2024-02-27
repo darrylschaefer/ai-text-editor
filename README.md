@@ -52,16 +52,10 @@ cd fthr-text
 npm install
 ```
 
-4. **Build the app:**
+4. **Run the dev server:**
 
 ```
-npm run build
-```
-
-5. **Start the app:**
-
-```
-npm start
+npm run dev
 ```
 
 6. **Open your browser:** Navigate to http://localhost:5173 to start working with fthr-text on your local machine.
