@@ -22,7 +22,7 @@ const AboutMenu = () => {
   }, [firstVisit]);
 
   function onGithubClick(){
-    window.location.href = "https://github.com/darrylschaefer/fthr-write";
+    window.location.href = "https://github.com/darrylschaefer/ai-text-editor";
   }
 
   return (

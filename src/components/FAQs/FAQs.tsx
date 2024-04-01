@@ -31,7 +31,7 @@ function HeaderLinks({header, subheader}: {header: string, subheader: string})
             <div className="flex justify-center items-center">
               <a href="/" className='flex justify-center items-center'>
                 <div className="pr-2"><ArrowLeft /></div>
-                <span className="pr-2">Back to FTHR Write</span>
+                <span className="pr-2">Back to ai-text-editor</span>
                 </a>
             </div>
           </div>
@@ -46,8 +46,8 @@ function HeaderLinks({header, subheader}: {header: string, subheader: string})
 function FooterLinks(){
   return (
     <div className="py-6 mt-3 w-[900px] max-w-full m-auto flex justify-center">
-      <div>© FTHR</div><div className="px-3 opacity-30">|</div>
-      <a href="/">Back to FTHR W</a><div className="px-3 opacity-30">|</div>
+      <div className="px-3 opacity-30">|</div>
+      <a href="/">Back to ai-text-editor</a><div className="px-3 opacity-30">|</div>
       <a href="/faqs">FAQs</a><div className="px-3 opacity-30">|</div>
     </div>
   )
@@ -58,7 +58,7 @@ const data = {
     rows: [
         {
             title: "What is this application?",
-            content: `FTHR Write is a web application word processor built to interact with AI models via API access. It allows you to manage and manipulate documents using a document management systme, send requests to AI model providers, and includes useful quality-of-life features, such as instant macros and selection sending. The OpenAI Chat API is accessed directly from your browser using your own API key, which is stored locally in your browser.`
+            content: `Ai-text-editor is a web application word processor built to interact with AI models via API access. It allows you to manage and manipulate documents using a document management systme, send requests to AI model providers, and includes useful quality-of-life features, such as instant macros and selection sending. The OpenAI Chat API is accessed directly from your browser using your own API key, which is stored locally in your browser.`
         },
         {
             title: "Do you have access to our documents?",
@@ -86,7 +86,7 @@ const data = {
         },
         {
           title: "Is there a mobile / desktop version?",
-          content: "FTHR Write is accessible on both desktop and mobile devices!"
+          content: "AI-text-editor is accessible on both desktop and mobile devices!"
         }
     ],
 };
