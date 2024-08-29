@@ -86,5 +86,5 @@ export const validateFolders = (
 };
 
 export const validateExportV1 = (data: ExportV1): data is ExportV1 => {
-  return validateAndFixChats(data.documents) && validateFolders(data.folders);
+  return validateAndFixChats(data.chats) && validateFolders(data.folders);
 };
