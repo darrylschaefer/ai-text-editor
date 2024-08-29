@@ -19,25 +19,25 @@ import FAQs from '@components/FAQs/FAQs';
 
 function App() {
   const initialiseNewDocument = useInitialiseNewDocument();
-  const setDocuments = useStore((state) => state.setDocuments);
+  const setChats = useStore((state) => state.setChats);
   const setTheme = useStore((state) => state.setTheme);
   const setApiKey = useStore((state) => state.setApiKey);
-  const setCurrentDocumentIndex = useStore((state) => state.setCurrentDocumentIndex);
+  const setCurrentChatIndex = useStore((state) => state.setCurrentChatIndex);
   const { t } = useTranslation(['main', 'about']);
 
   
 // a useEffect that resets the .edited variables of all items in chats to false
 
 useEffect(() => {
-  const chats = useStore.getState().documents;
-  const currentDocumentIndex = useStore.getState().currentDocumentIndex;
+  const chats = useStore.getState().chats;
+  const currentDocumentIndex = useStore.getState().currentChatIndex;
 
   if (chats && chats.length > 0) {
     const newChats = chats.map((chat) => {
       chat.edited = false;
       return chat;
     });
-    useStore.getState().setDocuments(newChats);
+    useStore.getState().setChats(newChats);
   }
 }, []);
 
@@ -72,8 +72,8 @@ useEffect(() => {
       try {
         const chats: DocumentInterface[] = JSON.parse(oldChats);
         if (chats.length > 0) {
-          setDocuments(chats);
-          setCurrentDocumentIndex(0);
+          setChats(chats);
+          setCurrentChatIndex(0);
         } else {
           initialiseNewDocument();
         }
@@ -83,8 +83,8 @@ useEffect(() => {
       localStorage.removeItem('chats');
     } else {
       // existing local storage
-      const chats = useStore.getState().documents;
-      const currentChatIndex = useStore.getState().currentDocumentIndex;
+      const chats = useStore.getState().chats;
+      const currentChatIndex = useStore.getState().currentChatIndex;
       if (!chats || chats.length === 0) {
         initialiseNewDocument();
       }
@@ -92,7 +92,7 @@ useEffect(() => {
         chats &&
         !(currentChatIndex >= 0 && currentChatIndex < chats.length)
       ) {
-        setCurrentDocumentIndex(0);
+        setCurrentChatIndex(0);
       }
     }
   }, []);

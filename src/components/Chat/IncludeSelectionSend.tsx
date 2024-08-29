@@ -3,8 +3,8 @@ import { TextSelection, Checkmark } from '@carbon/icons-react';
 import useStore from '@store/store';
 
 const IncludeSelectionSend = () => {
-  const currentDocumentIndex = useStore((state) => state.currentDocumentIndex);
-  const documents = useStore ((state) => state.documents);
+  const currentDocumentIndex = useStore((state) => state.currentChatIndex);
+  const documents = useStore ((state) => state.chats);
   const [selection, setSelection] = useState(false);
   const editorSettings = useStore((state) => state.editorSettings);
   const setEditorSettings = useStore((state) => state.setEditorSettings);

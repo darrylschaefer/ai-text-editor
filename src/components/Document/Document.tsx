@@ -27,9 +27,9 @@ const Document = () => {
   const hideSideMenu = useStore((state) => state.hideSideMenu);
   const hideSideAIMenu = useStore((state) => state.hideSideAIMenu);
   const editRef = useRef(null);
-  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
-  const chats = useStore((state) => state.documents);
-  const setChats = useStore((state) => state.setDocuments);
+  const currentChatIndex = useStore((state) => state.currentChatIndex);
+  const chats = useStore((state) => state.chats);
+  const setChats = useStore((state) => state.setChats);
 
   let editorState: InitialEditorStateType | undefined | null = null;
 

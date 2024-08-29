@@ -11,19 +11,19 @@ const ChatContent = () => {
   const inputRole = useStore((state) => state.inputRole);
   const setError = useStore((state) => state.setError);
   const messages = useStore((state) =>
-    state.documents &&
-    state.documents.length > 0 &&
-    state.currentDocumentIndex >= 0 &&
-    state.currentDocumentIndex < state.documents.length
-      ? state.documents[state.currentDocumentIndex].messageCurrent.messages
+    state.chats &&
+    state.chats.length > 0 &&
+    state.currentChatIndex >= 0 &&
+    state.currentChatIndex < state.chats.length
+      ? state.chats[state.currentChatIndex].messageCurrent.messages
       : []
   );
   const stickyIndex = useStore((state) =>
-    state.documents &&
-    state.documents.length > 0 &&
-    state.currentDocumentIndex >= 0 &&
-    state.currentDocumentIndex < state.documents.length
-      ? state.documents[state.currentDocumentIndex].messageCurrent.messages.length
+    state.chats &&
+    state.chats.length > 0 &&
+    state.currentChatIndex >= 0 &&
+    state.currentChatIndex < state.chats.length
+      ? state.chats[state.currentChatIndex].messageCurrent.messages.length
       : 0
   );
   const advancedMode = useStore((state) => state.advancedMode);

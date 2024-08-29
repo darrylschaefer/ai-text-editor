@@ -23,7 +23,7 @@ const Message = React.memo(
     const hideSideMenu = useStore((state) => state.hideSideMenu);
     const setAIPadding = useStore((state) => state.setAIPadding);
     const lastMessageIndex = useStore((state) =>
-    state.documents ? state.documents[state.currentDocumentIndex].messageCurrent.messages.length : 0
+    state.chats ? state.chats[state.currentChatIndex].messageCurrent.messages.length : 0
      );
 
      const heightRef = useRef<HTMLDivElement>(null);

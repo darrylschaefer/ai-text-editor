@@ -20,7 +20,7 @@ const ExportChat = () => {
         className='btn btn-small btn-primary'
         onClick={() => {
           const fileData: Export = {
-            documents: useStore.getState().documents,
+            documents: useStore.getState().chats,
             folders: useStore.getState().folders,
             prompts: useStore.getState().prompts,
             config: useStore.getState().defaultChatConfig,

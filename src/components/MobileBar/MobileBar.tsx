@@ -7,11 +7,11 @@ const MobileBar = () => {
   const setHideSideMenu = useStore((state) => state.setHideSideMenu);
   const setHideSideAIMenu = useStore((state) => state.setHideSideAIMenu);
   const chatTitle = useStore((state) =>
-    state.documents &&
-    state.documents.length > 0 &&
-    state.currentDocumentIndex >= 0 &&
-    state.currentDocumentIndex < state.documents.length
-      ? state.documents[state.currentDocumentIndex].title
+    state.chats &&
+    state.chats.length > 0 &&
+    state.currentChatIndex >= 0 &&
+    state.currentChatIndex < state.chats.length
+      ? state.chats[state.currentChatIndex].title
       : 'New Chat'
   );
 

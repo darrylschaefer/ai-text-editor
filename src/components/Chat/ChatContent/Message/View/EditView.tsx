@@ -23,9 +23,9 @@ const EditView = ({
   sticky?: boolean;
 }) => {
   const inputRole = useStore((state) => state.inputRole);
-  const chats = useStore((state) => state.documents);
-  const setChats = useStore((state) => state.setDocuments);
-  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+  const chats = useStore((state) => state.chats);
+  const setChats = useStore((state) => state.setChats);
+  const currentChatIndex = useStore((state) => state.currentChatIndex);
   const [_content, _setContent] = useState<string>(content);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const textareaRef = React.createRef<HTMLTextAreaElement>();
@@ -66,7 +66,7 @@ const EditView = ({
   const handleSave = () => {
     if (sticky && (_content === '' || useStore.getState().generating)) return;
     const updatedChats: DocumentInterface[] = JSON.parse(
-      JSON.stringify(useStore.getState().documents)
+      JSON.stringify(useStore.getState().chats)
     );
     const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
     if (sticky) {
@@ -84,7 +84,7 @@ const EditView = ({
   const handleSaveAndSubmit = () => {
     if (useStore.getState().generating) return;
     const updatedChats: DocumentInterface[] = JSON.parse(
-      JSON.stringify(useStore.getState().documents)
+      JSON.stringify(useStore.getState().chats)
     );
 
     const editorSettings = useStore.getState().editorSettings;
@@ -136,7 +136,7 @@ const EditView = ({
   // const updateChatMessage = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
   //   if (sticky && (_content === '' || useStore.getState().generating)) return;
   //   const updatedChats: DocumentInterface[] = JSON.parse(
-  //     JSON.stringify(useStore.getState().documents)
+  //     JSON.stringify(useStore.getState().chats)
   //   );
   //   const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
   //   if (sticky) {

@@ -3,13 +3,13 @@ import { generateDefaultDocument } from '@constants/chat';
 import { DocumentInterface } from '@type/document';
 
 const useAddDocument = () => {
-  const setDocuments = useStore((state) => state.setDocuments);
-  const setCurrentDocumentIndex = useStore((state) => state.setCurrentDocumentIndex);
+  const setChats = useStore((state) => state.setChats);
+  const setCurrentChatIndex = useStore((state) => state.setCurrentChatIndex);
   const setEditorRefresh = useStore((state) => state.setForceEditorRefresh);
 
   const addDocuments = (folder?:string) => {
     
-     const documents = useStore.getState().documents;
+     const documents = useStore.getState().chats;
     
      if (documents) {
        const updatedDocuments: DocumentInterface[] = JSON.parse(JSON.stringify(documents));
@@ -22,8 +22,8 @@ const useAddDocument = () => {
        }
 
        updatedDocuments.unshift(generateDefaultDocument({title, folder}));
-       setDocuments(updatedDocuments);
-       setCurrentDocumentIndex(0);
+       setChats(updatedDocuments);
+       setCurrentChatIndex(0);
 
        setEditorRefresh(!useStore.getState().forceEditorRefresh);
      }

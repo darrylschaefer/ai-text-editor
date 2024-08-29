@@ -30,8 +30,8 @@ const EditorSelection = (editorRef: any) => {
       // selectionState.container.classList.add("pointer-events-none");
         }
     const selectionRef = useRef<RangeSelection | null>(null);
-    const chats = useStore((state) => state.documents);
-    const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+    const chats = useStore((state) => state.chats);
+    const currentChatIndex = useStore((state) => state.currentChatIndex);
     const currentSelection = useStore((state) => state.currentSelection);
     const setCurrentSelection = useStore((state) => state.setCurrentSelection);
 

@@ -14,8 +14,8 @@ const PromptButton = ({prompt, index, activeMenu, setActiveMenu}: {
   
   const setHideSideAIMenu = useStore((state) => state.setHideSideAIMenu);
 
-  const chats = useStore((state) => state.documents);
-  const setChats = useStore((state) => state.setDocuments);
+  const chats = useStore((state) => state.chats);
+  const setChats = useStore((state) => state.setChats);
   const useClearChat = useClearChatPrompt();
   const { handleSubmit } = useSubmitPromptAdjust();
   const editorSettings = useStore((state) => state.editorSettings);

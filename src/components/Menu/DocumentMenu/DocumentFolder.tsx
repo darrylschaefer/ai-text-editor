@@ -26,7 +26,7 @@ const DocumentFolder = ({
   const isExpanded = useStore((state) => state.folders[folderId]?.expanded);
   const color = useStore((state) => state.folders[folderId]?.color);
 
-  const setDocuments = useStore((state) => state.setDocuments);
+  const setChats = useStore((state) => state.setChats);
   const setFolders = useStore((state) => state.setFolders);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,12 +51,12 @@ const DocumentFolder = ({
 
   const deleteFolder = () => {
     const updatedChats: DocumentInterface[] = JSON.parse(
-      JSON.stringify(useStore.getState().documents)
+      JSON.stringify(useStore.getState().chats)
     );
     updatedChats.forEach((chat) => {
       if (chat.folder === folderId) delete chat.folder;
     });
-    setDocuments(updatedChats);
+    setChats(updatedChats);
 
     const updatedFolders: FolderCollection = JSON.parse(
       JSON.stringify(useStore.getState().folders)
@@ -111,10 +111,10 @@ const DocumentFolder = ({
       // update chat folderId to new folderId
       const documentIndex = Number(e.dataTransfer.getData('chatIndex'));
       const updatedDocuments: DocumentInterface[] = JSON.parse(
-        JSON.stringify(useStore.getState().documents)
+        JSON.stringify(useStore.getState().chats)
       );
       updatedDocuments[documentIndex].folder = folderId;
-      setDocuments(updatedDocuments);
+      setChats(updatedDocuments);
     }
   };
 

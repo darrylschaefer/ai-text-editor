@@ -17,8 +17,8 @@ const useSubmitPromptAdjust = () => {
   const apiKey = useStore((state) => state.apiKey);
   const setGenerating = useStore((state) => state.setGenerating);
   const generating = useStore((state) => state.generating);
-  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
-  const setChats = useStore((state) => state.setDocuments);
+  const currentChatIndex = useStore((state) => state.currentChatIndex);
+  const setChats = useStore((state) => state.setChats);
 
 //   const chatMessages: MessageInterface[] = [
 //     {
@@ -56,7 +56,7 @@ const useSubmitPromptAdjust = () => {
   };
 
   const handleSubmit = async ({prompt, includeSelection, modifiedConfig}:{prompt: string, includeSelection: boolean, modifiedConfig?: ConfigInterface}) => {
-    const chats = useStore.getState().documents;
+    const chats = useStore.getState().chats;
     const currentSelection = useStore.getState().currentSelection;
     const defaultChatConfig = useStore.getState().defaultChatConfig;
     if(modifiedConfig == null || modifiedConfig == undefined){
@@ -90,7 +90,7 @@ const useSubmitPromptAdjust = () => {
         }
     ];
 
-    let resetChats = useStore.getState().documents;
+    let resetChats = useStore.getState().chats;
     if(resetChats){
       resetChats[currentChatIndex].messageCurrent = generateDefaultMessage(modifiedConfig, chatMessages);
       setChats(resetChats);
@@ -180,7 +180,7 @@ const useSubmitPromptAdjust = () => {
             }, '');
 
             const updatedChats: DocumentInterface[] = JSON.parse(
-              JSON.stringify(useStore.getState().documents)
+              JSON.stringify(useStore.getState().chats)
             );
 
             const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
@@ -217,7 +217,7 @@ const useSubmitPromptAdjust = () => {
       }
 
       // update tokens used in chatting
-      const currChats = useStore.getState().documents;
+      const currChats = useStore.getState().chats;
       const countTotalTokens = useStore.getState().countTotalTokens;
 
       if (currChats && countTotalTokens) {
@@ -252,7 +252,7 @@ const useSubmitPromptAdjust = () => {
           title = title.slice(1, -1);
         }
         const updatedChats: DocumentInterface[] = JSON.parse(
-          JSON.stringify(useStore.getState().documents)
+          JSON.stringify(useStore.getState().chats)
         );
         updatedChats[currentChatIndex].title = title;
         updatedChats[currentChatIndex].titleSet = true;

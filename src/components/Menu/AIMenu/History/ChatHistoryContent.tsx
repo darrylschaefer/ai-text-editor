@@ -18,9 +18,9 @@ const ChatHistoryContent = ({activeMenu, setActiveMenu}: {activeMenu: string; se
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [sendSelection, setSendSelection] = useState(true);
   const [dropDown, setDropDown] = useState(false);
-  const chats = useStore((state) => state.documents);
-  const setChats = useStore((state) => state.setDocuments);
-  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+  const chats = useStore((state) => state.chats);
+  const setChats = useStore((state) => state.setChats);
+  const currentChatIndex = useStore((state) => state.currentChatIndex);
   const [_messages, _setMessages] = useState<DocumentCurrent[]>([]);
   const editorRefresh = useStore((state) => state.forceEditorRefresh);
 

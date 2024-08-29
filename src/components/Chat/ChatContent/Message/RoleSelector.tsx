@@ -19,8 +19,8 @@ const RoleSelector = React.memo(
   }) => {
     const { t } = useTranslation();
     const setInputRole = useStore((state) => state.setInputRole);
-    const setChats = useStore((state) => state.setDocuments);
-    const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+    const setChats = useStore((state) => state.setChats);
+    const currentChatIndex = useStore((state) => state.currentChatIndex);
 
     const [dropDown, setDropDown, dropDownRef] = useHideOnOutsideClick();
 
@@ -51,7 +51,7 @@ const RoleSelector = React.memo(
                 onClick={() => {
                   if (!sticky) {
                     const updatedChats: DocumentInterface[] = JSON.parse(
-                      JSON.stringify(useStore.getState().documents)
+                      JSON.stringify(useStore.getState().chats)
                     );
                     updatedChats[currentChatIndex].messageCurrent.messages[messageIndex].role =
                       r;

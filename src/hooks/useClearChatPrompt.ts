@@ -3,11 +3,11 @@ import { generateDefaultDocument } from '@constants/chat';
 import { DocumentInterface } from '@type/document';
 
 const useClearChatPrompt = () => {
-  const setChats = useStore((state) => state.setDocuments);
-  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+  const setChats = useStore((state) => state.setChats);
+  const currentChatIndex = useStore((state) => state.currentChatIndex);
 
   const clearChat = (prompt: any) => {
-     const chats = useStore.getState().documents;
+     const chats = useStore.getState().chats;
      if (chats) {
        const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
        let titleIndex = 1;

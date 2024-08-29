@@ -15,7 +15,7 @@ import { ExportBase } from '@type/export';
 
 const ImportChat = () => {
   const { t } = useTranslation();
-  const setChats = useStore.getState().setDocuments;
+  const setChats = useStore.getState().setChats;
   const setFolders = useStore.getState().setFolders;
   const prompts = useStore.getState().prompts;
   const setPrompts = useStore.getState().setPrompts;
@@ -55,7 +55,7 @@ const ImportChat = () => {
 
 
           // import chats
-          const prevChats = useStore.getState().documents;
+          const prevChats = useStore.getState().chats;
           if (parsedData.chats) {
             if (prevChats) {
               const updatedChats: DocumentInterface[] = JSON.parse(

@@ -3,16 +3,16 @@ import { DocumentInterface, FolderCollection, DocumentCurrent, EditorSettings } 
 
 export interface DocumentSlice {
   documentCurrent: DocumentCurrent;
-  documents?: DocumentInterface[];
-  currentDocumentIndex: number;
+  chats?: DocumentInterface[];
+  currentChatIndex: number;
   forceEditorRefresh: boolean;
   generating: boolean;
   error: string;
   folders: FolderCollection;
   editorSettings: EditorSettings;
   currentSelection: string;
-  setDocuments: (documents: DocumentInterface[]) => void;
-  setCurrentDocumentIndex: (currentDocumentIndex: number) => void;
+  setChats: (chats: DocumentInterface[]) => void;
+  setCurrentChatIndex: (currentChatIndex: number) => void;
   setForceEditorRefresh: (editorRefresh: boolean) => void;
   setGenerating: (generating: boolean) => void;
   setError: (error: string) => void;
@@ -42,7 +42,7 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => ({
     messageIndex: null,
     edited: false,
   },
-  currentDocumentIndex: -1,
+  currentChatIndex: -1,
   forceEditorRefresh: false,
   generating: false,
   error: '',
@@ -72,16 +72,16 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => ({
       editorSettings: editorSettings,
     }));
   },
-  setDocuments: (documents: DocumentInterface[]) => {
+  setChats: (chats: DocumentInterface[]) => {
     set((prev: DocumentSlice) => ({
       ...prev,
-      documents: documents,
+      chats: chats,
     }));
   },
-  setCurrentDocumentIndex: (currentDocumentIndex: number) => {
+  setCurrentChatIndex: (currentChatIndex: number) => {
     set((prev: DocumentSlice) => ({
       ...prev,
-      currentDocumentIndex: currentDocumentIndex,
+      currentChatIndex: currentChatIndex,
     }));
   },
   setForceEditorRefresh: (forceEditorRefresh: boolean) => {

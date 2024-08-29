@@ -5,9 +5,9 @@ import { set } from 'lodash';
 import { use } from 'i18next';
 
 const ClearPromptConfig = () => {
-  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
-  const chats = useStore ((state) => state.documents);
-  const setChats = useStore ((state) => state.setDocuments);
+  const currentChatIndex = useStore((state) => state.currentChatIndex);
+  const chats = useStore ((state) => state.chats);
+  const setChats = useStore ((state) => state.setChats);
   const editorRefresh = useStore((state) => state.forceEditorRefresh);
   const setEditorRefresh = useStore((state) => state.setForceEditorRefresh);
 

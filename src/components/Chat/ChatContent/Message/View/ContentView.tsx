@@ -51,17 +51,17 @@ const ContentView = memo(
 
     
 
-    const currentChatIndex = useStore((state) => state.currentDocumentIndex);
-    const setChats = useStore((state) => state.setDocuments);
+    const currentChatIndex = useStore((state) => state.currentChatIndex);
+    const setChats = useStore((state) => state.setChats);
     const lastMessageIndex = useStore((state) =>
-      state.documents ? state.documents[state.currentDocumentIndex].messageCurrent.messages.length - 1 : 0
+      state.chats ? state.chats[state.currentChatIndex].messageCurrent.messages.length - 1 : 0
     );
     const inlineLatex = useStore((state) => state.inlineLatex);
     const markdownMode = useStore((state) => state.markdownMode);
 
     const handleDelete = () => {
       const updatedChats: DocumentInterface[] = JSON.parse(
-        JSON.stringify(useStore.getState().documents)
+        JSON.stringify(useStore.getState().chats)
       );
       updatedChats[currentChatIndex].messageCurrent.messages.splice(messageIndex, 1);
       setChats(updatedChats);
@@ -69,7 +69,7 @@ const ContentView = memo(
 
     const handleMove = (direction: 'up' | 'down') => {
       const updatedChats: DocumentInterface[] = JSON.parse(
-        JSON.stringify(useStore.getState().documents)
+        JSON.stringify(useStore.getState().chats)
       );
       const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
       const temp = updatedMessages[messageIndex];
@@ -93,7 +93,7 @@ const ContentView = memo(
 
     const handleRefresh = () => {
       const updatedChats: DocumentInterface[] = JSON.parse(
-        JSON.stringify(useStore.getState().documents)
+        JSON.stringify(useStore.getState().chats)
       );
       const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
       updatedMessages.splice(updatedMessages.length - 1, 1);

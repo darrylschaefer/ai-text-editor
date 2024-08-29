@@ -7,12 +7,12 @@ import { generateDefaultDocument } from '@constants/chat';
 
 const NewMessageButton = React.memo(
   ({ messageIndex }: { messageIndex: number }) => {
-    const setChats = useStore((state) => state.setDocuments);
-    const currentChatIndex = useStore((state) => state.currentDocumentIndex);
-    const setCurrentChatIndex = useStore((state) => state.setCurrentDocumentIndex);
+    const setChats = useStore((state) => state.setChats);
+    const currentChatIndex = useStore((state) => state.currentChatIndex);
+    const setCurrentChatIndex = useStore((state) => state.setCurrentChatIndex);
 
     const addChat = () => {
-      const chats = useStore.getState().documents;
+      const chats = useStore.getState().chats;
       if (chats) {
         const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
         let titleIndex = 1;
@@ -34,7 +34,7 @@ const NewMessageButton = React.memo(
         addChat();
       } else {
         const updatedChats: DocumentInterface[] = JSON.parse(
-          JSON.stringify(useStore.getState().documents)
+          JSON.stringify(useStore.getState().chats)
         );
         updatedChats[currentChatIndex].messageCurrent.messages.splice(messageIndex + 1, 0, {
           content: '',

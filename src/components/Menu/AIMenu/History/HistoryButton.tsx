@@ -14,9 +14,9 @@ const HistoryButton = ({message, activeMenu, setActiveMenu, index}: {
 
   const replaceHistory = useReplaceHistory();  
   const setHideSideAIMenu = useStore((state) => state.setHideSideAIMenu);
-  const chats = useStore((state) => state.documents);
-  const setChats = useStore((state) => state.setDocuments);
-  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+  const chats = useStore((state) => state.chats);
+  const setChats = useStore((state) => state.setChats);
+  const currentChatIndex = useStore((state) => state.currentChatIndex);
   const editorSettings = useStore((state) => state.editorSettings);
   const setEditorSettings = useStore((state) => state.setEditorSettings);
   const generating = useStore.getState().generating;
@@ -39,7 +39,7 @@ const HistoryButton = ({message, activeMenu, setActiveMenu, index}: {
 
   const editTitle = () => {
     const updatedChats = JSON.parse(
-      JSON.stringify(useStore.getState().documents)
+      JSON.stringify(useStore.getState().chats)
     );
     if(message.messageIndex != null){
     updatedChats[currentChatIndex].messageHistory[message.messageIndex].title = _title;
@@ -59,7 +59,7 @@ const HistoryButton = ({message, activeMenu, setActiveMenu, index}: {
     e.stopPropagation();
     if(message.messageIndex != null){
     const updatedChats = JSON.parse(
-      JSON.stringify(useStore.getState().documents)
+      JSON.stringify(useStore.getState().chats)
     );
     updatedChats[currentChatIndex].messageHistory[message.messageIndex].favorited = !updatedChats[currentChatIndex].messageHistory[message.messageIndex].favorited;
     setChats(updatedChats);
@@ -71,7 +71,7 @@ const HistoryButton = ({message, activeMenu, setActiveMenu, index}: {
      const setEditorRefresh = useStore.getState().setForceEditorRefresh
 
     const updatedChats = JSON.parse(
-      JSON.stringify(useStore.getState().documents)
+      JSON.stringify(useStore.getState().chats)
     );
     updatedChats[currentChatIndex].messageHistory.splice(message.messageIndex, 1);
     setIsDelete(false);

@@ -7,8 +7,8 @@ import {
 
 const EditorRefresh = () => {
     const [editor] = useLexicalComposerContext();
-    const chats = useStore((state) => state.documents);
-    const currentChatIndex = useStore((state) => state.currentDocumentIndex);
+    const chats = useStore((state) => state.chats);
+    const currentChatIndex = useStore((state) => state.currentChatIndex);
     const editorRefresh = useStore((state) => state.forceEditorRefresh);
   
     useEffect(() => {

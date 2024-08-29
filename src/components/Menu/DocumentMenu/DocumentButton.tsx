@@ -20,10 +20,10 @@ const DocumentButtonClass = {
 const DocumentButton = React.memo(
   ({ title, chatIndex: documentIndex }: { title: string; chatIndex: number }) => {
     const initialiseNewChat = useInitialiseNewDocument();
-    const setCurrentDocumentIndex = useStore((state) => state.setCurrentDocumentIndex);
-    const setDocuments = useStore((state) => state.setDocuments);
-    const documents = useStore((state) => state.documents);
-    const active = useStore((state) => state.currentDocumentIndex === documentIndex);
+    const setCurrentChatIndex = useStore((state) => state.setCurrentChatIndex);
+    const setChats = useStore((state) => state.setChats);
+    const documents = useStore((state) => state.chats);
+    const active = useStore((state) => state.currentChatIndex === documentIndex);
     const generating = useStore((state) => state.generating);
 
     const [isDelete, setIsDelete] = useState<boolean>(false);
@@ -40,10 +40,10 @@ const DocumentButton = React.memo(
 
     const editTitle = () => {
       const updatedDocuments = JSON.parse(
-        JSON.stringify(useStore.getState().documents)
+        JSON.stringify(useStore.getState().chats)
       );
       updatedDocuments[documentIndex].title = _title;
-      setDocuments(updatedDocuments);
+      setChats(updatedDocuments);
       setIsEdit(false);
     };
 
@@ -52,12 +52,12 @@ const DocumentButton = React.memo(
       const setEditorRefresh = useStore.getState().setForceEditorRefresh;
 
       const updatedDocuments = JSON.parse(
-        JSON.stringify(useStore.getState().documents)
+        JSON.stringify(useStore.getState().chats)
       );
       updatedDocuments.splice(documentIndex, 1);
       if (updatedDocuments.length > 0) {
-        setCurrentDocumentIndex(0);
-        setDocuments(updatedDocuments);
+        setCurrentChatIndex(0);
+        setChats(updatedDocuments);
       } else {
         initialiseNewChat();
       }
@@ -104,7 +104,7 @@ const DocumentButton = React.memo(
             : 'cursor-pointer opacity-100'
         }`}
         onClick={() => {
-          if (!generating) setCurrentDocumentIndex(documentIndex);
+          if (!generating) setCurrentChatIndex(documentIndex);
         }}
         draggable
         onDragStart={handleDragStart}

@@ -16,8 +16,8 @@ const useSubmit = () => {
   const apiKey = useStore((state) => state.apiKey);
   const setGenerating = useStore((state) => state.setGenerating);
   const generating = useStore((state) => state.generating);
-  const currentChatIndex = useStore((state) => state.currentDocumentIndex);
-  const setChats = useStore((state) => state.setDocuments);
+  const currentChatIndex = useStore((state) => state.currentChatIndex);
+  const setChats = useStore((state) => state.setChats);
 
   const generateTitle = async (
     message: MessageInterface[]
@@ -48,7 +48,7 @@ const useSubmit = () => {
   };
 
   const handleSubmit = async () => {
-    const chats = useStore.getState().documents;
+    const chats = useStore.getState().chats;
     if (generating || !chats) return;
 
     const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
@@ -133,7 +133,7 @@ const useSubmit = () => {
             }, '');
 
             const updatedChats: DocumentInterface[] = JSON.parse(
-              JSON.stringify(useStore.getState().documents)
+              JSON.stringify(useStore.getState().chats)
             );
 
             // Check the history to see if it matches the current message
@@ -173,7 +173,7 @@ const useSubmit = () => {
 
 
       // update tokens used in chatting
-      const currChats = useStore.getState().documents;
+      const currChats = useStore.getState().chats;
       const countTotalTokens = useStore.getState().countTotalTokens;
 
       if (currChats && countTotalTokens) {
@@ -208,7 +208,7 @@ const useSubmit = () => {
           title = title.slice(1, -1);
         }
         const updatedChats: DocumentInterface[] = JSON.parse(
-          JSON.stringify(useStore.getState().documents)
+          JSON.stringify(useStore.getState().chats)
         );
         updatedChats[currentChatIndex].title = title;
         updatedChats[currentChatIndex].titleSet = true;

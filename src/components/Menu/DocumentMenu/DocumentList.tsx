@@ -13,11 +13,11 @@ import {
 } from '@type/document';
 
 const DocumentList = () => {
-  const currentDocumentIndex = useStore((state) => state.currentDocumentIndex);
-  const setDocuments = useStore((state) => state.setDocuments);
+  const currentDocumentIndex = useStore((state) => state.currentChatIndex);
+  const setChats = useStore((state) => state.setChats);
   const setFolders = useStore((state) => state.setFolders);
   const documentTitles = useStore(
-    (state) => state.documents?.map((document) => document.title),
+    (state) => state.chats?.map((document) => document.title),
     shallow
   );
 
@@ -30,14 +30,14 @@ const DocumentList = () => {
   );
   const [filter, setFilter] = useState<string>('');
 
-  const chatsRef = useRef<DocumentInterface[]>(useStore.getState().documents || []);
+  const chatsRef = useRef<DocumentInterface[]>(useStore.getState().chats || []);
   const foldersRef = useRef<FolderCollection>(useStore.getState().folders);
   const filterRef = useRef<string>(filter);
 
   const updateFolders = useRef(() => {
     const _folders: DocumentHistoryFolderInterface = {};
     const _noFolders: DocumentHistoryInterface[] = [];
-    const documents = useStore.getState().documents;
+    const documents = useStore.getState().chats;
     const folders = useStore.getState().folders;
 
     Object.values(folders)
@@ -55,7 +55,7 @@ const DocumentList = () => {
         if (
           !_documentTitle.includes(_filterLowerCase) &&
           !_documentFolderName.includes(_filterLowerCase) &&
-          index !== useStore.getState().currentDocumentIndex
+          index !== useStore.getState().currentChatIndex
         )
           return;
 
@@ -82,11 +82,11 @@ const DocumentList = () => {
     useStore.subscribe((state) => {
       if (
         !state.generating &&
-        state.documents &&
-        state.documents !== chatsRef.current
+        state.chats &&
+        state.chats !== chatsRef.current
       ) {
         updateFolders();
-        chatsRef.current = state.documents;
+        chatsRef.current = state.chats;
       } else if (state.folders !== foldersRef.current) {
         updateFolders();
         foldersRef.current = state.folders;
@@ -104,7 +104,7 @@ const DocumentList = () => {
       document.title = documentTitles[currentDocumentIndex];
 
       // expand folder of current chat
-      const documents = useStore.getState().documents;
+      const documents = useStore.getState().chats;
       if (documents) {
         const folderId = documents[currentDocumentIndex].folder;
 
@@ -132,10 +132,10 @@ const DocumentList = () => {
 
       const documentIndex = Number(e.dataTransfer.getData('chatIndex'));
       const updatedDocuments: DocumentInterface[] = JSON.parse(
-        JSON.stringify(useStore.getState().documents)
+        JSON.stringify(useStore.getState().chats)
       );
       delete updatedDocuments[documentIndex].folder;
-      setDocuments(updatedDocuments);
+      setChats(updatedDocuments);
     }
   };
 
