@@ -39,7 +39,6 @@ const ImportChat = () => {
 
         try {
           const parsedData = JSON.parse(data);
-          console.log(parsedData);
 
           // import folders
           parsedData.folders;
@@ -57,9 +56,7 @@ const ImportChat = () => {
           // import chats
           const prevChats = useStore.getState().chats;
           if (parsedData.chats) {
-            console.log("contains chats");
             if (prevChats) {
-              console.log("has previous chats");
               const updatedChats: DocumentInterface[] = JSON.parse(
                 JSON.stringify(prevChats)
               );
@@ -85,111 +82,6 @@ const ImportChat = () => {
 
 
 
-
-          // if (isLegacyImport(parsedData)) {
-          //   console.log("hey");
-          //   if (validateAndFixChats(parsedData)) {
-          //     // import new folders
-          //     const folderNameToIdMap: Record<string, string> = {};
-          //     const parsedFolders: string[] = [];
-
-          //     parsedData.forEach((data) => {
-          //       const folder = data.folder;
-          //       if (folder) {
-          //         if (!parsedFolders.includes(folder)) {
-          //           parsedFolders.push(folder);
-          //           folderNameToIdMap[folder] = uuidv4();
-          //         }
-          //         data.folder = folderNameToIdMap[folder];
-          //       }
-          //     });
-
-          //     const newFolders: FolderCollection = parsedFolders.reduce(
-          //       (acc, curr, index) => {
-          //         const id = folderNameToIdMap[curr];
-          //         const _newFolder: Folder = {
-          //           id,
-          //           name: curr,
-          //           expanded: false,
-          //           order: index,
-          //         };
-          //         return { [id]: _newFolder, ...acc };
-          //       },
-          //       {}
-          //     );
-
-          //     // increment the order of existing folders
-          //     const offset = parsedFolders.length;
-          //     console.log("offset", offset)
-
-          //     const updatedFolders = useStore.getState().folders;
-          //     Object.values(updatedFolders).forEach((f) => (f.order += offset));
-
-          //     setFolders({ ...newFolders, ...updatedFolders });
-
-          //     // import chats
-          //     const prevChats = useStore.getState().chats;
-          //     if (prevChats) {
-          //       console.log("ege");
-          //       const updatedChats: ChatInterface[] = JSON.parse(
-          //         JSON.stringify(prevChats)
-          //       );
-          //       setChats(parsedData.concat(updatedChats));
-          //     } else {
-          //       setChats(parsedData);
-          //     }
-          //     setAlert({ message: 'Succesfully imported!', success: true });
-          //   } else {
-          //     setAlert({
-          //       message: 'Invalid chats data format',
-          //       success: false,
-          //     });
-          //   }
-          // } else {
-          //   console.log("yo");
-          //   switch ((parsedData as ExportBase).version) {
-          //     case 1:
-          //       if (validateExportV1(parsedData)) {
-          //         // import folders
-          //         parsedData.folders;
-          //         // increment the order of existing folders
-          //         const offset = Object.keys(parsedData.folders).length;
-
-          //         const updatedFolders = useStore.getState().folders;
-          //         Object.values(updatedFolders).forEach(
-          //           (f) => (f.order += offset)
-          //         );
-
-          //         setFolders({ ...parsedData.folders, ...updatedFolders });
-
-          //         // import chats
-          //         const prevChats = useStore.getState().chats;
-          //         if (parsedData.chats) {
-          //           console.log("zee");
-          //           if (prevChats) {
-          //             const updatedChats: ChatInterface[] = JSON.parse(
-          //               JSON.stringify(prevChats)
-          //             );
-          //             setChats(parsedData.chats.concat(updatedChats));
-          //             console.log("zzwafwa");
-          //           } else {
-          //             setChats(parsedData.chats);
-          //             console.log("eeefefeawfw");
-          //           }
-          //         }
-
-                  
-
-          //         setAlert({ message: 'Succesfully imported!', success: true });
-          //       } else {
-          //         setAlert({
-          //           message: 'Invalid format',
-          //           success: false,
-          //         });
-          //       }
-          //       break;
-          //   }
-          // }
         } catch (error: unknown) {
           setAlert({ message: (error as Error).message, success: false });
         }
