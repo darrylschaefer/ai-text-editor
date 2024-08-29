@@ -39,7 +39,7 @@ const ImportChat = () => {
 
         try {
           const parsedData = JSON.parse(data);
-//          console.log(parsedData);
+          console.log(parsedData);
 
           // import folders
           parsedData.folders;
@@ -57,7 +57,9 @@ const ImportChat = () => {
           // import chats
           const prevChats = useStore.getState().chats;
           if (parsedData.chats) {
+            console.log("contains chats");
             if (prevChats) {
+              console.log("has previous chats");
               const updatedChats: DocumentInterface[] = JSON.parse(
                 JSON.stringify(prevChats)
               );

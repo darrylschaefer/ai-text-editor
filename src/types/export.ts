@@ -7,7 +7,7 @@ export interface ExportBase {
 }
 
 export interface ExportV1 extends ExportBase {
-  documents?: DocumentInterface[];
+  chats?: DocumentInterface[];
   folders: FolderCollection;
   prompts?: Prompt[];
   config?: ConfigInterface;
