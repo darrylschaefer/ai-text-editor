@@ -18,6 +18,7 @@ const HistoryButton = ({message, activeMenu, setActiveMenu, index}: {
   const setChats = useStore((state) => state.setChats);
   const currentChatIndex = useStore((state) => state.currentChatIndex);
   const editorSettings = useStore((state) => state.editorSettings);
+  console.log(editorSettings, "editor");
   const setEditorSettings = useStore((state) => state.setEditorSettings);
   const generating = useStore.getState().generating;
   const setGenerating = useStore.getState().setGenerating;

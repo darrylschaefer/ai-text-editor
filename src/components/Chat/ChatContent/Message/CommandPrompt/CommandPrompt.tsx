@@ -51,32 +51,42 @@ const CommandPrompt = ({
       <div
         className={`${
           dropDown ? '' : 'hidden'
-        } absolute top-100 bottom-100 right-0 z-10 bg-white rounded-lg shadow-xl border-b border-black/10 dark:border-gray-900/50 text-gray-800 dark:text-gray-100 group dark:bg-gray-800 opacity-90`}
+        } absolute top-full mt-1.5 right-0 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-gray-800/30 text-gray-800 dark:text-gray-100 w-max min-w-[280px] max-w-sm max-md:max-w-[90vw] animate-scale-in overflow-hidden`}
       >
-        <div className='text-sm px-4 py-2 w-max'>{t('promptLibrary')}</div>
-        <input
-          ref={inputRef}
-          type='text'
-          className='text-gray-800 dark:text-white p-3 text-sm border-none bg-gray-200 dark:bg-gray-600 m-0 w-full mr-0 h-8 focus:outline-none'
-          value={input}
-          placeholder={t('search') as string}
-          onChange={(e) => {
-            setInput(e.target.value);
-          }}
-        />
-        <ul className='text-sm text-gray-700 dark:text-gray-200 p-0 m-0 w-max max-w-sm max-md:max-w-[90vw] max-h-32 overflow-auto'>
-          {_prompts.map((cp) => (
-            <li
-              className='px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer text-start w-full'
-              onClick={() => {
-                _setContent((prev) => prev + cp.prompt);
-                setDropDown(false);
-              }}
-              key={cp.id}
-            >
-              {cp.name}
+        <div className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-2.5 border-b border-gray-200 dark:border-gray-800/30 bg-gray-50 dark:bg-gray-850/50'>
+          {t('macrosLibrary')}
+        </div>
+        <div className='px-3 py-2.5 border-b border-gray-200 dark:border-gray-800/30'>
+          <input
+            ref={inputRef}
+            type='text'
+            className='text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700/40 rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all'
+            value={input}
+            placeholder={t('search') as string}
+            onChange={(e) => {
+              setInput(e.target.value);
+            }}
+          />
+        </div>
+        <ul className='text-sm p-1 m-0 max-h-64 overflow-y-auto'>
+          {_prompts.length > 0 ? (
+            _prompts.map((cp) => (
+              <li
+                className='px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-750 cursor-pointer text-start rounded-md mx-1 transition-colors duration-150'
+                onClick={() => {
+                  _setContent((prev) => prev + cp.prompt);
+                  setDropDown(false);
+                }}
+                key={cp.id}
+              >
+                {cp.name}
+              </li>
+            ))
+          ) : (
+            <li className='px-4 py-3 text-gray-500 dark:text-gray-400 text-center text-sm'>
+              No actions found
             </li>
-          ))}
+          )}
         </ul>
       </div>
     </div>

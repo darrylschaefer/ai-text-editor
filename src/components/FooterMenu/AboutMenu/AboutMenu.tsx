@@ -1,34 +1,32 @@
 import { useEffect, useState } from 'react';
-import { useTranslation, Trans } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import PopupModal from '@components/PopupModal';
 import { Information, LogoGithub, FavoriteFilled } from '@carbon/icons-react';
 import useStore from '@store/store';
-import { set } from 'lodash';
 import logoImage from './LogoImage';
 
 const AboutMenu = () => {
-  const { t } = useTranslation(['main', 'about']);
+  const { t } = useTranslation('main');
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const firstVisit = useStore((state) => state.firstVisit);
   const setFirstVisit = useStore((state) => state.setFirstVisit);
 
-// check if firstVisit is true, if so, set it to false and open the modal
   useEffect(() => {
-    if(firstVisit == true){
+    if (firstVisit === true) {
       setFirstVisit(false);
       setIsModalOpen(true);
     }
-  }, [firstVisit]);
+  }, [firstVisit, setFirstVisit]);
 
-  function onGithubClick(){
-    window.location.href = "https://github.com/darrylschaefer/ai-text-editor";
+  function onGithubClick() {
+    window.open('https://github.com/darrylschaefer/ai-text-editor', '_blank', 'noopener,noreferrer');
   }
 
   return (
     <>
       <a
-        className='flex py-2 mb-1 px-2 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm'
+        className='flex py-2 mb-1 px-2 items-center gap-3 rounded-md hover:bg-gray-500/10 dark:hover:bg-gray-500/10 transition-colors duration-200 text-gray-900 dark:text-white cursor-pointer text-sm'
         onClick={() => {
           setIsModalOpen(true);
         }}
@@ -44,24 +42,61 @@ const AboutMenu = () => {
           setIsModalOpen={setIsModalOpen}
           cancelButton={false}
         >
-          <div className='p-6 border-b border-gray-200 dark:border-gray-600'>
-            <div className='min-w-fit text-gray-900 dark:text-gray-300 text-sm flex flex-col gap-3 leading-relaxed'>
-              <h3 className="pb-2 text-lg font-bold leading-6">{t('aboutTitle')}</h3>
-              <ul className="list-disc list-inside text-sm md:columns-2 leading-6 pb-2">
-                <li>{t('aboutBulletOne')}</li>
-                <li className="hidden md:list-item">{t('aboutBulletTwo')}</li>
-                <li className="hidden md:list-item">{t('aboutBulletThree')}</li>
-                <li>{t('aboutBulletFour')}</li>
-                <li>{t('aboutBulletFive')}</li>
-                <li>{t('aboutBulletSix')}</li>
-              </ul>
+          <div className='p-6'>
+            <div className='text-gray-700 dark:text-gray-300 space-y-6'>
+              {/* Introduction */}
               <div>
-                <button onClick={onGithubClick} className="btn btn-neutral w-fit px-4 mt-1 mb-1">
-                  <LogoGithub size={16} /> <span className="pl-2 flex items-center justify-center">{t('aboutGithub')} <span className="pl-1 text-rose-500"><FavoriteFilled size={16}/></span></span>
-                </button>
+                <p className='text-sm leading-relaxed text-gray-600 dark:text-gray-400'>
+                  {t('aboutTitle')}
+                </p>
               </div>
+
+              {/* Features */}
               <div>
-                <p>This application does not collect any data from the user, nor does it store any data on our servers. All data is stored locally on your computer.</p>
+                <h4 className='text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3'>
+                  {t('aboutSectionCore')}
+                </h4>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-2 text-sm'>
+                  <div className='flex items-start gap-2'>
+                    <span className='text-gray-400 dark:text-gray-500 mt-0.5'>•</span>
+                    <span>{t('aboutFeatureDocument')}</span>
+                  </div>
+                  <div className='flex items-start gap-2'>
+                    <span className='text-gray-400 dark:text-gray-500 mt-0.5'>•</span>
+                    <span>{t('aboutFeatureSearch')}</span>
+                  </div>
+                  <div className='flex items-start gap-2'>
+                    <span className='text-gray-400 dark:text-gray-500 mt-0.5'>•</span>
+                    <span>{t('aboutFeatureRevisions')}</span>
+                  </div>
+                  <div className='flex items-start gap-2'>
+                    <span className='text-gray-400 dark:text-gray-500 mt-0.5'>•</span>
+                    <span>{t('aboutFeatureAgents')}</span>
+                  </div>
+                  <div className='flex items-start gap-2'>
+                    <span className='text-gray-400 dark:text-gray-500 mt-0.5'>•</span>
+                    <span>{t('aboutFeatureMacros')}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Privacy Statement */}
+              <div className='pt-4 border-t border-gray-200 dark:border-gray-700'>
+                <p className='text-xs leading-relaxed text-gray-500 dark:text-gray-400'>
+                  {t('aboutPrivacy')}
+                </p>
+              </div>
+
+              {/* GitHub Link */}
+              <div className='pt-2'>
+                <button
+                  onClick={onGithubClick}
+                  className='inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors duration-200'
+                >
+                  <LogoGithub size={16} />
+                  <span>{t('aboutGithub')}</span>
+                  <FavoriteFilled size={14} className='text-rose-500' />
+                </button>
               </div>
             </div>
           </div>

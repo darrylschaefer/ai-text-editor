@@ -143,7 +143,7 @@ const DocumentFolder = ({
   return (
     <div
       className={`w-full transition-colors group/folder ${
-        isHover ? 'bg-gray-800/40' : ''
+        isHover ? 'bg-gray-200/40 dark:bg-gray-800/40' : ''
       }`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
@@ -152,8 +152,8 @@ const DocumentFolder = ({
       <div
         style={{ background: color || '' }}
         className={`${
-          color ? '' : 'hover:bg-gray-850'
-        } transition-colors flex py-2 pl-3 pr-2 items-center gap-3 relative break-all cursor-pointer parent-sibling group`}
+          color ? '' : 'hover:bg-gray-100/70 dark:hover:bg-gray-800/30'
+        } transition-colors flex py-1.5 pl-2 pr-2 items-center gap-2.5 relative break-all cursor-pointer parent-sibling group rounded-md text-gray-700 dark:text-gray-400`}
         onClick={toggleExpanded}
         ref={folderRef}
         onMouseEnter={() => {
@@ -199,15 +199,15 @@ const DocumentFolder = ({
           )}
         </div>
         <div
-          className='flex text-gray-300 h-4'
+          className='flex text-gray-600 dark:text-gray-300 h-4'
           onClick={(e) => e.stopPropagation()}
         >
           {isDelete || isEdit ? (
             <>
-              <button className='px-1 hover:text-white' onClick={handleTick}>
+              <button className='px-1 hover:text-gray-900 dark:hover:text-white' onClick={handleTick}>
                 <Checkmark size={16} />
               </button>
-              <button className='px-1 hover:text-white' onClick={handleCross}>
+              <button className='px-1 hover:text-gray-900 dark:hover:text-white' onClick={handleCross}>
                 <Close size={16} />
               </button>
             </>
@@ -218,7 +218,7 @@ const DocumentFolder = ({
                 ref={paletteRef}
               >
                 <button
-                  className='px-1 hover:text-white'
+                  className='px-1 hover:text-gray-900 dark:hover:text-white'
                   onClick={() => {
                     setShowPalette((prev) => !prev);
                   }}
@@ -226,7 +226,7 @@ const DocumentFolder = ({
                   <ColorPalette size={16} />
                 </button>
                 {showPalette && (
-                  <div className='absolute left-0 bottom-0 translate-y-full p-2 z-20 bg-gray-900 border border-gray-600 flex flex-col gap-2 items-center'>
+                  <div className='absolute left-0 bottom-0 translate-y-full p-2 z-20 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700/40 flex flex-col gap-2 items-center'>
                     <>
                       {folderColorOptions.map((c) => (
                         <button
@@ -251,7 +251,7 @@ const DocumentFolder = ({
               </div>
 
               <button
-                className='px-1 hover:text-white md:hidden group-hover/folder:md:inline'
+                className='px-1 hover:text-gray-900 dark:hover:text-white md:hidden group-hover/folder:md:inline'
                 onClick={() => {
                   addChat(folderId);
                 }}
@@ -259,19 +259,19 @@ const DocumentFolder = ({
                 <DocumentAdd size={16} />
               </button>
               <button
-                className='px-1 hover:text-white md:hidden group-hover/folder:md:inline'
+                className='px-1 hover:text-gray-900 dark:hover:text-white md:hidden group-hover/folder:md:inline'
                 onClick={() => setIsEdit(true)}
               >
                 <Edit size={16} />
               </button>
               <button
-                className='px-1 hover:text-white md:hidden group-hover/folder:md:inline'
+                className='px-1 hover:text-gray-900 dark:hover:text-white md:hidden group-hover/folder:md:inline'
                 onClick={() => setIsDelete(true)}
               >
                 <TrashCan size={16} />
               </button>
 
-              <button className='px-1 hover:text-white' onClick={toggleExpanded}>
+              <button className='px-1 hover:text-gray-900 dark:hover:text-white' onClick={toggleExpanded}>
                 <DownChevronArrow size={16}
                   className={`${
                     isExpanded ? 'rotate-180' : ''
@@ -283,7 +283,7 @@ const DocumentFolder = ({
         </div>
       </div>
       {isExpanded && (
-      <div className='ml-3 pl-1 mt-1 border-l-2 border-gray-700 flex flex-col gap-1 parent'>
+      <div className='ml-2 pl-1.5 mt-1 border-l border-gray-200/50 dark:border-gray-800/30 flex flex-col gap-1 parent'>
         {/* {isExpanded && <NewChat folder={folderId} />} */}
         {isExpanded &&
           folderDocuments.map((chat) => (

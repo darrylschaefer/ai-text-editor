@@ -14,8 +14,26 @@ import { DocumentInterface } from '@type/document';
 import { Theme } from '@type/theme';
 import ApiPopup from '@components/FooterMenu/Api/ApiPopup';
 import Toast from '@components/Toast';
+import ActionQueue from '@components/ActionQueue';
 import { set } from 'lodash';
 import FAQs from '@components/FAQs/FAQs';
+
+const Home = () => {
+  const actionQueue = useStore((state) => state.actionQueue);
+  // Show the queue whenever it has items (pending, running, completed, or error)
+  const isVisible = actionQueue.length > 0;
+  
+  return (
+  <>
+  <DocumentMenu />
+  <Document />
+  <AIMenu />
+  <ApiPopup />
+  <Toast />
+  <ActionQueue queue={actionQueue} isVisible={isVisible} />
+  </>
+  )
+}
 
 function App() {
   const initialiseNewDocument = useInitialiseNewDocument();
@@ -96,18 +114,6 @@ useEffect(() => {
       }
     }
   }, []);
-
-  function Home (){
-    return (
-    <>
-    <DocumentMenu />
-    <Document />
-    <AIMenu />
-    <ApiPopup />
-    <Toast />   
-    </>
-    )
-  }
 
   return (
     <div className='w-full h-full relative'>

@@ -6,6 +6,8 @@ import { AuthSlice, createAuthSlice } from './auth-slice';
 import { ConfigSlice, createConfigSlice } from './config-slice';
 import { PromptSlice, createPromptSlice } from './prompt-slice';
 import { ToastSlice, createToastSlice } from './toast-slice';
+import { ChatSlice, createChatSlice } from './chat-slice';
+import { ActionQueueSlice, createActionQueueSlice } from './action-queue-slice';
 import { get, set } from "idb-keyval";
 // import {
 //   LocalStorageInterfaceV0ToV1,
@@ -33,7 +35,9 @@ export type StoreState = DocumentSlice &
   AuthSlice &
   ConfigSlice &
   PromptSlice &
-  ToastSlice;
+  ToastSlice &
+  ChatSlice &
+  ActionQueueSlice;
 
 export type StoreSlice<T> = (
   set: StoreApi<StoreState>['setState'],
@@ -43,11 +47,13 @@ export type StoreSlice<T> = (
 export const createPartializedState = (state: StoreState) => ({
   chats: state.chats,
   currentChatIndex: state.currentChatIndex,
+  documentCurrent: state.documentCurrent,
   apiKey: state.apiKey,
   apiEndpoint: state.apiEndpoint,
   theme: state.theme,
   autoTitle: state.autoTitle,
   advancedMode: state.advancedMode,
+  editorSettings: state.editorSettings,
   prompts: state.prompts,
   defaultChatConfig: state.defaultChatConfig,
   defaultSystemMessage: state.defaultSystemMessage,
@@ -61,6 +67,12 @@ export const createPartializedState = (state: StoreState) => ({
   totalTokenUsed: state.totalTokenUsed,
   countTotalTokens: state.countTotalTokens,
   fineTuneModels: state.fineTuneModels,
+  editorAgentsMode: state.editorAgentsMode,
+  enabledTools: state.enabledTools,
+  agentApiEndpoint: state.agentApiEndpoint,
+  fetchedModels: state.fetchedModels,
+  conversations: state.conversations,
+  activeConversationId: state.activeConversationId,
 });
 
 export const IDBStorage = {
@@ -95,6 +107,8 @@ const useStore = create<StoreState>()(
       ...createConfigSlice(set, get),
       ...createPromptSlice(set, get),
       ...createToastSlice(set, get),
+      ...createChatSlice(set, get),
+      ...createActionQueueSlice(set, get),
     }),
     {
       name: 'fthr-write',

@@ -34,6 +34,13 @@ function createWindow() {
 
   win.loadURL(`http://localhost:${PORT}`);
 
+  // Reset zoom level to 100% on startup (set after URL loads to ensure it applies)
+  win.webContents.once('did-finish-load', () => {
+    win.webContents.setZoomLevel(0);
+  });
+  // Also set immediately in case page is already loaded
+  win.webContents.setZoomLevel(0);
+
   if (isDev) {
     win.webContents.openDevTools({ mode: 'detach' });
   }

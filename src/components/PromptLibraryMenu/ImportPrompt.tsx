@@ -39,7 +39,6 @@ const ImportPrompt = () => {
               name: columns[0],
               prompt: columns[1],
               config: config,
-              includeSelection: columns[3] === 'true',
             };
           });
 
@@ -56,27 +55,30 @@ const ImportPrompt = () => {
   };
 
   return (
-    <div>
-      <label className='block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300'>
+    <div className='flex-1'>
+      <label className='block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
         {t('import')} (CSV)
       </label>
-      <input
-        className='w-full text-sm file:p-2 text-gray-800 file:text-gray-700 dark:text-gray-300 dark:file:text-gray-200 rounded-md cursor-pointer focus:outline-none bg-gray-50 file:bg-gray-100 dark:bg-gray-800 dark:file:bg-gray-700 file:border-0 border border-gray-300 dark:border-gray-600 placeholder-gray-900 dark:placeholder-gray-300 file:cursor-pointer'
-        type='file'
-        ref={inputRef}
-      />
-      <button
-        className='btn btn-small btn-primary mt-3'
-        onClick={handleFileUpload}
-      >
-        {t('import')}
-      </button>
+      <div className='flex gap-2 min-w-0'>
+        <input
+          className='flex-1 min-w-0 text-sm file:mr-2 sm:file:mr-4 file:py-1.5 file:px-2 sm:file:px-3 file:rounded-md file:border-0 file:text-xs sm:file:text-sm file:font-medium file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 file:cursor-pointer hover:file:bg-blue-100 dark:hover:file:bg-blue-900/40 cursor-pointer text-gray-800 dark:text-gray-300 rounded-md focus:outline-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-700/40 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 overflow-hidden'
+          type='file'
+          ref={inputRef}
+          accept='.csv'
+        />
+        <button
+          className='px-4 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium transition-colors'
+          onClick={handleFileUpload}
+        >
+          {t('import')}
+        </button>
+      </div>
       {alert && (
         <div
-          className={`relative py-2 px-3 w-full mt-3 border rounded-md text-gray-600 dark:text-gray-100 text-sm whitespace-pre-wrap ${
+          className={`relative py-2 px-3 w-full mt-2 border rounded-md text-gray-600 dark:text-gray-100 text-sm whitespace-pre-wrap ${
             alert.success
-              ? 'border-green-500 bg-green-500/10'
-              : 'border-red-500 bg-red-500/10'
+              ? 'border-green-500 bg-green-500/10 dark:bg-green-500/20'
+              : 'border-red-500 bg-red-500/10 dark:bg-red-500/20'
           }`}
         >
           {alert.message}

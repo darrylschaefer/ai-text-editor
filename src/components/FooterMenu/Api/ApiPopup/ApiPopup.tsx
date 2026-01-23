@@ -40,19 +40,38 @@ const ApiPopup = () => {
       setIsModalOpen={setIsModalOpen}
       cancelButton={false}
     >
-      <div className='p-6 border-b border-gray-200 dark:border-gray-600'>
+      <div className='p-6 border-b border-gray-200 dark:border-gray-800/30'>
         <div className='flex gap-2 items-center justify-center mt-2'>
           <div className='min-w-fit text-gray-900 dark:text-gray-300 text-sm'>
             {t('apiKey.inputLabel', { ns: 'api' })}
           </div>
-          <input
-            type='text'
-            className='text-gray-800 dark:text-white p-3 text-sm border-none bg-gray-200 dark:bg-gray-600 rounded-md m-0 w-full mr-0 h-8 focus:outline-none'
-            value={_apiKey}
-            onChange={(e) => {
-              _setApiKey(e.target.value);
-            }}
-          />
+          <div className='flex-1 relative flex items-center'>
+            <input
+              type='text'
+              className='text-gray-800 dark:text-white p-3 text-sm border-none bg-gray-200 dark:bg-gray-600 rounded-md m-0 w-full mr-0 h-8 focus:outline-none'
+              value={_apiKey}
+              onChange={(e) => {
+                _setApiKey(e.target.value);
+              }}
+            />
+            <span 
+              className={`absolute right-2 inline-block w-2 h-2 rounded-full ${
+                _apiKey && _apiKey.trim().length > 0 
+                  ? 'bg-green-500' 
+                  : 'bg-red-500'
+              }`}
+              title={
+                _apiKey && _apiKey.trim().length > 0 
+                  ? 'API key is set' 
+                  : 'No API key set'
+              }
+              style={{
+                boxShadow: _apiKey && _apiKey.trim().length > 0 
+                  ? '0 0 4px rgba(34, 197, 94, 0.6)' 
+                  : '0 0 4px rgba(239, 68, 68, 0.6)',
+              }}
+            />
+          </div>
         </div>
 
         <div className='min-w-fit text-gray-900 dark:text-gray-300 text-sm mt-4'>

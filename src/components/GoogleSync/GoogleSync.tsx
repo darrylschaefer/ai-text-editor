@@ -150,7 +150,7 @@ const GooglePopup = ({
       setIsModalOpen={setIsModalOpen}
       cancelButton={false}
     >
-      <div className='p-6 border-b border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-300 text-sm flex flex-col items-center gap-4 text-center'>
+      <div className='p-6 border-b border-gray-200 dark:border-gray-800/30 text-gray-900 dark:text-gray-300 text-sm flex flex-col items-center gap-4 text-center'>
         <p>{t('tagline')}</p>
         <GoogleSyncButton
           loginHandler={() => {

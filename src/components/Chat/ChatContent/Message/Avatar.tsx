@@ -20,6 +20,8 @@ const Avatar = React.memo(({
       {role === 'user' && <UserAvatar role={role} content={content} messageIndex={messageIndex} sticky={sticky} />}
       {role === 'assistant' && <AssistantAvatar role={role} content={content} messageIndex={messageIndex} sticky={sticky} />}
       {role === 'system' && <SystemAvatar role={role} content={content} messageIndex={messageIndex} sticky={sticky} />}
+      {role === 'developer' && <SystemAvatar role={role} content={content} messageIndex={messageIndex} sticky={sticky} />}
+      
     </div>
   );
 });

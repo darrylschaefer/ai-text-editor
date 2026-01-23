@@ -6,7 +6,22 @@ import Avatar from './Avatar';
 import MessageContent from './MessageContent';
 
 import { Role } from '@type/document';
-const backgroundStyle = ['dark:bg-gray-900', 'dark:bg-gray-900/50'];
+
+// Determine message styling based on role
+const getMessageStyle = (role: Role, messageIndex: number) => {
+  const isAgentRole = role === 'assistant' || role === 'system' || role === 'developer';
+  const isUserRole = role === 'user';
+  
+  if (isAgentRole) {
+    // Agent messages: full width, no border, text on background
+    return 'w-full text-gray-900 dark:text-gray-100';
+  } else if (isUserRole) {
+    // User messages: subtle background with rounded border
+    return 'w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-800/30 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100';
+  }
+  // Default: same as agent
+  return 'w-full text-gray-900 dark:text-gray-100';
+};
 
 const Message = React.memo(
   ({
@@ -22,9 +37,9 @@ const Message = React.memo(
   }) => {
     const hideSideMenu = useStore((state) => state.hideSideMenu);
     const setAIPadding = useStore((state) => state.setAIPadding);
-    const lastMessageIndex = useStore((state) =>
-    state.chats ? state.chats[state.currentChatIndex].messageCurrent.messages.length : 0
-     );
+    const getActiveConversation = useStore((state) => state.getActiveConversation);
+    const activeConversation = getActiveConversation();
+    const lastMessageIndex = activeConversation ? activeConversation.messages.length : 0;
 
      const heightRef = useRef<HTMLDivElement>(null);
 
@@ -52,65 +67,62 @@ useEffect(() => {
   };
 }, [heightRef, setAIPadding]);
 
+    const isAgentRole = role === 'assistant' || role === 'system' || role === 'developer';
+    const isUserRole = role === 'user';
+    
     return (
-      messageIndex == lastMessageIndex ?
-      <div ref={heightRef} className="fixed bottom-0 w-full right-0 ">
-      <div
-        className={`w-full border-b border-black/10 dark:border-gray-900/50 text-gray-800 dark:text-gray-100 group ${
-          backgroundStyle[messageIndex % 2]
-        }`}
-      >
-        <div
-          className={`text-base flex-col gap-4 p-2 flex transition-all ease-in-out ${
-            hideSideMenu
-              ? 'md:max-w-5xl lg:max-w-5xl xl:max-w-6xl'
-              : 'md:max-w-3xl lg:max-w-3xl xl:max-w-4xl'
-          }`}
-        >
-          {/* <Avatar role={role} /><span>{role}</span> */}
-          <div>
-            {/* {advancedMode &&
-              <RoleSelector
-                role={role}
-                messageIndex={messageIndex}
-                sticky={sticky}
-              />} */}
-            <MessageContent
-              role={role}
-              content={content}
-              messageIndex={messageIndex}
-              sticky={sticky}
-            />
+      messageIndex == lastMessageIndex ? (
+        <div ref={heightRef} className="w-full mb-3">
+          <div className="w-full border-b border-gray-200 dark:border-gray-800/30 group bg-white dark:bg-gray-950">
+            <div className="text-base flex-col gap-4 px-4 py-3 md:px-6 md:py-4 flex transition-all ease-in-out duration-200">
+              {isUserRole ? (
+                <div className={getMessageStyle(role, messageIndex)}>
+                  <MessageContent
+                    role={role}
+                    content={content}
+                    messageIndex={messageIndex}
+                    sticky={sticky}
+                  />
+                </div>
+              ) : (
+                <div className="w-full">
+                  <MessageContent
+                    role={role}
+                    content={content}
+                    messageIndex={messageIndex}
+                    sticky={sticky}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      </div>
-      
-      :
-      <div
-      className={`w-full border-b text-gray-800 dark:text-gray-100 group border-gray-700/50 ${
-        backgroundStyle[messageIndex % 2]
-      }`}
-    >
-      <div
-        className={`text-base font-normal flex-col gap-4 md:gap-6 m-auto p-4 md:py-6 flex transition-all ease-in-out ${
-          hideSideMenu
-            ? 'md:max-w-5xl lg:max-w-5xl xl:max-w-6xl'
-            : 'md:max-w-3xl lg:max-w-3xl xl:max-w-4xl'
-        }`}
-      >
-        <Avatar content={""} role={role} messageIndex={messageIndex} />
-        <div>
-          <MessageContent
-            role={role}
-            content={content}
-            messageIndex={messageIndex}
-            sticky={sticky}
-          />
+      ) : (
+        <div className="w-full border-b border-gray-200 dark:border-gray-800/30 group bg-white dark:bg-gray-950 mb-3">
+          <div className="text-base font-normal flex-col gap-4 md:gap-6 px-4 py-4 md:px-6 md:py-6 flex transition-all ease-in-out duration-200">
+            {!isAgentRole && <Avatar content={""} role={role} messageIndex={messageIndex} />}
+            {isUserRole ? (
+              <div className={getMessageStyle(role, messageIndex)}>
+                <MessageContent
+                  role={role}
+                  content={content}
+                  messageIndex={messageIndex}
+                  sticky={sticky}
+                />
+              </div>
+            ) : (
+              <div className="w-full">
+                <MessageContent
+                  role={role}
+                  content={content}
+                  messageIndex={messageIndex}
+                  sticky={sticky}
+                />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </div>     
-
+      )
     );
   }
 );

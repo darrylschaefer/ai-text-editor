@@ -19,10 +19,14 @@ const EditorSelection = (editorRef: any) => {
     const [editor] = useLexicalComposerContext();
     const boxRef = useRef<HTMLDivElement>(null);
     const selectionState = useMemo(
-      () => ({
-        container: document.createElement('div'),
-        elements: [],
-      }),
+      () => {
+        const container = document.createElement('div');
+        container.setAttribute('data-selection-overlay-container', 'true');
+        return {
+          container,
+          elements: [],
+        };
+      },
       [],
     );
     if (selectionState.container) {

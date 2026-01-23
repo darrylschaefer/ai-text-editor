@@ -39,15 +39,17 @@ const RoleSelector = React.memo(
           id='dropdown'
           className={`${
             dropDown ? '' : 'hidden'
-          } absolute top-100 bottom-100 z-10 bg-white rounded-lg shadow-xl border-b border-black/10 dark:border-gray-900/50 text-gray-800 dark:text-gray-100 group dark:bg-gray-800 opacity-90`}
+          } absolute top-full mt-1.5 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-gray-800/30 text-gray-800 dark:text-gray-100 w-full min-w-[120px] animate-scale-in overflow-hidden`}
         >
           <ul
-            className='text-sm text-gray-700 dark:text-gray-200 p-0 m-0'
+            className='text-sm p-1 m-0 max-h-64 overflow-y-auto'
             aria-labelledby='dropdownDefaultButton'
           >
             {roles.map((r) => (
               <li
-                className='px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer'
+                className={`px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-750 cursor-pointer transition-colors duration-150 rounded-md mx-1 ${
+                  role === r ? 'bg-gray-100 dark:bg-gray-750 font-medium' : ''
+                }`}
                 onClick={() => {
                   if (!sticky) {
                     const updatedChats: DocumentInterface[] = JSON.parse(

@@ -16,7 +16,7 @@ const MobileBar = () => {
   );
 
   return (
-    <div className='sticky top-0 left-0 w-full z-50 flex items-center border-b border-white/10 bg-gray-900 p-2 text-gray-200 sm:pl-3 xl:hidden'>
+    <div className='sticky top-0 left-0 w-full z-50 flex items-center border-b border-gray-200 dark:border-gray-800/30 bg-white dark:bg-gray-950 px-3 py-2.5 text-gray-900 dark:text-gray-100 sm:px-4 xl:hidden'>
       <button
         type='button'
         className={defaultStyles.buttonNav}
@@ -25,9 +25,9 @@ const MobileBar = () => {
         }}
       >
         <span className='sr-only'>Open sidebar</span>
-        <Menu size={16} />
+        <Menu size={18} className='text-gray-700 dark:text-gray-300' />
       </button>
-      <h1 className='flex-1 text-center text-base font-normal px-2 max-h-20 overflow-y-auto text-white'>
+      <h1 className='flex-1 text-center text-sm font-medium px-3 max-h-20 overflow-y-auto text-gray-900 dark:text-gray-100 truncate'>
         {chatTitle}
       </h1>
       <button
@@ -37,7 +37,7 @@ const MobileBar = () => {
           setHideSideAIMenu(false);
         }}
       >
-        <Chat size={16} />
+        <Chat size={18} className='text-gray-700 dark:text-gray-300' />
       </button>
     </div>
   );

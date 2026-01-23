@@ -12,16 +12,14 @@ import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
-import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import EditorRefresh from './EditorComponents/EditorRefresh';
 import EditorSelection from './EditorComponents/EditorSelection';
 import EditorToolbar from "./EditorComponents/EditorToolbar";
+import AutosavePlugin from "./EditorComponents/AutosavePlugin";
+import BlockIdNormalizationPlugin from "./EditorComponents/BlockIdNormalizationPlugin";
+import EditorStorePlugin from "./EditorComponents/EditorStorePlugin";
 import lexicalTheme from "./LexicalTheme";
-
-import {
-  $getSelection,
-  $getRoot,
-} from "lexical";
+import SnippetsView from './SnippetsComponents/SnippetsView';
 
 const Document = () => {
   const hideSideMenu = useStore((state) => state.hideSideMenu);
@@ -34,7 +32,15 @@ const Document = () => {
   let editorState: InitialEditorStateType | undefined | null = null;
 
   if (chats && chats[currentChatIndex]) {
-    editorState = chats[currentChatIndex].editorState;
+    const currentDoc = chats[currentChatIndex];
+    const currentVersion = currentDoc.currentVersion || 'Draft';
+    
+    // Load the appropriate version's editor state
+    if (currentVersion === 'Draft') {
+      editorState = currentDoc.draftEditorState || currentDoc.editorState;
+    } else {
+      editorState = currentDoc.finishedEditorState || currentDoc.editorState;
+    }
   } else {
   }
 
@@ -45,12 +51,44 @@ const Document = () => {
     // check if the editor state of the current chat index is empty, if not, use a placeholder
     const value = '{"root":{"children":[{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1}],"direction":null,"format":"","indent":0,"type":"root","version":1}}';
 
+    // Migrate legacy documents that don't have version fields
+    if (chats && chats[currentChatIndex]) {
+      const doc = chats[currentChatIndex];
+      if (!doc.hasOwnProperty('currentVersion') || !doc.hasOwnProperty('snippets')) {
+        // Migrate legacy document
+        const temp = [...chats];
+        temp[currentChatIndex] = {
+          ...doc,
+          currentVersion: doc.currentVersion || 'Draft',
+          draftEditorState: doc.draftEditorState || doc.editorState || '',
+          finishedEditorState: doc.finishedEditorState || '',
+          snippets: doc.snippets || [],
+        };
+        setChats(temp);
+      }
+    }
+
      if (editorState === undefined || editorState === null || editorState === ""){
       let temp = chats;
       if(temp){
-      temp[currentChatIndex].editorState = value;
-      setChats(temp);
-    return value;
+        const currentDoc = temp[currentChatIndex];
+        const currentVersion = currentDoc.currentVersion || 'Draft';
+        
+        // Initialize both version states if needed
+        if (!currentDoc.draftEditorState) {
+          currentDoc.draftEditorState = value;
+        }
+        if (!currentDoc.finishedEditorState) {
+          currentDoc.finishedEditorState = '';
+        }
+        
+        currentDoc.editorState = value;
+        if (currentVersion === 'Draft') {
+          currentDoc.draftEditorState = value;
+        }
+        
+        setChats(temp);
+        return value;
       }
      } else {
       return editorState as InitialEditorStateType;
@@ -92,68 +130,84 @@ const editorConfig = {
     setRefresh(!refresh);
   }, [currentChatIndex]);
 
-  function onChange(change: any) {
-     if(chats){
-       let temp = chats;
-       if(temp[currentChatIndex].editorState != JSON.stringify(change)){
-        chats[currentChatIndex].edited = true;
-        }
-       chats[currentChatIndex].editorState = JSON.stringify(change); 
-       setChats(temp);
-     }
-    change.read(() => {
-      // Read the contents of the EditorState here.
-      const root = $getRoot();
-      const selection = $getSelection();
-  
-      if(chats){
-      let temp = chats;
-      if(temp[currentChatIndex].editorState != JSON.stringify(change)){
-       chats[currentChatIndex].edited = true;
-        }
-        chats[currentChatIndex].editorState = JSON.stringify(change);
-      setChats(temp);
+  // Also refresh when version changes
+  useEffect(() => {
+    if (chats && chats[currentChatIndex]) {
+      setRefresh(!refresh);
     }
-  }
-    );
-  }
+  }, [chats?.[currentChatIndex]?.currentVersion]);
 
-return (
-  <>
-    <LexicalComposer initialConfig={editorConfig}>
-    <div
+  // Get current document and version
+  const currentDoc = chats && chats[currentChatIndex] ? chats[currentChatIndex] : null;
+  const currentVersion = currentDoc?.currentVersion || 'Draft';
+  const isSnippetsView = currentVersion === 'Snippets';
+
+  // Render Snippets view if version is 'Snippets'
+  if (isSnippetsView && currentDoc) {
+    return (
+      <div
         className={`flex flex-col h-full flex-1 ${
           hideSideMenu ? 'md:pl-0' : 'md:pl-[260px]'
         } ${
           hideSideAIMenu ? 'md:pr-0' : 'md:pr-[365px]'
-        }
-   transition-all ease-in-out 
-        `}
+        } transition-all ease-in-out duration-200`}
       >
-      <MobileBar />
-      <main className='relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1'>
-        <div className="flex w-full">
-          <div className="flex-grow w-full">
-            <div className='relative h-full flex flex-grow flex-col gap-2 md:gap-3'>
-              <div ref={editorRef} className="editor-inner line-height-1.5 flex flex-col flex-grow w-full h-screen border-b border-black/10 dark:border-gray-900/50 text-gray-800 dark:text-gray-100 group dark:bg-gray-900">
-                <EditorToolbar />
-                <RichTextPlugin placeholder={<div />}
-                  contentEditable={<ContentEditable className="editor-input bg-white border border-gray-900/10 overflow-scroll w-full text-white text-base p-6 gap-4 md:gap-6 md:m-auto transition-all ease-in-out md:max-w-3xl dark:bg-gray-850" />}
-                  ErrorBoundary={LexicalErrorBoundary}
-                />
-                <EditorRefresh />
-                <OnChangePlugin onChange={onChange} />
-                <HistoryPlugin />
-                <EditorSelection editorRef={editorRef} />
-              </div>
-              </div>
-              </div>
-        </div>
+        <MobileBar />
+        <main className='relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1'>
+          <SnippetsView documentId={currentDoc.id} />
         </main>
+      </div>
+    );
+  }
+
+  // Render regular editor for Draft/Finished
+  return (
+    <>
+      <LexicalComposer initialConfig={editorConfig}>
+        <div
+          className={`flex flex-col h-full flex-1 ${
+            hideSideMenu ? 'md:pl-0' : 'md:pl-[260px]'
+          } ${
+            hideSideAIMenu ? 'md:pr-0' : 'md:pr-[365px]'
+          } transition-all ease-in-out duration-200`}
+        >
+          <MobileBar />
+          <main className='relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1'>
+            <div className="flex w-full h-full">
+              <div className="flex-grow w-full h-full">
+                <div className='relative h-full flex flex-grow flex-col'>
+                  <div 
+                    ref={editorRef} 
+                    className="editor-inner flex flex-col flex-grow w-full h-full border-b border-gray-200 dark:border-gray-800/30 text-gray-800 dark:text-gray-100 group bg-gray-100 dark:bg-gray-950"
+                  >
+                    <EditorToolbar />
+                    <RichTextPlugin 
+                      placeholder={<div />}
+                      contentEditable={
+                        <ContentEditable className="editor-input overflow-auto w-full text-base px-4 py-6 md:px-6 md:py-8 md:mx-auto transition-all ease-in-out md:max-w-3xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none" />
+                      }
+                      ErrorBoundary={LexicalErrorBoundary}
+                    />
+                    <EditorRefresh />
+                    <BlockIdNormalizationPlugin />
+                    <EditorStorePlugin />
+                    {currentDoc && (
+                      <AutosavePlugin 
+                        documentId={currentDoc.id} 
+                        section={currentVersion}
+                      />
+                    )}
+                    <HistoryPlugin />
+                    <EditorSelection editorRef={editorRef} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
-        </LexicalComposer>
-        </>
-);
+      </LexicalComposer>
+    </>
+  );
 }
 
 export default Document;

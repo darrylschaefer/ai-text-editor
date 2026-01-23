@@ -31,6 +31,9 @@ import DeleteButton from './Button/DeleteButton';
 // import MarkdownModeButton from './Button/MarkdownModeButton';
 
 import CodeBlock from '../CodeBlock';
+import HighlightedText from '@components/Common/HighlightedText';
+import TypingIndicator from '@components/Common/TypingIndicator';
+import { Hourglass } from '@carbon/icons-react';
 import { set } from 'lodash';
 
 const ContentView = memo(
@@ -53,11 +56,22 @@ const ContentView = memo(
 
     const currentChatIndex = useStore((state) => state.currentChatIndex);
     const setChats = useStore((state) => state.setChats);
-    const lastMessageIndex = useStore((state) =>
-      state.chats ? state.chats[state.currentChatIndex].messageCurrent.messages.length - 1 : 0
-    );
+    const getActiveConversation = useStore((state) => state.getActiveConversation);
+    const activeConversation = getActiveConversation();
+    // Support both old system (chats) and new unified system (conversations)
+    const lastMessageIndex = activeConversation 
+      ? activeConversation.messages.length - 1
+      : useStore.getState().chats 
+        ? useStore.getState().chats[useStore.getState().currentChatIndex]?.messageCurrent?.messages?.length - 1 || 0
+        : 0;
     const inlineLatex = useStore((state) => state.inlineLatex);
     const markdownMode = useStore((state) => state.markdownMode);
+    const generating = useStore((state) => state.generating);
+    const actionQueue = useStore((state) => state.actionQueue);
+    const isExecutingActions = actionQueue.length > 0 && actionQueue.some(item => item.status === 'running' || item.status === 'pending');
+    const isLastMessage = messageIndex === lastMessageIndex;
+    const showLoadingSpinner = isLastMessage && role === 'assistant' && !content && isExecutingActions;
+    const showTypingIndicator = isLastMessage && generating && role === 'assistant' && !content && !isExecutingActions;
 
     const handleDelete = () => {
       const updatedChats: DocumentInterface[] = JSON.parse(
@@ -108,7 +122,13 @@ const ContentView = memo(
     return (
       <>
         <div className='markdown prose w-full md:max-w-full break-words dark:prose-invert dark share-gpt-message'>
-          {markdownMode ? (
+          {showLoadingSpinner ? (
+            <div className="flex items-center">
+              <Hourglass className="animate-spin opacity-60" size={14} />
+            </div>
+          ) : showTypingIndicator ? (
+            <TypingIndicator />
+          ) : markdownMode ? (
             <ReactMarkdown
               remarkPlugins={[
                 remarkGfm,
@@ -134,7 +154,7 @@ const ContentView = memo(
               {content}
             </ReactMarkdown>
           ) : (
-            <span className='whitespace-pre-wrap'>{content}</span>
+            <HighlightedText text={content} className='whitespace-pre-wrap' />
           )}
         </div>
         <div className='flex justify-end gap-2 w-full mt-2'>

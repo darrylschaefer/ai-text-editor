@@ -1,12 +1,16 @@
 import useStore from '@store/store';
 import { useTranslation } from 'react-i18next';
 import { DocumentInterface, MessageInterface } from '@type/document';
-import { getChatCompletion, getChatCompletionStream } from '@api/api';
+import { getChatCompletion, getChatCompletionStream, getLegacyCompletion, getLegacyCompletionStream } from '@api/api';
 import { parseEventSource } from '@api/helper';
 import { limitMessageTokens, updateTotalTokenUsed } from '@utils/messageUtils';
-import { _defaultChatConfig } from '@constants/chat';
+import { _defaultChatConfig, _defaultLegacyConfig } from '@constants/chat';
 import { officialAPIEndpoint } from '@constants/auth';
 import useUpdateHistory from './useUpdateHistory';
+import { LegacyModels } from '@type/document';
+import { legacyCompletionModels } from '@constants/chat';
+import { constructEndpointUrl, removeProviderAndApiEndpoint } from '@utils/api';
+
 
 const useSubmit = () => {
   const { t, i18n } = useTranslation('api');
@@ -18,6 +22,9 @@ const useSubmit = () => {
   const generating = useStore((state) => state.generating);
   const currentChatIndex = useStore((state) => state.currentChatIndex);
   const setChats = useStore((state) => state.setChats);
+  const documentCurrent = useStore((state) => state.documentCurrent);
+  const model = documentCurrent.config?.model; // might be string
+  const isLegacy = legacyCompletionModels.includes(model as LegacyModels);
 
   const generateTitle = async (
     message: MessageInterface[]
@@ -47,6 +54,11 @@ const useSubmit = () => {
     return data.choices[0].message.content;
   };
 
+
+  // removeProviderAndApiEndpoint is now imported from @utils/api
+
+
+
   const handleSubmit = async () => {
     const chats = useStore.getState().chats;
     if (generating || !chats) return;
@@ -54,7 +66,7 @@ const useSubmit = () => {
     const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
     const defaultChatConfig = useStore.getState().defaultChatConfig;
 
-    const config = updatedChats[currentChatIndex].messageCurrent.config ? updatedChats[currentChatIndex].messageCurrent.config : defaultChatConfig;
+    const config = removeProviderAndApiEndpoint(documentCurrent.config? documentCurrent.config : defaultChatConfig);
 
     updatedChats[currentChatIndex].messageCurrent.messages.push({
       role: 'assistant',
@@ -88,18 +100,12 @@ const useSubmit = () => {
           throw new Error(t('noApiKeyWarning') as string);
         }
 
-        // other endpoints
-        stream = await getChatCompletionStream(
-          useStore.getState().apiEndpoint,
-          messages,
-          config ? config : defaultChatConfig
-        );
       } else if (apiKey) {
         // own apikey
         stream = await getChatCompletionStream(
           useStore.getState().apiEndpoint,
           messages,
-          config ? config : defaultChatConfig,
+          config,
           apiKey
         );
       }
@@ -136,9 +142,6 @@ const useSubmit = () => {
               JSON.stringify(useStore.getState().chats)
             );
 
-            // Check the history to see if it matches the current message
-//            const messageHistory = updatedChats[currentChatIndex].messageHistory;
-//            let matchFound = false;
              const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
              updatedMessages[updatedMessages.length - 1].content += resultString;
              updatedChats[currentChatIndex].messageCurrent.messages = updatedMessages;
@@ -233,7 +236,148 @@ const useSubmit = () => {
     setGenerating(false);
   };
 
-  return { handleSubmit, error };
+  const handleLegacy = async () => {
+    const chats = useStore.getState().chats;
+    if (generating || !chats) return;
+
+    const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
+    const defaultLegacyConfig = useStore.getState().defaultLegacyConfig;
+
+    const config = removeProviderAndApiEndpoint(documentCurrent.config ? documentCurrent.config : defaultLegacyConfig);
+
+    // Reset messages[1], which stores the output.
+    updatedChats[currentChatIndex].messageCurrent.messages.push ({
+      role: 'developer',
+      content: '',
+    });
+
+    setChats(updatedChats);
+    setGenerating(true);
+
+    try {
+      let stream;
+      if (chats[currentChatIndex].messageCurrent.messages.length === 0)
+        throw new Error('No messages submitted!');
+
+      const messages = chats[currentChatIndex].messageCurrent.messages;
+
+      if (messages.length === 0) throw new Error('Message exceed max token!');
+
+   
+      // no api key (free)
+      if (!apiKey || apiKey.length === 0) {
+        // official endpoint
+        if (apiEndpoint === officialAPIEndpoint) {
+          throw new Error(t('noApiKeyWarning') as string);
+        }
+
+        // other endpoints
+        stream = await getChatCompletionStream(
+          useStore.getState().apiEndpoint,
+          messages,
+          config ? config : defaultChatConfig
+        );
+      } else if (apiKey) {
+        // own apikey
+        const baseEndpoint = useStore.getState().apiEndpoint;
+        const apiEndpointType = documentCurrent.config?.apiEndpoint || defaultLegacyConfig.apiEndpoint;
+        const endpoint = constructEndpointUrl(baseEndpoint, apiEndpointType);
+        
+        stream = await getLegacyCompletionStream(
+          endpoint,
+          messages[0].content,
+          config,
+          apiKey
+        );
+      }
+
+      if (stream) {
+        if (stream.locked)
+          throw new Error(
+            'Oops, the stream is locked right now. Please try again'
+          );
+        const reader = stream.getReader();
+        let reading = true;
+        let partial = '';
+        while (reading && useStore.getState().generating) {
+          console.log("generationg");
+          const { done, value } = await reader.read();
+          const result = parseEventSource(
+            partial + new TextDecoder().decode(value)
+          );
+          partial = '';
+
+          if (result === '[DONE]' || done) {
+            reading = false;
+          } else {
+            const resultString = result.reduce((output: string, curr) => {
+              if (typeof curr === 'string') {
+                partial += curr;
+              } else {
+                console.log("hi");
+                console.log(curr)
+                console.log(curr.choices);
+                const content = curr.choices[0].text;
+                if (content) output += content;
+              }
+              console.log(output)
+              return output;
+            }, '');
+
+            const updatedChats: DocumentInterface[] = JSON.parse(
+              JSON.stringify(useStore.getState().chats)
+            );
+
+            // Check the history to see if it matches the current message
+//            const messageHistory = updatedChats[currentChatIndex].messageHistory;
+//            let matchFound = false;
+             const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
+             updatedMessages[updatedMessages.length - 1].content += resultString;
+             updatedChats[currentChatIndex].messageCurrent.messages = updatedMessages;
+
+
+            //  let matchFound = false;
+            let messageHistory = updatedChats[currentChatIndex].messageHistory;
+
+
+            // for(let i = 0; i < messageHistory.length; i++) {
+            //   if (messageHistory[i].id == updatedChats[currentChatIndex].messageCurrent.id) {
+            //     messageHistory[i] = updatedChats[currentChatIndex].messageCurrent;
+            //     matchFound = true;
+            //   }
+            // }
+
+            // if (!matchFound) {
+            //   messageHistory.push(updatedChats[currentChatIndex].messageCurrent);
+            // }
+
+            console.log(messageHistory)
+              updatedChats[currentChatIndex].messageHistory = messageHistory;
+              setChats(updatedChats);
+          }
+        }
+        if (useStore.getState().generating) {
+          reader.cancel('Cancelled by user');
+        } else {
+          reader.cancel('Generation completed');
+        }
+        reader.releaseLock();
+        stream.cancel();
+      }
+      
+    } catch (e: unknown) {
+      const err = (e as Error).message;
+      console.log(err);
+      setError(err);
+    }
+    setGenerating(false);
+  };
+
+
+  const handleFunction = isLegacy? handleLegacy : handleSubmit;
+  console.log("returning", isLegacy)
+
+  return { handleFunction, error };
 };
 
 export default useSubmit;

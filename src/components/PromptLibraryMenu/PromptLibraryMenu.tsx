@@ -17,7 +17,7 @@ const PromptLibraryMenu = () => {
   return (
     <div>
       <button className='btn btn-neutral w-48 justify-center' onClick={() => setIsModalOpen(true)}>
-        {t('promptLibrary')}
+        {t('macrosLibrary')}
       </button>
       {isModalOpen && (
         <PromptLibraryMenuPopUp setIsModalOpen={setIsModalOpen} />
@@ -26,7 +26,7 @@ const PromptLibraryMenu = () => {
   );
 };
 
-const PromptLibraryMenuPopUp = ({
+export const PromptLibraryMenuPopUp = ({
   setIsModalOpen,
 }: {
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -60,7 +60,6 @@ const PromptLibraryMenuPopUp = ({
        name: 'Default title',
        prompt: 'Default prompt',
        config: null,
-       includeSelection: false,
      });
      _setPrompts(updatedPrompts);
      setPrompts(updatedPrompts);
@@ -101,87 +100,102 @@ const PromptLibraryMenuPopUp = ({
 
   return (
     <PopupModal
-      title={t('promptLibrary') as string}
+      title={t('macrosLibrary') as string}
       setIsModalOpen={setIsModalOpen}
     >
-      <div className='p-6 border-b border-gray-200 dark:border-gray-600 w-[90vw] max-w-full text-sm text-gray-900 dark:text-gray-300'>
-        <div className='border p-4 rounded border-gray-200 dark:border-gray-600'>
-          <ImportPrompt />
-          <ExportPrompt />
-        </div>
-        <div className='flex flex-col py-2 max-w-full' ref={container}>
-          <div className='flex font-bold border-b border-gray-500/50 mb-1 p-1'>
-            <div className='sm:w-1/4 max-sm:flex-1'>{t('name')}</div>
-            <div className='flex-1'>{t('prompt')}</div>
-            <div className="w-16 text-center">Config</div>
-            <div className="w-16 text-center">Delete</div>
+      <div className='p-6 w-full max-w-full text-sm text-gray-900 dark:text-gray-300'>
+        {/* Import/Export Section */}
+        <div className='mb-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800/30'>
+          <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
+            <ImportPrompt />
+            <ExportPrompt />
           </div>
-          {_prompts.map((prompt, index) => (
-            <div
-              key={prompt.id}
-              className='flex items-center border-b border-gray-500/50 mb-1 p-1'
-            >
-              <div className='sm:w-1/4 max-sm:flex-1'>
-                <textarea
-                  className='m-0 resize-none rounded-lg bg-transparent overflow-y-hidden leading-7 p-1 focus:ring-1 focus:ring-blue w-full max-h-10 transition-all'
-                  onFocus={handleOnFocus}
-                  onBlur={handleOnBlur}
-                  onChange={(e) => {
-                    _setPrompts((prev) => {
-                      const newPrompts = [...prev];
-                      newPrompts[index].name = e.target.value;
-                      return newPrompts;
-                    });
-                  }}
-                  onInput={handleInput}
-                  value={prompt.name}
-                  rows={1}
-                  maxLength={32}
-                  
-                ></textarea>
+        </div>
+
+        {/* Macros List */}
+        <div className='flex flex-col gap-3 max-w-full mb-6' ref={container}>
+          {_prompts.length === 0 ? (
+            <div className='flex flex-col items-center justify-center py-12 px-4 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-dashed border-gray-300 dark:border-gray-700'>
+              <div className='w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4'>
+                <svg
+                  className='w-8 h-8 text-gray-400 dark:text-gray-500'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={1.5}
+                    d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'
+                  />
+                </svg>
               </div>
-              <div className='flex-1'>
-                <textarea
-                  className='m-0 resize-none rounded-lg bg-transparent overflow-y-hidden leading-7 p-1 focus:ring-1 focus:ring-blue w-full max-h-10 transition-all'
-                  onFocus={handleOnFocus}
-                  onBlur={handleOnBlur}
-                  onChange={(e) => {
-                    _setPrompts((prev) => {
-                      const newPrompts = [...prev];
-                      newPrompts[index].prompt = e.target.value;
-                      return newPrompts;
-                    });
-                  }}
-                  onInput={handleInput}
-                  value={prompt.prompt}
-                  rows={1}
-                ></textarea>
+              <div className='text-gray-500 dark:text-gray-400 text-sm font-medium mb-1'>
+                No macros yet
               </div>
-              <div
-                className='cursor-pointer w-16 flex items-center justify-center'
-              >
-                <PromptConfig prompt={prompt} index={index} _updatePrompt={_updatePrompt} _prompts={_prompts} _setPrompts={_setPrompts} />
-              </div>
-              <div
-                className='cursor-pointer w-16 flex items-center justify-center'
-                onClick={() => deletePrompt(index)}
-              >
-                <TrashCan />
+              <div className='text-gray-400 dark:text-gray-500 text-xs text-center'>
+                Create your first macro to get started
               </div>
             </div>
-          ))}
+          ) : (
+            _prompts.map((prompt, index) => (
+              <div
+                key={prompt.id}
+                className='group flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-800/30 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-700/50 hover:shadow-sm transition-all duration-200 min-w-0 overflow-hidden'
+              >
+                {/* Name Input */}
+                <div className='flex-1 min-w-0 overflow-hidden'>
+                  <input
+                    type='text'
+                    className='w-full px-3 py-2 rounded-md bg-transparent border border-gray-200 dark:border-gray-800/30 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all'
+                    onChange={(e) => {
+                      _setPrompts((prev) => {
+                        const newPrompts = [...prev];
+                        newPrompts[index].name = e.target.value;
+                        return newPrompts;
+                      });
+                    }}
+                    value={prompt.name}
+                    placeholder='Macro name...'
+                    maxLength={32}
+                  />
+                </div>
+
+                {/* Macro Buttons */}
+                <div className='flex items-center gap-1 flex-shrink-0'>
+                  <div className='opacity-70 group-hover:opacity-100 transition-opacity'>
+                    <div className='p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors'>
+                      <PromptConfig 
+                        prompt={prompt} 
+                        index={index} 
+                        _updatePrompt={_updatePrompt} 
+                        _prompts={_prompts} 
+                        _setPrompts={_setPrompts} 
+                      />
+                    </div>
+                  </div>
+                  <button
+                    className='p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors opacity-70 group-hover:opacity-100'
+                    onClick={() => deletePrompt(index)}
+                    title='Delete macro'
+                  >
+                    <TrashCan size={18} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
-        <button className='flex justify-center cursor-pointer btn btn-neutral' onClick={addPrompt}>
-          <Add /> <span className="pl-1">New Prompt</span>
+
+        {/* Add New Macro Button */}
+        <button
+          className='w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-medium transition-colors duration-200'
+          onClick={addPrompt}
+        >
+          <Add size={20} />
+          <span>New Macro</span>
         </button>
-        <div className='flex justify-center mt-2'>
-          {/* <div
-            className='btn btn-neutral cursor-pointer text-xs'
-            onClick={clearPrompts}
-          >
-            {t('clearPrompts')}
-          </div> */}
-        </div>
       </div>
     </PopupModal>
   );

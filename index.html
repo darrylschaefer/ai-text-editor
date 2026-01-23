@@ -21,6 +21,18 @@
   <body>
     <div id="root"></div>
     <div id="modal-root"></div>
+    <script>
+      // Apply theme immediately to prevent flash of light mode
+      // This runs before React loads, so we can only check localStorage synchronously
+      // The main.tsx will handle reading from IndexedDB for the full state
+      (function() {
+        // Check localStorage for legacy theme support
+        const legacyTheme = localStorage.getItem('theme');
+        if (legacyTheme === 'dark' || legacyTheme === 'light') {
+          document.documentElement.className = legacyTheme;
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

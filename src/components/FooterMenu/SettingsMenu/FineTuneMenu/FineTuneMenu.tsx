@@ -21,7 +21,7 @@ const FineTuneMenu = () => {
   );
 };
 
-const FineTuneMenuPopUp = ({
+export const FineTuneMenuPopUp = ({
   setIsModalOpen,
 }: {
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -69,7 +69,7 @@ const FineTuneMenuPopUp = ({
       setIsModalOpen={setIsModalOpen}
       handleConfirm={handleSave}
     >
-      <div className='p-6 border-b border-gray-200 dark:border-gray-600 w-[90vw] max-w-full text-sm text-gray-900 dark:text-gray-300'>
+      <div className='p-6 border-b border-gray-200 dark:border-gray-800/30 w-[90vw] max-w-full text-sm text-gray-900 dark:text-gray-300'>
         <div className='flex flex-col py-3 max-w-full' ref={container}>
           <div className='flex font-bold border-b border-gray-500/50 mb-1 p-1'>
             <div className='sm:w-1/4 max-sm:flex-1'>{t('name')}</div>

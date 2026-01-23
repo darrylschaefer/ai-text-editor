@@ -104,7 +104,7 @@ useEffect(() => {
       ref={dropdownRef}
         className={`${
           dropDown ? '' : ''
-        } z-10 text-sm h-screen text-gray-800 dark:text-gray-100 group dark:bg-gray-900`}
+        } z-10 text-sm h-screen text-gray-800 dark:text-gray-100 group dark:bg-gray-950`}
       >
         <div className="flex-col flex overflow-y-auto hide-scroll-bar border-b border-white/10 p-2 pb-4 h-full">
         <div className='h-10 mb-2'>

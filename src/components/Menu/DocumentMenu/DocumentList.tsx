@@ -4,6 +4,8 @@ import { shallow } from 'zustand/shallow';
 
 import DocumentFolder from './DocumentFolder';
 import DocumentButton from './DocumentButton';
+import AddDocumentMenuItem from './AddDocumentMenuItem';
+import AddFolderMenuItem from './AddFolderMenuItem';
 
 import {
   DocumentHistoryInterface,
@@ -22,6 +24,8 @@ const DocumentList = () => {
   );
 
   const [isHover, setIsHover] = useState<boolean>(false);
+  const [isScrolling, setIsScrolling] = useState<boolean>(false);
+  const [isHoveringScroll, setIsHoveringScroll] = useState<boolean>(false);
   const [documentFolders, setDocumentFolders] = useState<DocumentHistoryFolderInterface>(
     {}
   );
@@ -29,6 +33,7 @@ const DocumentList = () => {
     []
   );
   const [filter, setFilter] = useState<string>('');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const chatsRef = useRef<DocumentInterface[]>(useStore.getState().chats || []);
   const foldersRef = useRef<FolderCollection>(useStore.getState().folders);
@@ -125,6 +130,27 @@ const DocumentList = () => {
     updateFolders();
   }, [filter]);
 
+  // Handle scroll detection for scrollbar visibility
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    let scrollTimeout: NodeJS.Timeout;
+    const handleScroll = () => {
+      setIsScrolling(true);
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        setIsScrolling(false);
+      }, 1200); // Delay to allow fade-out transition to complete
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, []);
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     if (e.dataTransfer) {
       e.stopPropagation();
@@ -154,9 +180,12 @@ const DocumentList = () => {
 
   return (
     <div
-      className={`flex-col flex-1 overflow-y-auto hide-scroll-bar border-b border-white/10 ${
-        isHover ? 'bg-gray-800/40' : ''
-      }`}
+      ref={scrollContainerRef}
+      onMouseEnter={() => setIsHoveringScroll(true)}
+      onMouseLeave={() => setIsHoveringScroll(false)}
+      className={`flex-col flex-1 overflow-y-auto subtle-scrollbar border-b border-gray-200 dark:border-gray-800/30 ${
+        isHover ? 'bg-gray-50 dark:bg-gray-800/25' : ''
+      } ${isScrolling || isHoveringScroll ? 'scrolling' : ''}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -165,7 +194,9 @@ const DocumentList = () => {
       {/* <div className="pt-2 px-2">
       <ChatSearch filter={filter} setFilter={setFilter} />
       </div> */}
-      <div className='flex flex-col gap-2 text-gray-100 text-sm overflow-scroll h-full p-1 pt-2'>
+      <div className='flex flex-col gap-1 text-gray-900 dark:text-gray-100 text-sm px-2 py-2'>
+        <AddDocumentMenuItem />
+        <AddFolderMenuItem />
         {Object.keys(documentFolders).map((folderId) => (
           <DocumentFolder
             folderDocuments={documentFolders[folderId]}

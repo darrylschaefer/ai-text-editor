@@ -104,11 +104,11 @@ const functionalityData = {
       },
       {
         title: "How do I create new prompts?",
-        content: "1. Locate the 'Settings' button found in the footer links, underneath your documents.<br>2. Click the 'Settings' button to open the settings menu.<br>3. In this menu, find and click the 'Prompt Library' option.<br>4. This will give you the option to update your prompt library as needed."
+        content: "1. Locate the 'Settings' button found in the footer links, underneath your documents.<br>2. Click the 'Settings' button to open the settings menu.<br>3. In this menu, find and click the 'Actions Library' option.<br>4. This will give you the option to update your actions library as needed."
       },
       {
         title: "How do I set the chat to a prompt from my library?",
-        content: "1. Find the 'Chat' menu on your screen.<br>2. Click the lightbulb icon within the chat menu to access your prompt library.<br>3. In the prompt library, you can choose to do one of two things with each prompt: <br>&emsp;a) To set one as your current prompt, simply click on the desired prompt.<br>&emsp;b) To instantly run a prompt as a macro, click on the magic wand icon next to it."
+        content: "1. Find the 'Chat' menu on your screen.<br>2. Click the lightbulb icon within the chat menu to access your actions library.<br>3. In the actions library, you can choose to do one of two things with each action: <br>&emsp;a) To set one as your current prompt, simply click on the desired action.<br>&emsp;b) To instantly run an action as a macro, click on the magic wand icon next to it."
       },
       { title: "What are prompt macros?",
       content: "1. Understand that prompt macros are prompts designed to generate an output instantly without further input.<br>2. Take into account that prompts have customizable configuration settings.<br>&emsp;a) This enables you to set a custom model setting or even send your current document selection.<br>3. Attempt to create prompts based on these settings to swiftly generate the desired outputs."
@@ -119,7 +119,7 @@ const functionalityData = {
       },
       {
         title: "How do I run a prompt macro?",
-        content: "1. Navigate to the 'Chat' menu on your screen.<br>2. Click on the lightbulb icon to open the prompt library menu.<br>3. Each prompt in this menu has a magic wand icon to the right. Click on this to run that prompt instantly as a 'Prompt Macro'.<br>4. If you have the 'Include Selection' option enabled, your current selection will be automatically added to the end of your prompt on a new line."
+        content: "1. Navigate to the 'Chat' menu on your screen.<br>2. Click on the lightbulb icon to open the actions library menu.<br>3. Each action in this menu has a magic wand icon to the right. Click on this to run that action instantly as an 'Action Macro'.<br>4. If you have the 'Include Selection' option enabled, your current selection will be automatically added to the end of your action on a new line."
       },
       {
         title: "How do I send the current selection to OpenAI?",

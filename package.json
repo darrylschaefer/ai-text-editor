@@ -1,7 +1,7 @@
 {
   "name": "ai-text-editor",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "homepage": "./",
   "main": "electron/index.cjs",

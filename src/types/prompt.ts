@@ -3,9 +3,10 @@ import { ConfigInterface } from "./document";
 export interface Prompt {
   id: string;
   name: string;
-  prompt: string;
+  prompt: {content: string, role: string}[];
   config: ConfigInterface | null;
-  includeSelection: boolean;
+  enabledTools?: string[]; // Per-prompt tool selection (exclusive to this action)
+  toolConfirmationSettings?: Record<string, boolean>; // Per-prompt tool confirmation settings
 }
 
 export interface PromptDropdownItem {

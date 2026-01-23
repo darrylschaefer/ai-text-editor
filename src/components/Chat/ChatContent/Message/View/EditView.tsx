@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import useStore from '@store/store';
 
 import useSubmit from '@hooks/useSubmit';
+import useUnifiedSubmit from '@hooks/useUnifiedSubmit';
+import useUnifiedChat from '@hooks/useUnifiedChat';
 import { SendFilled, StopFilledAlt } from '@carbon/icons-react';
 import { DocumentInterface } from '@type/document';
 
@@ -31,6 +33,10 @@ const EditView = ({
   const textareaRef = React.createRef<HTMLTextAreaElement>();
 
   const { t } = useTranslation();
+  
+  // Use unified system for sticky messages (chat input)
+  const { handleSubmit: handleUnifiedSubmit, generating: unifiedGenerating } = useUnifiedSubmit();
+  const { sendMessage, getOrCreateConversation, generating: unifiedChatGenerating } = useUnifiedChat();
 
   const resetTextAreaHeight = () => {
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -80,56 +86,80 @@ const EditView = ({
     setChats(updatedChats);
   };
 
-  const { handleSubmit } = useSubmit();
-  const handleSaveAndSubmit = () => {
-    if (useStore.getState().generating) return;
-    const updatedChats: DocumentInterface[] = JSON.parse(
-      JSON.stringify(useStore.getState().chats)
-    );
+  const { handleFunction } = useSubmit();
+  const handleSaveAndSubmit = async () => {
+    const generating = useStore.getState().generating || unifiedGenerating || unifiedChatGenerating;
+    if (generating) return;
 
     const editorSettings = useStore.getState().editorSettings;
     const setEditorSettings = useStore.getState().setEditorSettings;
     const currentSelection = useStore.getState().currentSelection;
 
-    const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
     if (sticky) {
+      // Use unified system for sticky messages (chat input)
       let tempContent = _content;
-      let tempSelection = currentSelection
+      let tempSelection = currentSelection;
+      
       if (editorSettings.includeSelection) {
-
-      if (_content.length != 0) {
-        // remove newline from start of currentSelection
-        if (currentSelection[0] == '\n') {
-          tempSelection = currentSelection.substring(1);
+        if (_content.length != 0) {
+          // remove newline from start of currentSelection
+          if (currentSelection[0] == '\n') {
+            tempSelection = currentSelection.substring(1);
+          }
+          // remove newline from end of currentSelection
+          if (currentSelection[currentSelection.length - 1] == '\n') {
+            tempSelection = currentSelection.substring(0, currentSelection.length - 1);
+          }
+          tempContent = (_content + '\n\n' + tempSelection + '\n\n');
+        } else {
+          tempContent = tempSelection;
         }
-        // remove newline from end of currentSelection
-        if (currentSelection[currentSelection.length - 1] == '\n') {
-          tempSelection = currentSelection.substring(0, currentSelection.length - 1);
-        }
-
-        tempContent = (_content  + '\n\n' + tempSelection + '\n\n');
-      } else {
-        tempContent = tempSelection;
       }
-    }
-        updatedMessages.push({ role: inputRole, content: tempContent });
-      _setContent('');
-      resetTextAreaHeight();
+
+      if (tempContent.trim()) {
+        // Add message using unified system
+        const conversation = getOrCreateConversation();
+        if (!conversation) {
+          console.error('No conversation found');
+          return;
+        }
+        
+        // Add message directly to ensure it's in the store before submitting
+        useStore.getState().addMessage(conversation.id, {
+          role: inputRole,
+          content: tempContent.trim(),
+        });
+        
+        // Verify message was added
+        const verifyConversation = useStore.getState().getActiveConversation();
+        if (!verifyConversation || verifyConversation.messages.length === 0) {
+          console.error('Failed to add message to conversation');
+          setError('Failed to add message. Please try again.');
+          return;
+        }
+        
+        _setContent('');
+        resetTextAreaHeight();
+        
+        // Submit to API - the message should now be in the store
+        await handleUnifiedSubmit();
+      }
     } else {
+      // Use old system for editing existing messages
+      const updatedChats: DocumentInterface[] = JSON.parse(
+        JSON.stringify(useStore.getState().chats)
+      );
+      const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
       let tempContent = _content;
-      if (editorSettings.includeSelection) {
-        tempContent = (_content  + '\n\n' + "{ " + currentSelection + " }" + '\n\n');
-     }
       updatedMessages[messageIndex].content = tempContent;
       updatedChats[currentChatIndex].messageCurrent.messages = updatedMessages.slice(
         0,
         messageIndex + 1
       );
       setIsEdit(false);
+      setChats(updatedChats);
+      handleFunction();
     }
-    setEditorSettings({ ...editorSettings, includeSelection: false });
-    setChats(updatedChats);
-    handleSubmit();
   };
 
 
@@ -168,7 +198,6 @@ const EditView = ({
     <>
     {sticky && (
     <div className="flex w-full">
-    <IncludeSelectionSend />
     {chats && chats[currentChatIndex].messageCurrent.config != null && (
     <ClearPromptConfig />
     )}
@@ -242,8 +271,7 @@ const EditViewSubmitButton = memo(
     _setContent: React.Dispatch<React.SetStateAction<string>>;
   }) => {
     const { t } = useTranslation();
-    const generating = useStore.getState().generating;
-    const setGenerating = useStore.getState().setGenerating;
+    const { generating, setGenerating } = useUnifiedChat();
 
     const handleCancel = () => {
       setGenerating(false);
@@ -251,7 +279,7 @@ const EditViewSubmitButton = memo(
 
     return (
       <>
-      {!generating? (
+      {!isGenerating? (
       <div className="absolute right-2 bottom-2 py-2 pl-2 pr-1 cursor-pointer" onClick={handleSaveAndSubmit} onMouseDown={(e) => { e.preventDefault(); }}>
         <SendFilled size={16} />
       </div>)

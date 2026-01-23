@@ -1,77 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import useStore from '@store/store';
-import { Idea, RecentlyViewed, TrashCan, Chat } from '@carbon/icons-react';
-import useClearChat from '@hooks/useClearChat';
-import { _defaultChatConfig } from '@constants/chat';
-import defaultStyles from '@components/style';
+import React from 'react';
 
-const Header = React.memo(({setActiveMenu, activeMenu}: {
-  setActiveMenu: React.Dispatch<React.SetStateAction<string>>;
+interface HeaderProps {
   activeMenu: string;
-}) => {
-  const { t } = useTranslation();
-  const [_content, _setContent] = useState<string>('');
-  const clearChat = useClearChat();
-  const generating = useStore.getState().generating;
-  const setGenerating = useStore.getState().setGenerating;
+  setActiveMenu: React.Dispatch<React.SetStateAction<string>>;
+}
 
-  const [chatCleared, setChatCleared] = useState(false);
-
-  const handleReturnChatClick = () => {
-    setActiveMenu("chat");
-  };
-
- const handleClearChatClick = () => {
-  setGenerating(false);
-    setChatCleared(true);
-};
-
-  useEffect(() => {
-    if (chatCleared) {
-      setTimeout(clearChat, 100);
-      setActiveMenu("chat");
-      setChatCleared(false);
-    }
-  }, [generating, chatCleared]);
-
+const Header = React.memo(({ setActiveMenu, activeMenu }: HeaderProps) => {
   return (
-    <div className="flex w-full justify-between">
-    <div>
-    {activeMenu == "chat" ? (
-      <div className={
-        defaultStyles.buttonStyle
-        } onClick={handleClearChatClick}>
-        <TrashCan size={16} />
-        </div> ) : (
-          <div className={
-            defaultStyles.buttonStyle + " bg-gray-800"
-            } onClick={handleReturnChatClick}>
-              <Chat size={16} />
-          </div>
-        )}
-    </div>
-    <div className="flex">
-        <div onClick={() => { 
-          activeMenu == "history" ? (setActiveMenu("chat")): setActiveMenu("history"); }
-        }
-      className={defaultStyles.buttonStyle}
-      title="Chat History"
+    <div className='flex flex-1 rounded-md border border-gray-200 dark:border-gray-800/30 overflow-hidden bg-white dark:bg-gray-950'>
+      <button
+        className={`flex-1 py-2 px-3 text-sm font-medium transition-colors ${
+          activeMenu === 'chat'
+            ? 'bg-gray-100 dark:bg-gray-800/70 text-gray-900 dark:text-gray-200 shadow-sm'
+            : 'bg-transparent text-gray-600 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-400'
+        }`}
+        onClick={() => setActiveMenu('chat')}
       >
-        <RecentlyViewed size={16} />
-      </div>
-      
-      <div 
-      onClick={() => { activeMenu == "settings" ? (setActiveMenu("chat")): setActiveMenu("settings");  }} 
-      className={defaultStyles.buttonStyle}
-      title="Change Prompt"
+        Chat
+      </button>
+      <button
+        className={`flex-1 py-2 px-3 text-sm font-medium transition-colors ${
+          activeMenu === 'meta'
+            ? 'bg-gray-100 dark:bg-gray-800/70 text-gray-900 dark:text-gray-200 shadow-sm'
+            : 'bg-transparent text-gray-600 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-400'
+        }`}
+        onClick={() => setActiveMenu('meta')}
       >
-        <Idea size={16} />
-      </div>
-      </div>
+        Meta
+      </button>
+      <button
+        className={`flex-1 py-2 px-3 text-sm font-medium transition-colors ${
+          activeMenu === 'actions'
+            ? 'bg-gray-100 dark:bg-gray-800/70 text-gray-900 dark:text-gray-200 shadow-sm'
+            : 'bg-transparent text-gray-600 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-400'
+        }`}
+        onClick={() => setActiveMenu('actions')}
+      >
+        Macros
+      </button>
     </div>
   );
-}
-);
+});
 
 export default Header;

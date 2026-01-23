@@ -41,33 +41,72 @@ const PromptMenuContent = ({activeMenu, setActiveMenu}: {activeMenu: string; set
   }
 
   return (
-    <div 
-    >
+    <div className="h-full flex flex-col">
       <div
-      ref={dropdownRef}
-        className={`${
-          dropDown ? '' : ''
-        } z-10 text-sm h-screen text-gray-800 dark:text-gray-100 group dark:bg-gray-900`}
+        ref={dropdownRef}
+        className="z-10 text-sm h-full text-gray-800 dark:text-gray-100 group dark:bg-gray-950"
       >
-        <div className="flex-col flex overflow-y-auto hide-scroll-bar border-b border-white/10 p-2 pb-4 h-full">
-        <div className='h-10 mb-2'>
-        <input
-          ref={inputRef}
-          type='text'
-          className='text-gray-800 dark:text-white p-3 text-sm bg-transparent disabled:opacity-40 disabled:cursor-not-allowed transition-opacity m-0 w-full h-full focus:outline-none border border-white/10'
-          value={input}
-          placeholder={"Search Prompts"}
-          onChange={(e) => {
-            setInput(e.target.value);
-          }}
-        />
+        <div className="flex flex-col h-full overflow-hidden">
+          {/* Search Header */}
+          <div className="px-4 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800/30">
+            <div className="relative">
+              <input
+                ref={inputRef}
+                type='text'
+                className='w-full px-4 py-2.5 pl-10 text-sm text-gray-800 dark:text-white bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500'
+                value={input}
+                placeholder="Search actions..."
+                onChange={(e) => {
+                  setInput(e.target.value);
+                }}
+              />
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+          
+          {/* Macros List */}
+          <div className='flex-1 overflow-y-auto px-3 py-3'>
+            {_prompts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                  <svg
+                    className="w-8 h-8 text-gray-400 dark:text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <div className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">
+                  {input ? 'No macros found' : 'No macros available'}
+                </div>
+                <div className="text-gray-400 dark:text-gray-500 text-xs">
+                  {input ? 'Try a different search term' : 'Create your first macro in Settings'}
+                </div>
+              </div>
+            ) : (
+              <div className='flex flex-col gap-2'>
+                {_prompts.map((prompt, index) => (
+                  <PromptButton 
+                    key={prompt.id || index} 
+                    index={index} 
+                    prompt={prompt} 
+                    activeMenu={activeMenu} 
+                    setActiveMenu={setActiveMenu} 
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        <div className='flex-1 flex flex-col gap-1 overflow-y-auto mb-14'>
-          {_prompts.map((prompt, index) => (
-             <PromptButton key={index} index={index} prompt={prompt} activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-            ))}
-        </div>
-      </div>
       </div>
     </div>
   );
