@@ -114,5 +114,8 @@
     "@swc/core-win32-arm64-msvc": "^1.4.2",
     "@swc/core-win32-ia32-msvc": "^1.4.2",
     "@swc/core-win32-x64-msvc": "^1.4.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }
