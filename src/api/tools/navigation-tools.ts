@@ -1368,7 +1368,8 @@ export async function editPreviewTool(
     // Get current revision_id from section history
     let currentRevisionId: string | null = null;
     if (targetDoc.sectionHistory && targetDoc.sectionHistory[section]) {
-      currentRevisionId = targetDoc.sectionHistory[section].current_revision_id || null;
+      const sectionState = targetDoc.sectionHistory[section];
+      currentRevisionId = sectionState?.current_revision_id || null;
     }
     
     return {
@@ -1791,15 +1792,19 @@ export async function editApplyTool(
          storedEditorStateJson.root.children.length > 0)) {
       dbgEditApply.log('Live editor state is empty, using stored state and loading it into editor');
       // Load stored state into editor first
+      if (!editor) {
+        throw new Error('Editor is null');
+      }
+      const editorInstance = editor;
       try {
-        editor.update(() => {
-          const parsedState = editor.parseEditorState(JSON.stringify(storedEditorStateJson));
-          editor.setEditorState(parsedState);
+        editorInstance.update(() => {
+          const parsedState = editorInstance.parseEditorState(JSON.stringify(storedEditorStateJson));
+          editorInstance.setEditorState(parsedState);
         }, { discrete: true });
         // Wait for state to be set
         await new Promise(resolve => setTimeout(resolve, 200));
         // Now get the live state
-        liveStateJson = editor.getEditorState().toJSON();
+        liveStateJson = editorInstance.getEditorState().toJSON();
       } catch (error) {
         dbgEditApply.error('ERROR: Failed to load stored state into editor:', error);
         // Fall back to stored state
@@ -1830,10 +1835,14 @@ export async function editApplyTool(
     const stateJson = liveStateJson;
     
     // Update editor state with merged block IDs
+    if (!editor) {
+      throw new Error('Editor is null');
+    }
+    const editorInstance = editor;
     try {
-      editor.update(() => {
-        const mergedState = editor.parseEditorState(JSON.stringify(stateJson));
-        editor.setEditorState(mergedState);
+      editorInstance.update(() => {
+        const mergedState = editorInstance.parseEditorState(JSON.stringify(stateJson));
+        editorInstance.setEditorState(mergedState);
       }, { discrete: true });
       
       // Wait a bit for state update to complete

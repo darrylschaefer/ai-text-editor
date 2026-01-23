@@ -61,19 +61,21 @@ export default function BlockIdNormalizationPlugin() {
     // Also normalize when editor state is set externally (e.g., on document load)
     const unregister = editor.registerUpdateListener(({ editorState, prevEditorState }) => {
       // Only normalize if this is a significant state change (not just typing)
-      if (prevEditorState && editorState.read(() => {
-        const currentJson = editorState.toJSON();
-        const prevJson = prevEditorState.toJSON();
-        
-        // If the JSON structure changed significantly (not just text content), re-check
-        const currentBlocks = JSON.stringify(currentJson.root?.children?.map((c: any) => c.type));
-        const prevBlocks = JSON.stringify(prevJson.root?.children?.map((c: any) => c.type));
-        
-        if (currentBlocks !== prevBlocks) {
-          hasNormalizedRef.current = false;
-          normalizeOnce();
-        }
-      }));
+      if (prevEditorState) {
+        editorState.read(() => {
+          const currentJson = editorState.toJSON();
+          const prevJson = prevEditorState.toJSON();
+          
+          // If the JSON structure changed significantly (not just text content), re-check
+          const currentBlocks = JSON.stringify(currentJson.root?.children?.map((c: any) => c.type));
+          const prevBlocks = JSON.stringify(prevJson.root?.children?.map((c: any) => c.type));
+          
+          if (currentBlocks !== prevBlocks) {
+            hasNormalizedRef.current = false;
+            normalizeOnce();
+          }
+        });
+      }
     });
 
     return () => {

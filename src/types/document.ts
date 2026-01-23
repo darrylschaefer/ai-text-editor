@@ -93,6 +93,7 @@ export interface DocumentCurrent {
 
 export interface EditorSettings {
   activeMenu: string;
+  includeSelection?: boolean;
 }
 
 
@@ -180,7 +181,7 @@ export interface LegacyConfigInterface {
 
 
 
-export type ModelOptions = [ChatCompletionOptions | LegacyModels | string];
+export type ModelOptions = ChatCompletionOptions | LegacyModels | string;
 
 export type ChatCompletionOptions = 'gpt-3.5-turbo' | 'gpt-3.5-turbo-16k' | 'gpt-4' | 'gpt-4-32k' | 'gpt-4-turbo' | 'gpt-4o' | 'gpt-4o-mini' | 'gpt-4.5-preview' | 'o1' | 'o1-mini' | 'o3' | 'o3-mini' | string;
 

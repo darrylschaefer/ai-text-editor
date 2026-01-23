@@ -35,15 +35,15 @@ export class BlockIdParagraphNode extends ParagraphNode {
     return cloned;
   }
 
-  createDOM(): HTMLElement {
-    const element = super.createDOM();
+  createDOM(config?: any): HTMLElement {
+    const element = super.createDOM(config);
     const blockId = this.getBlockId();
     element.setAttribute('data-block-id', blockId);
     return element;
   }
 
-  updateDOM(prevNode: BlockIdParagraphNode, dom: HTMLElement): boolean {
-    const updated = super.updateDOM(prevNode, dom);
+  updateDOM(prevNode: BlockIdParagraphNode, dom: HTMLElement, config?: any): boolean {
+    const updated = super.updateDOM(prevNode, dom, config);
     const blockId = this.getBlockId();
     dom.setAttribute('data-block-id', blockId);
     return updated;
@@ -63,7 +63,7 @@ export class BlockIdParagraphNode extends ParagraphNode {
   exportJSON(): any {
     const json = super.exportJSON();
     const blockId = this.getBlockId();
-    json.block_id = blockId;
+    (json as any).block_id = blockId;
     return json;
   }
 
@@ -103,8 +103,8 @@ export class BlockIdHeadingNode extends HeadingNode {
     return cloned;
   }
 
-  createDOM(): HTMLElement {
-    const element = super.createDOM();
+  createDOM(config?: any): HTMLElement {
+    const element = super.createDOM(config);
     const blockId = this.getBlockId();
     element.setAttribute('data-block-id', blockId);
     return element;
@@ -131,7 +131,7 @@ export class BlockIdHeadingNode extends HeadingNode {
   exportJSON(): any {
     const json = super.exportJSON();
     const blockId = this.getBlockId();
-    json.block_id = blockId;
+    (json as any).block_id = blockId;
     return json;
   }
 
@@ -170,8 +170,8 @@ export class BlockIdQuoteNode extends QuoteNode {
     return cloned;
   }
 
-  createDOM(): HTMLElement {
-    const element = super.createDOM();
+  createDOM(config?: any): HTMLElement {
+    const element = super.createDOM(config);
     const blockId = this.getBlockId();
     element.setAttribute('data-block-id', blockId);
     return element;
@@ -198,7 +198,7 @@ export class BlockIdQuoteNode extends QuoteNode {
   exportJSON(): any {
     const json = super.exportJSON();
     const blockId = this.getBlockId();
-    json.block_id = blockId;
+    (json as any).block_id = blockId;
     return json;
   }
 
@@ -237,15 +237,15 @@ export class BlockIdListItemNode extends ListItemNode {
     return cloned;
   }
 
-  createDOM(): HTMLElement {
-    const element = super.createDOM();
+  createDOM(config?: any): HTMLElement {
+    const element = super.createDOM(config);
     const blockId = this.getBlockId();
     element.setAttribute('data-block-id', blockId);
     return element;
   }
 
-  updateDOM(prevNode: BlockIdListItemNode, dom: HTMLElement): boolean {
-    const updated = super.updateDOM(prevNode, dom);
+  updateDOM(prevNode: BlockIdListItemNode, dom: HTMLElement, config?: any): boolean {
+    const updated = super.updateDOM(prevNode, dom, config);
     const blockId = this.getBlockId();
     dom.setAttribute('data-block-id', blockId);
     return updated;
@@ -265,7 +265,7 @@ export class BlockIdListItemNode extends ListItemNode {
   exportJSON(): any {
     const json = super.exportJSON();
     const blockId = this.getBlockId();
-    json.block_id = blockId;
+    (json as any).block_id = blockId;
     return json;
   }
 
@@ -301,19 +301,22 @@ export class BlockIdCodeNode extends CodeNode {
   static clone(node: BlockIdCodeNode): BlockIdCodeNode {
     const cloned = new BlockIdCodeNode(node.__key);
     cloned.__block_id = node.__block_id;
-    cloned.setLanguage(node.getLanguage());
+    const language = node.getLanguage();
+    if (language) {
+      cloned.setLanguage(language);
+    }
     return cloned;
   }
 
-  createDOM(): HTMLElement {
-    const element = super.createDOM();
+  createDOM(config?: any): HTMLElement {
+    const element = super.createDOM(config);
     const blockId = this.getBlockId();
     element.setAttribute('data-block-id', blockId);
     return element;
   }
 
-  updateDOM(prevNode: BlockIdCodeNode, dom: HTMLElement): boolean {
-    const updated = super.updateDOM(prevNode, dom);
+  updateDOM(prevNode: BlockIdCodeNode, dom: HTMLElement, config?: any): boolean {
+    const updated = super.updateDOM(prevNode, dom, config);
     const blockId = this.getBlockId();
     dom.setAttribute('data-block-id', blockId);
     return updated;
@@ -333,12 +336,13 @@ export class BlockIdCodeNode extends CodeNode {
   exportJSON(): any {
     const json = super.exportJSON();
     const blockId = this.getBlockId();
-    json.block_id = blockId;
+    (json as any).block_id = blockId;
     return json;
   }
 
   static importJSON(serializedNode: any): BlockIdCodeNode {
-    const node = $createBlockIdCodeNode(serializedNode.language);
+    const language = serializedNode.language || null;
+    const node = $createBlockIdCodeNode(language);
     const blockId = serializedNode.block_id || uuidv4();
     node.setBlockId(blockId);
     

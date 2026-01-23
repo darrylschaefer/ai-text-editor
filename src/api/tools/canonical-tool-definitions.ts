@@ -17,7 +17,6 @@ export const readSelectionDefinition: ToolDefinition = {
       type: 'object',
       properties: {},
       required: [],
-      additionalProperties: false,
     },
   },
 };
@@ -39,7 +38,6 @@ export const readMetaDefinition: ToolDefinition = {
         },
       },
       required: ['handle'],
-      additionalProperties: false,
     },
   },
 };
@@ -65,7 +63,6 @@ export const writeMetaDefinition: ToolDefinition = {
         },
       },
       required: ['handle', 'value'],
-      additionalProperties: false,
     },
   },
 };
@@ -99,7 +96,6 @@ export const snippetListDefinition: ToolDefinition = {
         },
       },
       required: [],
-      additionalProperties: false,
     },
   },
 };
@@ -125,7 +121,6 @@ export const snippetReadDefinition: ToolDefinition = {
         },
       },
       required: ['snippet_id'],
-      additionalProperties: false,
     },
   },
 };
@@ -162,7 +157,6 @@ export const snippetCreateDefinition: ToolDefinition = {
         },
       },
       required: [],
-      additionalProperties: false,
     },
   },
 };
@@ -203,7 +197,6 @@ export const snippetUpdateDefinition: ToolDefinition = {
         },
       },
       required: ['snippet_id'],
-      additionalProperties: false,
     },
   },
 };

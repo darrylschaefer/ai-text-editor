@@ -28,13 +28,18 @@ const ConfigMenu = () => {
 
   // update individual config fields helper
   const updateConfigField = (key: string, value: any) => {
-    _setConfig((prevConfig) => ({
-      ...prevConfig,
-      config: {
-        ...prevConfig.config,
-        [key]: value,
-      },
-    }));
+    _setConfig((prevConfig) => {
+      if (!prevConfig.config) {
+        return prevConfig;
+      }
+      return {
+        ...prevConfig,
+        config: {
+          ...prevConfig.config,
+          [key]: value,
+        },
+      };
+    });
   };
 
   function updateProviderDefault(provider: any) {
@@ -57,64 +62,78 @@ const ConfigMenu = () => {
       </div>
 
       <div className='p-2'>
-        <ProviderSelector
-          _provider={_config.config.provider}
-          _setProvider={(provider: ProviderOptions) => {
-            updateConfigField('provider', provider)
-            updateProviderDefault(provider);
-          }}
-        />
+        {_config.config && (
+          <>
+            <ProviderSelector
+              _provider={_config.config.provider}
+              _setProvider={((provider: ProviderOptions | ((prev: ProviderOptions) => ProviderOptions)) => {
+                const value = typeof provider === 'function' ? provider(_config.config!.provider) : provider;
+                updateConfigField('provider', value);
+                updateProviderDefault(value);
+              }) as React.Dispatch<React.SetStateAction<ProviderOptions>>}
+            />
 
-        <ApiEndpointSelector
-          _apiEndpoint={_config.config.apiEndpoint}
-          _setApiEndpoint={(endpoint: ApiEndpointOptions) =>
-          {
-            updateConfigField('apiEndpoint', endpoint);
-            updateApiEndpointDefault(endpoint);
-          }
-        }
-        />
+            <ApiEndpointSelector
+              _apiEndpoint={_config.config.apiEndpoint}
+              _setApiEndpoint={((endpoint: ApiEndpointOptions | ((prev: ApiEndpointOptions) => ApiEndpointOptions)) => {
+                const value = typeof endpoint === 'function' ? endpoint(_config.config!.apiEndpoint) : endpoint;
+                updateConfigField('apiEndpoint', value);
+                updateApiEndpointDefault(value);
+              }) as React.Dispatch<React.SetStateAction<ApiEndpointOptions>>}
+            />
 
-        <ModelSelector
-          _model={_config.config.model}
-          _setModel={(model: string) => updateConfigField('model', model)}
-          _provider={_config.config.provider}
-          _apiEndpoint={_config.config.apiEndpoint}
-        />
+            <ModelSelector
+              _model={_config.config.model as ModelOptions}
+              _setModel={((model: ModelOptions | ((prev: ModelOptions) => ModelOptions)) => {
+                const value = typeof model === 'function' ? model(_config.config!.model as ModelOptions) : model;
+                updateConfigField('model', value);
+              }) as React.Dispatch<React.SetStateAction<ModelOptions>>}
+              _provider={_config.config.provider}
+              _apiEndpoint={_config.config.apiEndpoint}
+            />
 
-        <MaxTokenSlider
-          _maxToken={_config.config.max_completion_tokens}
-          _setMaxToken={(tokens: number) =>
-            updateConfigField('max_completion_tokens', tokens)
-          }
-          _model={_config.config.model}
-        />
+            <MaxTokenSlider
+              _maxToken={('max_completion_tokens' in _config.config ? _config.config.max_completion_tokens : undefined) ?? 0}
+              _setMaxToken={((tokens: number | ((prev: number) => number)) => {
+                const value = typeof tokens === 'function' ? tokens(('max_completion_tokens' in _config.config! ? _config.config!.max_completion_tokens : undefined) ?? 0) : tokens;
+                updateConfigField('max_completion_tokens', value);
+              }) as React.Dispatch<React.SetStateAction<number>>}
+              _model={_config.config.model as ModelOptions}
+            />
 
-        <TemperatureSlider
-          _temperature={_config.config.temperature}
-          _setTemperature={(temperature: number) =>
-            updateConfigField('temperature', temperature)
-          }
-        />
+            <TemperatureSlider
+              _temperature={_config.config.temperature ?? 0}
+              _setTemperature={((temperature: number | ((prev: number) => number)) => {
+                const value = typeof temperature === 'function' ? temperature(_config.config!.temperature ?? 0) : temperature;
+                updateConfigField('temperature', value);
+              }) as React.Dispatch<React.SetStateAction<number>>}
+            />
 
-        <TopPSlider
-          _topP={_config.config.top_p}
-          _setTopP={(top_p: number) => updateConfigField('top_p', top_p)}
-        />
+            <TopPSlider
+              _topP={_config.config.top_p ?? 0}
+              _setTopP={((top_p: number | ((prev: number) => number)) => {
+                const value = typeof top_p === 'function' ? top_p(_config.config!.top_p ?? 0) : top_p;
+                updateConfigField('top_p', value);
+              }) as React.Dispatch<React.SetStateAction<number>>}
+            />
 
-        <PresencePenaltySlider
-          _presencePenalty={_config.config.presence_penalty}
-          _setPresencePenalty={(presence_penalty: number) =>
-            updateConfigField('presence_penalty', presence_penalty)
-          }
-        />
+            <PresencePenaltySlider
+              _presencePenalty={_config.config.presence_penalty ?? 0}
+              _setPresencePenalty={((presence_penalty: number | ((prev: number) => number)) => {
+                const value = typeof presence_penalty === 'function' ? presence_penalty(_config.config!.presence_penalty ?? 0) : presence_penalty;
+                updateConfigField('presence_penalty', value);
+              }) as React.Dispatch<React.SetStateAction<number>>}
+            />
 
-        <FrequencyPenaltySlider
-          _frequencyPenalty={_config.config.frequency_penalty}
-          _setFrequencyPenalty={(frequency_penalty: number) =>
-            updateConfigField('frequency_penalty', frequency_penalty)
-          }
-        />
+            <FrequencyPenaltySlider
+              _frequencyPenalty={_config.config.frequency_penalty ?? 0}
+              _setFrequencyPenalty={((frequency_penalty: number | ((prev: number) => number)) => {
+                const value = typeof frequency_penalty === 'function' ? frequency_penalty(_config.config!.frequency_penalty ?? 0) : frequency_penalty;
+                updateConfigField('frequency_penalty', value);
+              }) as React.Dispatch<React.SetStateAction<number>>}
+            />
+          </>
+        )}
       </div>
     </div>
   );

@@ -71,7 +71,6 @@ export const searchDefinition: ToolDefinition = {
         },
       },
       required: ['query'],
-      additionalProperties: false,
     },
   },
 };
@@ -123,7 +122,6 @@ export const searchTextDefinition: ToolDefinition = {
         },
       },
       required: ['query'],
-      additionalProperties: false,
     },
   },
 };
@@ -171,7 +169,6 @@ export const searchSemanticDefinition: ToolDefinition = {
         },
       },
       required: ['query'],
-      additionalProperties: false,
     },
   },
 };
@@ -215,7 +212,6 @@ export const getContextPacketDefinition: ToolDefinition = {
         },
       },
       required: ['doc_id', 'section', 'block_id'],
-      additionalProperties: false,
     },
   },
 };
@@ -256,7 +252,6 @@ export const getBlockMapDefinition: ToolDefinition = {
         },
       },
       required: [],
-      additionalProperties: false,
     },
   },
 };
@@ -367,7 +362,6 @@ export const getDocMetadataDefinition: ToolDefinition = {
         },
       },
       required: ['doc_id'],
-      additionalProperties: false,
     },
   },
 };
@@ -424,7 +418,6 @@ export const editPreviewDefinition: ToolDefinition = {
         },
       },
       required: ['doc_id', 'section', 'ops'],
-      additionalProperties: false,
     },
   },
 };
@@ -456,7 +449,6 @@ export const revisionListDefinition: ToolDefinition = {
         },
       },
       required: [],
-      additionalProperties: false,
     },
   },
 };
@@ -493,7 +485,6 @@ export const revisionGetDefinition: ToolDefinition = {
         },
       },
       required: ['revision_id'],
-      additionalProperties: false,
     },
   },
 };
@@ -530,7 +521,6 @@ export const revisionDiffDefinition: ToolDefinition = {
         },
       },
       required: ['from_revision_id', 'to_revision_id'],
-      additionalProperties: false,
     },
   },
 };
@@ -570,7 +560,6 @@ export const editApplyDefinition: ToolDefinition = {
         },
       },
       required: ['doc_id', 'section', 'ops', 'base_revision_id'],
-      additionalProperties: false,
     },
   },
 };

@@ -454,7 +454,7 @@ export async function executeMacro(
       ...config,
       apiEndpoint: 'completions',
       model: config.model || defaultLegacyConfig.model,
-      max_tokens: config.max_completion_tokens || (defaultLegacyConfig as any).max_tokens || defaultLegacyConfig.max_completion_tokens,
+      max_tokens: ('max_completion_tokens' in config ? config.max_completion_tokens : undefined) || ('max_tokens' in defaultLegacyConfig ? defaultLegacyConfig.max_tokens : undefined) || 100,
     };
 
     // Remove provider, apiEndpoint, notes, and stream before sending to API
@@ -578,8 +578,8 @@ export async function executeMacro(
 
     if (limitedMessages.length === 0) {
       // Remove from visited set before throwing
-      if (actionName) {
-        visited.delete(actionName);
+      if (macroName) {
+        visited.delete(macroName);
       }
       throw new Error('Message exceeds max token limit!');
     }

@@ -297,25 +297,6 @@ export const toolRegistry: ToolRegistry = {
       implementation: snippetUpdateTool,
     },
   } : {}),
-  // Legacy aliases (camelCase) - route to canonical implementations
-  // These are kept for backward compatibility but should not be exposed to OpenAI
-  readSelection: {
-    definition: toolDefinitionsMap.readSelection,
-    implementation: readSelectionToolCanonical,
-  },
-  readMeta: {
-    definition: toolDefinitionsMap.readMeta,
-    implementation: readMetaTool,
-  },
-  writeMeta: {
-    definition: toolDefinitionsMap.writeMeta,
-    implementation: writeMetaTool,
-  },
-  // readDocumentMeta aliases to doc_metadata_get
-  readDocumentMeta: {
-    definition: toolDefinitionsMap.readDocumentMeta,
-    implementation: getDocMetadataTool,
-  },
 } as ToolRegistry;
 
 /**

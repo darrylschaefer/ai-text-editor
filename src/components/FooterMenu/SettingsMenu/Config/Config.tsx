@@ -218,7 +218,7 @@ const CompletionConfigForm = ({
 }: {
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
-  const config = useStore.getState().defaultLegacyConfig;
+  const config = useStore.getState().defaultLegacyConfig as LegacyConfigInterface;
   const setDefaultLegacyConfig = useStore((state) => state.setDefaultLegacyConfig);
 
   const [_model, _setModel] = useState<LegacyModels>(config.model as LegacyModels);
@@ -237,7 +237,7 @@ const CompletionConfigForm = ({
   const { t } = useTranslation('model');
 
   const handleSave = () => {
-    setDefaultLegacyConfig({
+    const legacyConfig: LegacyConfigInterface = {
       ...config,
       model: _model,
       max_tokens: _maxToken,
@@ -247,13 +247,14 @@ const CompletionConfigForm = ({
       frequency_penalty: _frequencyPenalty,
       provider: _provider,
       apiEndpoint: _apiEndpoint,
-    });
+    };
+    setDefaultLegacyConfig(legacyConfig);
     setIsModalOpen(false);
   };
 
   const handleReset = () => {
     _setModel(_defaultLegacyConfig.model as LegacyModels);
-    _setMaxToken(_defaultLegacyConfig.max_tokens || 100);
+    _setMaxToken(('max_tokens' in _defaultLegacyConfig ? _defaultLegacyConfig.max_tokens : undefined) || 100);
     _setTemperature(_defaultLegacyConfig.temperature ?? 1);
     _setTopP(_defaultLegacyConfig.top_p ?? 1);
     _setPresencePenalty(_defaultLegacyConfig.presence_penalty ?? 0);

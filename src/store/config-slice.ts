@@ -1,6 +1,6 @@
 import { StoreSlice } from './store';
 import { Theme } from '@type/theme';
-import { ConfigInterface, TotalTokenUsed, ModelOptions, AvailableEndpoints } from '@type/document';
+import { ConfigInterface, LegacyConfigInterface, TotalTokenUsed, ModelOptions, AvailableEndpoints } from '@type/document';
 import { _defaultChatConfig, _defaultSystemMessage, _defaultLegacyConfig } from '@constants/chat';
 import { FineTuneModel } from '@type/config';
 
@@ -11,7 +11,7 @@ export interface ConfigSlice {
   hideMenuOptions: boolean;
   advancedMode: boolean;
   defaultChatConfig: ConfigInterface;
-  defaultLegacyConfig: ConfigInterface,
+  defaultLegacyConfig: LegacyConfigInterface,
   defaultSystemMessage: string;
   activeMenu: string;
   hideSideMenu: boolean;
@@ -49,7 +49,7 @@ export interface ConfigSlice {
   setAutoTitle: (autoTitle: boolean) => void;
   setAdvancedMode: (advancedMode: boolean) => void;
   setDefaultChatConfig: (defaultChatConfig: ConfigInterface) => void;
-  setDefaultLegacyConfig: (defaultChatConfig: ConfigInterface) => void;
+  setDefaultLegacyConfig: (defaultLegacyConfig: LegacyConfigInterface) => void;
   setDefaultSystemMessage: (defaultSystemMessage: string) => void;
   setActiveMenu: (activeMenu: string) => void;
   setHideMenuOptions: (hideMenuOptions: boolean) => void;
@@ -226,7 +226,7 @@ export const createConfigSlice: StoreSlice<ConfigSlice> = (set, get) => ({
       defaultChatConfig: defaultChatConfig,
     }));
   },
-  setDefaultLegacyConfig: (defaultLegacyConfig: ConfigInterface) => {
+  setDefaultLegacyConfig: (defaultLegacyConfig: LegacyConfigInterface) => {
     set((prev: ConfigSlice) => ({
       ...prev,
       defaultLegacyConfig: defaultLegacyConfig,

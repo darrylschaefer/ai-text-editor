@@ -26,6 +26,7 @@ import {
   ToolExecutionContext,
   Citation,
   DryRunPreview,
+  AgentBudgets,
 } from './types';
 import { PatchOperation } from '@type/block';
 import { applyPatches } from '@utils/block-patch';
@@ -100,44 +101,86 @@ async function executeToolSafely(
   
   try {
     switch (toolName) {
-      case 'search':
-        result = await searchTool(args);
-        // Extract citations from search results
-        citations = extractCitationsFromSearchResult(result);
+      case 'search': {
+        const toolResult = await searchTool(args);
+        if (!toolResult.success) {
+          result = `Error: ${toolResult.error || 'Search failed'}`;
+        } else {
+          result = formatSearchResult(toolResult);
+          citations = extractCitationsFromSearchResult(result);
+        }
         break;
-      case 'search_text': // Legacy
-        result = await searchTextTool(args);
-        // Extract citations from search results
-        citations = extractCitationsFromSearchResult(result);
+      }
+      case 'search_text': { // Legacy
+        const toolResult = await searchTextTool(args);
+        if (!toolResult.success) {
+          result = `Error: ${toolResult.error || 'Search failed'}`;
+        } else {
+          result = formatSearchResult(toolResult);
+          citations = extractCitationsFromSearchResult(result);
+        }
         break;
-      case 'search_semantic': // Legacy
-        result = await searchSemanticTool(args);
-        citations = extractCitationsFromSearchResult(result);
+      }
+      case 'search_semantic': { // Legacy
+        const toolResult = await searchSemanticTool(args);
+        if (!toolResult.success) {
+          result = `Error: ${toolResult.error || 'Search failed'}`;
+        } else {
+          result = formatSearchResult(toolResult);
+          citations = extractCitationsFromSearchResult(result);
+        }
         break;
-      case 'context_packet_get':
-        result = await getContextPacketTool(args);
+      }
+      case 'context_packet_get': {
+        const toolResult = await getContextPacketTool(args);
+        if (!toolResult.success) {
+          result = `Error: ${toolResult.error || 'Failed to get context packet'}`;
+        } else {
+          result = formatContextPacketResult(toolResult);
+        }
         break;
-      case 'doc_structure_get':
-        result = await getBlockMapTool(args);
+      }
+      case 'doc_structure_get': {
+        const toolResult = await getBlockMapTool(args);
+        if (!toolResult.success) {
+          result = `Error: ${toolResult.error || 'Failed to get block map'}`;
+        } else {
+          result = formatBlockMapResult(toolResult);
+        }
         break;
-      case 'doc_read':
-        result = await readBlocksTool(args);
+      }
+      case 'doc_read': {
         // Check budget
         if (args.block_ids && args.block_ids.length > context.budgets.max_blocks_per_read) {
           result = `Error: Requested ${args.block_ids.length} blocks, but maximum is ${context.budgets.max_blocks_per_read}.`;
+        } else {
+          const toolResult = await readBlocksTool(args);
+          if (!toolResult.success) {
+            result = `Error: ${toolResult.error || 'Failed to read blocks'}`;
+          } else {
+            result = formatReadBlocksResult(toolResult);
+          }
         }
         break;
+      }
       case 'doc_metadata_get':
         result = await getDocMetadataTool(args);
         break;
-      case 'edit_preview':
-        result = await editPreviewTool(args);
+      case 'edit_preview': {
         // Check edit size budget
         const totalBlocks = countBlocksInPatch(args.ops);
         if (totalBlocks > context.budgets.max_blocks_per_patch) {
           result = `Error: Edit affects ${totalBlocks} blocks, but maximum is ${context.budgets.max_blocks_per_patch}.`;
+        } else {
+          const toolResult = await editPreviewTool(args);
+          if (!toolResult.success) {
+            result = `Error: ${toolResult.error || 'Failed to preview edit'}`;
+          } else {
+            result = formatEditPreviewResult(toolResult);
+          }
         }
         break;
+      }
       case 'edit_apply':
         // This requires special handling with editor access
         result = 'edit_apply requires editor instance - handled separately';
@@ -170,6 +213,142 @@ async function executeToolSafely(
       result: `Error executing ${toolName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
+}
+
+/**
+ * Format search result to string
+ */
+function formatSearchResult(toolResult: any): string {
+  if (!toolResult.success || !toolResult.results || toolResult.results.length === 0) {
+    return 'No matches found.';
+  }
+  
+  const formatted = toolResult.results.map((r: any, i: number) => 
+    `${i + 1}. [${r.doc_id}:${r.section}:${r.block_id}]${r.score ? ` (score: ${r.score.toFixed(3)})` : ''}\n   ${r.snippet}`
+  ).join('\n\n');
+  
+  return `Found ${toolResult.count} match(es):\n\n${formatted}`;
+}
+
+/**
+ * Format context packet result to string
+ */
+function formatContextPacketResult(toolResult: any): string {
+  if (!toolResult.success || !toolResult.packet) {
+    return `Error: ${toolResult.error || 'Failed to get context packet'}`;
+  }
+  
+  const packet = toolResult.packet;
+  let formatted = `Context Packet for block ${packet.anchor?.block_id || 'unknown'}:\n\n`;
+  formatted += `=== Anchor Block ===\n${packet.anchor?.content || ''}\n\n`;
+  
+  if (packet.neighbors && packet.neighbors.length > 0) {
+    formatted += `=== Neighboring Blocks ===\n`;
+    packet.neighbors.forEach((n: any) => {
+      formatted += `[${n.position}] ${n.block_id}:\n${n.content?.substring(0, 200)}...\n\n`;
+    });
+  }
+  
+  if (packet.doc_metadata) {
+    formatted += `=== Document Metadata ===\n`;
+    formatted += `Title: ${packet.doc_metadata.title || ''}\n`;
+    if (packet.doc_metadata.description) {
+      formatted += `Description: ${packet.doc_metadata.description}\n`;
+    }
+    if (packet.doc_metadata.tags) {
+      formatted += `Tags: ${packet.doc_metadata.tags.join(', ')}\n`;
+    }
+    formatted += '\n';
+  }
+  
+  if (packet.relevant_snippets && packet.relevant_snippets.length > 0) {
+    formatted += `=== Relevant Snippets ===\n`;
+    packet.relevant_snippets.forEach((c: any) => {
+      formatted += `[${c.snippet_id}] ${c.name || 'unnamed'} (score: ${c.score?.toFixed(3) || '0'}):\n${c.snippet}...\n\n`;
+    });
+  }
+  
+  if (packet.relevant_manuscript && packet.relevant_manuscript.length > 0) {
+    formatted += `=== Relevant Manuscript Content ===\n`;
+    packet.relevant_manuscript.forEach((m: any) => {
+      formatted += `[${m.doc_id}:${m.section}:${m.block_id}] (score: ${m.score?.toFixed(3) || '0'}):\n${m.snippet}...\n\n`;
+    });
+  }
+  
+  return formatted;
+}
+
+/**
+ * Format block map result to string
+ */
+function formatBlockMapResult(toolResult: any): string {
+  if (!toolResult.success) {
+    return `Error: ${toolResult.error || 'Failed to get block map'}`;
+  }
+  
+  let formatted = `Block Map for ${toolResult.doc_id}:${toolResult.section}\n\n`;
+  
+  if (toolResult.outline && toolResult.outline.length > 0) {
+    formatted += `=== Outline ===\n`;
+    const formatOutline = (nodes: any[], indent = 0): string => {
+      return nodes.map(node => {
+        const prefix = '  '.repeat(indent);
+        let line = `${prefix}- ${node.title} [${node.start_block_id}..${node.end_block_id}]`;
+        if (node.children && node.children.length > 0) {
+          line += '\n' + formatOutline(node.children, indent + 1);
+        }
+        return line;
+      }).join('\n');
+    };
+    formatted += formatOutline(toolResult.outline) + '\n\n';
+  }
+  
+  if (toolResult.block_index && toolResult.block_index.length > 0) {
+    formatted += `=== Block Index (${toolResult.block_index.length} blocks) ===\n`;
+    toolResult.block_index.forEach((block: any, i: number) => {
+      formatted += `${i + 1}. [${block.block_id}] ${block.type}${block.word_count ? ` (${block.word_count} words)` : ''}\n`;
+      formatted += `   Preview: ${block.preview}...\n\n`;
+    });
+  }
+  
+  return formatted;
+}
+
+/**
+ * Format read blocks result to string
+ */
+function formatReadBlocksResult(toolResult: any): string {
+  if (!toolResult.success || !toolResult.blocks || toolResult.blocks.length === 0) {
+    return `Error: ${toolResult.error || 'No blocks found'}`;
+  }
+  
+  const formatted = toolResult.blocks.map((b: any) => 
+    `[${b.block_id}]:\n${b.content}`
+  ).join('\n\n---\n\n');
+  
+  return `Read ${toolResult.count} block(s):\n\n${formatted}`;
+}
+
+/**
+ * Format edit preview result to string
+ */
+function formatEditPreviewResult(toolResult: any): string {
+  if (!toolResult.success) {
+    return `Error: ${toolResult.error || 'Failed to preview edit'}`;
+  }
+  
+  let formatted = `Dry Run Preview:\n\n`;
+  if (toolResult.preview) {
+    formatted += `Changed blocks: ${toolResult.preview.changed_blocks?.join(', ') || 'none'}\n`;
+    formatted += `Operations: ${toolResult.preview.operations?.length || 0}\n`;
+    if (toolResult.preview.diff) {
+      formatted += `\n=== Diff ===\n${toolResult.preview.diff}\n`;
+    }
+  }
+  formatted += `\nCurrent revision_id: ${toolResult.current_revision_id || 'unknown'}\n`;
+  formatted += `\n⚠️ This is a preview. Use edit_apply with approval_token to actually apply these changes.`;
+  
+  return formatted;
 }
 
 /**

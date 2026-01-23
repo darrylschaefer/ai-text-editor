@@ -48,21 +48,22 @@ const ContentView = memo(
     setIsEdit: React.Dispatch<React.SetStateAction<boolean>>;
     messageIndex: number;
   }) => {
-    const { handleSubmit } = useSubmit();
+    const { handleFunction } = useSubmit();
 
     const [isDelete, setIsDelete] = useState<boolean>(false);
 
     
 
-    const currentChatIndex = useStore((state) => state.currentChatIndex);
     const setChats = useStore((state) => state.setChats);
     const getActiveConversation = useStore((state) => state.getActiveConversation);
     const activeConversation = getActiveConversation();
     // Support both old system (chats) and new unified system (conversations)
+    const chats = useStore.getState().chats;
+    const currentChatIdx = useStore.getState().currentChatIndex;
     const lastMessageIndex = activeConversation 
       ? activeConversation.messages.length - 1
-      : useStore.getState().chats 
-        ? useStore.getState().chats[useStore.getState().currentChatIndex]?.messageCurrent?.messages?.length - 1 || 0
+      : (chats && currentChatIdx >= 0 && chats[currentChatIdx])
+        ? (chats[currentChatIdx]!.messageCurrent?.messages?.length - 1 || 0)
         : 0;
     const inlineLatex = useStore((state) => state.inlineLatex);
     const markdownMode = useStore((state) => state.markdownMode);
@@ -77,7 +78,7 @@ const ContentView = memo(
       const updatedChats: DocumentInterface[] = JSON.parse(
         JSON.stringify(useStore.getState().chats)
       );
-      updatedChats[currentChatIndex].messageCurrent.messages.splice(messageIndex, 1);
+      updatedChats[currentChatIdx].messageCurrent.messages.splice(messageIndex, 1);
       setChats(updatedChats);
     };
 
@@ -85,7 +86,7 @@ const ContentView = memo(
       const updatedChats: DocumentInterface[] = JSON.parse(
         JSON.stringify(useStore.getState().chats)
       );
-      const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
+      const updatedMessages = updatedChats[currentChatIdx].messageCurrent.messages;
       const temp = updatedMessages[messageIndex];
       if (direction === 'up') {
         updatedMessages[messageIndex] = updatedMessages[messageIndex - 1];
@@ -109,10 +110,10 @@ const ContentView = memo(
       const updatedChats: DocumentInterface[] = JSON.parse(
         JSON.stringify(useStore.getState().chats)
       );
-      const updatedMessages = updatedChats[currentChatIndex].messageCurrent.messages;
+      const updatedMessages = updatedChats[currentChatIdx].messageCurrent.messages;
       updatedMessages.splice(updatedMessages.length - 1, 1);
       setChats(updatedChats);
-      handleSubmit();
+      handleFunction();
     };
 
     const handleCopy = () => {

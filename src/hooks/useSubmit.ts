@@ -1,6 +1,6 @@
 import useStore from '@store/store';
 import { useTranslation } from 'react-i18next';
-import { DocumentInterface, MessageInterface } from '@type/document';
+import { DocumentInterface, MessageInterface, ConfigInterface, LegacyConfigInterface } from '@type/document';
 import { getChatCompletion, getChatCompletionStream, getLegacyCompletion, getLegacyCompletionStream } from '@api/api';
 import { parseEventSource } from '@api/helper';
 import { limitMessageTokens, updateTotalTokenUsed } from '@utils/messageUtils';
@@ -105,7 +105,7 @@ const useSubmit = () => {
         stream = await getChatCompletionStream(
           useStore.getState().apiEndpoint,
           messages,
-          config,
+          config as ConfigInterface,
           apiKey
         );
       }
@@ -275,7 +275,7 @@ const useSubmit = () => {
         stream = await getChatCompletionStream(
           useStore.getState().apiEndpoint,
           messages,
-          config ? config : defaultChatConfig
+          config ? config as ConfigInterface : _defaultChatConfig
         );
       } else if (apiKey) {
         // own apikey
@@ -286,7 +286,7 @@ const useSubmit = () => {
         stream = await getLegacyCompletionStream(
           endpoint,
           messages[0].content,
-          config,
+          config as LegacyConfigInterface,
           apiKey
         );
       }
@@ -317,7 +317,7 @@ const useSubmit = () => {
                 console.log("hi");
                 console.log(curr)
                 console.log(curr.choices);
-                const content = curr.choices[0].text;
+                const content = (curr.choices[0] as any).text;
                 if (content) output += content;
               }
               console.log(output)

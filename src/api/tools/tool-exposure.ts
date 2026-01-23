@@ -77,7 +77,7 @@ export type ToolPackName = keyof typeof TOOL_PACKS;
  * Get tools for a specific pack
  */
 export function getToolsForPack(packName: ToolPackName): string[] {
-  return TOOL_PACKS[packName] || [];
+  return [...(TOOL_PACKS[packName] || [])];
 }
 
 /**

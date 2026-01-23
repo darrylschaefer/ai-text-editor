@@ -134,7 +134,7 @@ const EditView = ({
         const verifyConversation = useStore.getState().getActiveConversation();
         if (!verifyConversation || verifyConversation.messages.length === 0) {
           console.error('Failed to add message to conversation');
-          setError('Failed to add message. Please try again.');
+          useStore.getState().setError('Failed to add message. Please try again.');
           return;
         }
         
@@ -279,7 +279,7 @@ const EditViewSubmitButton = memo(
 
     return (
       <>
-      {!isGenerating? (
+      {!generating? (
       <div className="absolute right-2 bottom-2 py-2 pl-2 pr-1 cursor-pointer" onClick={handleSaveAndSubmit} onMouseDown={(e) => { e.preventDefault(); }}>
         <SendFilled size={16} />
       </div>)

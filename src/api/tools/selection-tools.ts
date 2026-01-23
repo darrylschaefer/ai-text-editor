@@ -202,10 +202,10 @@ function $getBlockIdsFromSelection(editorStateJson?: any): { blockIds: string[];
   // For multi-block selections, selection.getNodes() might not return all blocks.
   // We also need to get all text nodes and their parent blocks to ensure we capture
   // all blocks that have selected content.
-  if (typeof selection.getTextNodes === 'function') {
+  if (selection.getNodes) {
     try {
-      const textNodes = selection.getTextNodes();
-      dbg.log('selection.getTextNodes() returned', textNodes.length, 'text nodes');
+      const textNodes = selection.getNodes().filter(node => node.getType() === 'text');
+      dbg.log('selection.getNodes() returned', textNodes.length, 'text nodes');
       for (const textNode of textNodes) {
         const block = getTopLevelBlock(textNode);
         if (block) {
@@ -634,7 +634,8 @@ function $getBlockIdsFromSelection(editorStateJson?: any): { blockIds: string[];
           
         if (!blockId) {
             // Try to get block_id directly from the JSON if getBlockId didn't find it
-            blockId = blockJson.block_id || blockJson.blockId || null;
+            const jsonWithBlockId = blockJson as any;
+            blockId = jsonWithBlockId.block_id || jsonWithBlockId.blockId || null;
             if (blockId) {
               dbg.log('Found block_id directly in exportJSON:', blockId);
             } else {
@@ -669,7 +670,7 @@ function $getBlockIdsFromSelection(editorStateJson?: any): { blockIds: string[];
             nodeType,
           });
           // Use the expected block_id from the map instead
-          blockId = expectedBlockId;
+          blockId = expectedBlockId || null;
         }
       }
       

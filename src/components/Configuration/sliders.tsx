@@ -1,13 +1,11 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ConfigInterface, ModelOptions, ModelMetadata } from '@type/document';
+import { ConfigInterface, ModelOptions, ModelMetadata, ApiEndpointOptions, ProviderOptions, LegacyModels } from '@type/document';
 import { ChevronDown } from '@carbon/icons-react';
 import { modelMaxToken, completionModels } from '@constants/chat';
 import { apiEndpointOptions } from '@constants/chat';
-import { ApiEndpointOptions } from '@type/document';
 import { providerOptions, providerDefault, modelOptions } from '@constants/chat';
-import { ProviderOptions, ApiEndpointOptions } from '@type/document';
 import { apiEndpointDefault } from '@constants/chat';
 import useStore from '@store/store';
 
@@ -150,8 +148,9 @@ export const MaxTokenSlider = ({
         (o) => o.provider === _provider && o.apiEndpoint === _apiEndpoint,
       );
       
-      if (fetchedModelsForEndpoint) {
-        const modelMetadata = fetchedModelsForEndpoint.models.find(
+      if (fetchedModelsForEndpoint && Array.isArray(fetchedModelsForEndpoint.models)) {
+        const modelsArray = fetchedModelsForEndpoint.models as (ModelOptions | LegacyModels | ModelMetadata)[];
+        const modelMetadata = modelsArray.find(
           (m: any) => (typeof m === 'object' && m.id === _model) || m === _model
         ) as ModelMetadata | undefined;
         
@@ -170,13 +169,13 @@ export const MaxTokenSlider = ({
   const hasMaxTokensFromApi = maxTokens !== null && maxTokens !== undefined;
   
   // For non-fetched models, check if we have constant max tokens
-  const hasConstantMaxTokens = modelMaxToken[_model] !== undefined;
+  const hasConstantMaxTokens = modelMaxToken[_model as string] !== undefined;
   
   // Use slider only if we have max tokens from API OR we have constant max tokens and no fetched models
   const useSlider = hasMaxTokensFromApi || (hasConstantMaxTokens && (!_provider || !_apiEndpoint || fetchedModels.length === 0));
   
   // Get the actual max value to use (from API or constant)
-  const actualMaxTokens = hasMaxTokensFromApi ? maxTokens : (hasConstantMaxTokens ? modelMaxToken[_model] : null);
+  const actualMaxTokens = hasMaxTokensFromApi ? maxTokens : (hasConstantMaxTokens ? modelMaxToken[_model as string] : null);
 
   useEffect(() => {
     // Only auto-update if we have a valid max tokens value and using slider

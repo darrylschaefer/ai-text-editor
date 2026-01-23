@@ -1,6 +1,6 @@
 import useStore from '@store/store';
 import { useTranslation } from 'react-i18next';
-import { DocumentInterface, ConfigInterface, MessageInterface } from '@type/document';
+import { DocumentInterface, ConfigInterface, MessageInterface, LegacyConfigInterface } from '@type/document';
 import { getChatCompletion, getChatCompletionStream, getLegacyCompletion, getLegacyCompletionStream, getResponseStream, getResponse } from '@api/api';
 import { parseEventSource } from '@api/helper';
 import { limitMessageTokens, updateTotalTokenUsed } from '@utils/messageUtils';
@@ -75,7 +75,7 @@ const useSubmitPromptAdjust = () => {
       modifiedConfig = { ...defaultChatConfig };
     }
     // Use the API endpoint from config, or default to responses
-    const apiEndpointType = modifiedConfig.apiEndpoint || defaultChatConfig.apiEndpoint || 'responses';
+    const apiEndpointType = ('apiEndpoint' in modifiedConfig ? modifiedConfig.apiEndpoint : undefined) || defaultChatConfig.apiEndpoint || 'responses';
 
     // Convert prompt to string if it's an array
     let promptContent = '';
@@ -102,7 +102,7 @@ const useSubmitPromptAdjust = () => {
     const setToastMessage = useStore.getState().setToastMessage;
     const setToastStatus = useStore.getState().setToastStatus;
     
-    if (actionNames.length > 0) {
+    if (macroNames.length > 0) {
       const macroResults = await executeMacroQueue(
         macroNames,
         prompts,
@@ -128,34 +128,34 @@ const useSubmitPromptAdjust = () => {
     promptContent = specialCommandsResult.result;
     
     // Remove the old includeSelection toggle logic - no longer needed
-    if (false && includeSelection && !hasIncludeSelectionCommand){
-      let tempSelection = currentSelection;
-      // clear newLine from the beginning of the selection
-      if (currentSelection.startsWith('\n')){
-        tempSelection = currentSelection.substring(1);
-      }
+    // if (false && includeSelection && !hasIncludeSelectionCommand){
+    //   let tempSelection = currentSelection;
+    //   // clear newLine from the beginning of the selection
+    //   if (currentSelection.startsWith('\n')){
+    //     tempSelection = currentSelection.substring(1);
+    //   }
 
-      // clear newLine from the end of the selection
+    //   // clear newLine from the end of the selection
 
-      if (currentSelection.endsWith('\n')){
-        tempSelection = currentSelection.substring(0, currentSelection.length - 1);
-      }
+    //   if (currentSelection.endsWith('\n')){
+    //     tempSelection = currentSelection.substring(0, currentSelection.length - 1);
+    //   }
       
-      promptContent = promptContent + '\n\n' + tempSelection + '\n\n'
-    }
+    //   promptContent = promptContent + '\n\n' + tempSelection + '\n\n'
+    // }
 
     // Clear action queue after execution
     clearActionQueue();
 
     const chatMessages: MessageInterface[] = [
-      promptContent
+      { role: 'user', content: promptContent }
     ];
 
     console.log(chatMessages,"chatm");
 
     let resetChats = useStore.getState().chats;
     if(resetChats){
-      resetChats[currentChatIndex].messageCurrent = generateDefaultMessage(modifiedConfig, chatMessages);
+      resetChats[currentChatIndex].messageCurrent = generateDefaultMessage(modifiedConfig as ConfigInterface, chatMessages);
       setChats(resetChats);
     }
 
@@ -179,15 +179,17 @@ const useSubmitPromptAdjust = () => {
         chats[0].messageCurrent.messages[0].content = prompt;
 
 
+      const maxTokens: number = ('max_completion_tokens' in modifiedConfig && typeof modifiedConfig.max_completion_tokens === 'number' && modifiedConfig.max_completion_tokens) ? modifiedConfig.max_completion_tokens : defaultChatConfig.max_completion_tokens;
+      const model: string = ('model' in modifiedConfig && typeof modifiedConfig.model === 'string' && modifiedConfig.model) ? modifiedConfig.model : defaultChatConfig.model;
       const messages = limitMessageTokens(
         chats[currentChatIndex].messageCurrent.messages,
-        modifiedConfig.max_completion_tokens ? modifiedConfig.max_completion_tokens : defaultChatConfig.max_completion_tokens,
-        modifiedConfig.model ? modifiedConfig.model : defaultChatConfig.model
+        maxTokens,
+        model
       );
       if (messages.length === 0) throw new Error('Message exceed max token!');
 
       // Use the API endpoint from config
-      const endpoint = constructEndpointUrl(useStore.getState().apiEndpoint, apiEndpointType);
+      const endpoint = constructEndpointUrl(useStore.getState().apiEndpoint, apiEndpointType as string);
 
       // no api key (free)
       if (!apiKey || apiKey.length === 0) {
@@ -205,33 +207,33 @@ const useSubmitPromptAdjust = () => {
             ...defaultLegacyConfig,
             ...modifiedConfig,
             apiEndpoint: 'completions',
-            model: modifiedConfig.model || defaultLegacyConfig.model,
-            max_tokens: modifiedConfig.max_completion_tokens || defaultLegacyConfig.max_tokens,
+            model: (('model' in modifiedConfig && modifiedConfig.model) ? modifiedConfig.model : defaultLegacyConfig.model) as string,
+            max_tokens: (('max_completion_tokens' in modifiedConfig && modifiedConfig.max_completion_tokens) ? modifiedConfig.max_completion_tokens : (('max_tokens' in defaultLegacyConfig && defaultLegacyConfig.max_tokens) ? defaultLegacyConfig.max_tokens : 100)) as number,
           });
           stream = await getLegacyCompletionStream(
             endpoint,
             promptText,
-            legacyConfig
+            legacyConfig as unknown as LegacyConfigInterface
           );
         } else if (apiEndpointType === 'chat_completions') {
           stream = await getChatCompletionStream(
             endpoint,
             messages,
-            modifiedConfig
+            modifiedConfig as ConfigInterface
           );
         } else {
           // responses API
           stream = await getResponseStream(
             endpoint,
             messages,
-            modifiedConfig
+            modifiedConfig as ConfigInterface
           );
         }
       } else if (apiKey) {
         // own apikey
 
-        if(modifiedConfig.model == null) {
-          modifiedConfig.model = defaultChatConfig.model;
+        if(!('model' in modifiedConfig) || modifiedConfig.model == null) {
+          (modifiedConfig as any).model = defaultChatConfig.model;
         }
 
         // Handle different API types
@@ -243,20 +245,20 @@ const useSubmitPromptAdjust = () => {
             ...defaultLegacyConfig,
             ...modifiedConfig,
             apiEndpoint: 'completions',
-            model: modifiedConfig.model || defaultLegacyConfig.model,
-            max_tokens: modifiedConfig.max_completion_tokens || defaultLegacyConfig.max_tokens,
+            model: (('model' in modifiedConfig && modifiedConfig.model) ? modifiedConfig.model : defaultLegacyConfig.model) as string,
+            max_tokens: (('max_completion_tokens' in modifiedConfig && modifiedConfig.max_completion_tokens) ? modifiedConfig.max_completion_tokens : (('max_tokens' in defaultLegacyConfig && defaultLegacyConfig.max_tokens) ? defaultLegacyConfig.max_tokens : 100)) as number,
           });
           stream = await getLegacyCompletionStream(
             endpoint,
             promptText,
-            legacyConfig,
+            legacyConfig as unknown as LegacyConfigInterface,
             apiKey
           );
         } else if (apiEndpointType === 'chat_completions') {
           stream = await getChatCompletionStream(
             endpoint,
             messages,
-            modifiedConfig,
+            modifiedConfig as ConfigInterface,
             apiKey
           );
         } else {
@@ -264,7 +266,7 @@ const useSubmitPromptAdjust = () => {
           stream = await getResponseStream(
             endpoint,
             messages,
-            modifiedConfig,
+            modifiedConfig as ConfigInterface,
             apiKey
           );
         }
@@ -340,7 +342,7 @@ const useSubmitPromptAdjust = () => {
       const countTotalTokens = useStore.getState().countTotalTokens;
 
       if (currChats && countTotalTokens) {
-        const model = modifiedConfig.model;
+        const model: string = ('model' in modifiedConfig && typeof modifiedConfig.model === 'string' && modifiedConfig.model) ? modifiedConfig.model : defaultChatConfig.model;
         const messages = currChats[currentChatIndex].messageCurrent.messages;
         updateTotalTokenUsed(
           model,
@@ -379,7 +381,7 @@ const useSubmitPromptAdjust = () => {
 
         // update tokens used for generating title
         if (countTotalTokens) {
-          const model = modifiedConfig.model;
+          const model: string = ('model' in modifiedConfig && typeof modifiedConfig.model === 'string' && modifiedConfig.model) ? modifiedConfig.model : defaultChatConfig.model;
           updateTotalTokenUsed(model, [message], {
             role: 'assistant',
             content: title,
@@ -730,7 +732,7 @@ const useSubmitPromptAdjust = () => {
 
   //       // update tokens used for generating title
   //       if (countTotalTokens) {
-  //         const model = modifiedConfig.model;
+  //         const model: string = ('model' in modifiedConfig && typeof modifiedConfig.model === 'string' && modifiedConfig.model) ? modifiedConfig.model : defaultChatConfig.model;
   //         updateTotalTokenUsed(model, [message], {
   //           role: 'assistant',
   //           content: title,
@@ -750,10 +752,6 @@ const useSubmitPromptAdjust = () => {
     role: string;
   }
   
-  interface ConfigInterface {
-    // ... fill in as needed
-  }
-  
   const handleLegacy = async ({
     prompt,
     modifiedConfig
@@ -768,8 +766,7 @@ const useSubmitPromptAdjust = () => {
     const setGenerating = useStore.getState().setGenerating;
     const setError = useStore.getState().setError;
     const apiEndpoint = useStore.getState().apiEndpoint;
-    const officialAPIEndpoint = useStore.getState().officialAPIEndpoint;
-    const t = useStore.getState().t;
+    // officialAPIEndpoint and t are imported/available in scope
     const generating = useStore.getState().generating;
   
     if (generating || !chats) return;
@@ -804,7 +801,7 @@ const useSubmitPromptAdjust = () => {
       ];
     }
   
-    updatedChats[currentChatIndex].messageCurrent.messages = inputMessages;
+    updatedChats[currentChatIndex].messageCurrent.messages = inputMessages as MessageInterface[];
     setChats(updatedChats);
   
     setGenerating(true);
@@ -832,10 +829,10 @@ const useSubmitPromptAdjust = () => {
       } else {
         // Use your own API key
         const baseEndpoint = useStore.getState().apiEndpoint;
-        const apiEndpointType = config?.apiEndpoint || defaultLegacyConfig.apiEndpoint;
+        const apiEndpointType = ('apiEndpoint' in (config || {}) ? (config as any).apiEndpoint : undefined) || defaultLegacyConfig.apiEndpoint;
         const endpoint = constructEndpointUrl(baseEndpoint, apiEndpointType);
         
-        const legacyConfig = removeProviderAndApiEndpoint(config ? { ...config } : { ...defaultLegacyConfig });
+        const legacyConfig = removeProviderAndApiEndpoint(config ? { ...defaultLegacyConfig, ...config } : defaultLegacyConfig) as LegacyConfigInterface;
         stream = await getLegacyCompletionStream(
           endpoint,
           promptContents,
@@ -866,8 +863,8 @@ const useSubmitPromptAdjust = () => {
             const resultString = result.reduce((output: string, curr) => {
               if (typeof curr === 'string') {
                 partial += curr;
-              } else if (curr.choices && curr.choices[0].text) {
-                const content = curr.choices[0].text;
+              } else if (curr.choices && curr.choices[0] && (curr.choices[0] as any).text) {
+                const content = (curr.choices[0] as any).text;
                 if (content) output += content;
               }
               return output;

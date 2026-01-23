@@ -93,7 +93,7 @@ export const readDocumentMeta = async (args: any): Promise<string> => {
       edited: currentDoc.edited,
       date: documentCurrent.date || currentDoc.messageCurrent?.date || 'Unknown',
       messageCount: documentCurrent.messages?.length || 0,
-      clipsCount: currentDoc.clips?.length || 0,
+      clipsCount: currentDoc.snippets?.length || 0,
     };
 
     // Format metadata as a readable string

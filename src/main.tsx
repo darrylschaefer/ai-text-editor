@@ -57,7 +57,7 @@ await initializeTheme();
 // but we can ensure CSS zoom is normalized. Electron apps handle zoom via electron/index.cjs
 if (typeof window !== 'undefined' && !window.navigator.userAgent.includes('Electron')) {
   // Normalize CSS zoom to 100% (only affects page scaling, not browser zoom)
-  document.body.style.zoom = '1';
+  (document.body.style as any).zoom = '1';
 }
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

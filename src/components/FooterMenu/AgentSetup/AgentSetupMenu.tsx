@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '@store/store';
-import { ApiEndpointOptions, ConfigInterface, ModelOptions, ProviderOptions, AvailableEndpoints } from '@type/document';
+import { ApiEndpointOptions, ConfigInterface, ModelOptions, ProviderOptions, AvailableEndpoints, ModelMetadata } from '@type/document';
 import PopupModal from '@components/PopupModal';
 import { toolRegistry, getToolDefinitions, LEGACY_TOOLS, CANONICAL_TOOLS } from '@api/tools';
 import { getModelsList } from '@api/api';

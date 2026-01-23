@@ -53,11 +53,9 @@ export const projectGetTreeDefinition: ToolDefinition = {
               description: 'Optional: Array of status strings. Documents must match one of these statuses (e.g., "draft", "finished", "archived").',
             },
           },
-          additionalProperties: false,
         },
       },
       required: [],
-      additionalProperties: false,
     },
   },
 };
@@ -95,7 +93,6 @@ export const docCreateDefinition: ToolDefinition = {
         },
       },
       required: ['title'],
-      additionalProperties: false,
     },
   },
 };
@@ -121,7 +118,6 @@ export const docRenameDefinition: ToolDefinition = {
         },
       },
       required: ['doc_id', 'new_title'],
-      additionalProperties: false,
     },
   },
 };
@@ -152,7 +148,6 @@ export const docMoveDefinition: ToolDefinition = {
         },
       },
       required: ['doc_id'],
-      additionalProperties: false,
     },
   },
 };
@@ -182,7 +177,6 @@ export const folderCreateDefinition: ToolDefinition = {
         },
       },
       required: ['name'],
-      additionalProperties: false,
     },
   },
 };
@@ -216,7 +210,6 @@ export const folderUpdateDefinition: ToolDefinition = {
         },
       },
       required: ['folder_id'],
-      additionalProperties: false,
     },
   },
 };
@@ -243,7 +236,6 @@ export const folderDeleteDefinition: ToolDefinition = {
         },
       },
       required: ['folder_id', 'mode'],
-      additionalProperties: false,
     },
   },
 };
@@ -290,7 +282,6 @@ export const docUpdateDefinition: ToolDefinition = {
         },
       },
       required: ['doc_id'],
-      additionalProperties: false,
     },
   },
 };
@@ -320,7 +311,6 @@ export const docDuplicateDefinition: ToolDefinition = {
         },
       },
       required: ['doc_id'],
-      additionalProperties: false,
     },
   },
 };
@@ -342,7 +332,6 @@ export const docDeleteDefinition: ToolDefinition = {
         },
       },
       required: ['doc_id'],
-      additionalProperties: false,
     },
   },
 };

@@ -8,7 +8,7 @@ import { apiEndpointOptions } from '@constants/chat';
 import { ApiEndpointOptions } from '@type/document';
 import { providerOptions } from '@constants/chat';
 import { ProviderOptions } from '@type/document';
-import { ModelSelector, MaxTokenSlider, TemperatureSlider, TopPSlider, PresencePenaltySlider, ApiEndpointSelector, ProviderSelector } from '@components/Configuration/sliders';
+import { ModelSelector, MaxTokenSlider, TemperatureSlider, TopPSlider, PresencePenaltySlider, FrequencyPenaltySlider, ApiEndpointSelector, ProviderSelector } from '@components/Configuration/sliders';
 
 const ConfigMenu = ({
   setIsModalOpen,
@@ -35,6 +35,7 @@ const ConfigMenu = ({
 
   const handleConfirm = () => {
     setConfig({
+      ...config,
       max_completion_tokens: _maxToken,
       model: _model,
       temperature: _temperature,
@@ -58,7 +59,7 @@ const ConfigMenu = ({
       <div className='p-6 border-b border-gray-200 dark:border-gray-800/30'>
       <ProviderSelector _provider={_provider} _setProvider={_setProvider} />
       <ApiEndpointSelector _apiEndpoint={_apiEndpoint} _setApiEndpoint={_setApiEndpoint} />
-        <ModelSelector _model={_model} _setModel={_setModel} />
+        <ModelSelector _model={_model} _setModel={_setModel} _provider={_provider} _apiEndpoint={_apiEndpoint} />
         <MaxTokenSlider
           _maxToken={_maxToken}
           _setMaxToken={_setMaxToken}

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import useStore from '@store/store';
 import { DocumentAdd, Search, Chat, Code } from '@carbon/icons-react';
 import { Agent } from '@store/document-slice';
+import { ConfigInterface } from '@type/document';
 import { v4 as uuidv4 } from 'uuid';
 import AgentButton from './AgentButton';
 import ConversationButton from './ConversationButton';
@@ -129,7 +130,9 @@ const AgentsList = () => {
       config: {
         ...defaultLegacyConfig,
         apiEndpoint: 'completions',
-      },
+        max_completion_tokens: defaultLegacyConfig.max_tokens || 100,
+        notes: null,
+      } as ConfigInterface,
     });
     
     // Clear any selected agent when selecting a conversation

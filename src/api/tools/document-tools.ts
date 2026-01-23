@@ -211,7 +211,7 @@ export async function projectGetTreeTool(
                   }
                 }
               }
-              wordCounts.Snippets = snippetsWords > 0 ? snippetsWords : null;
+              wordCounts.Clips = snippetsWords > 0 ? snippetsWords : null;
             } else {
               // Use block index for Draft/Finished
               const count = await getSectionWordCount(doc.id, section);
@@ -264,7 +264,7 @@ export async function projectGetTreeTool(
                 }
               }
             }
-            wordCounts.Snippets = snippetsWords > 0 ? snippetsWords : null;
+            wordCounts.Clips = snippetsWords > 0 ? snippetsWords : null;
           } else {
             const count = await getSectionWordCount(doc.id, section);
             wordCounts[section] = count;
@@ -1024,17 +1024,16 @@ export async function docDuplicateTool(
     // Copy all content and metadata
     newDoc.meta = { ...sourceDoc.meta };
     newDoc.tags = sourceDoc.tags ? [...sourceDoc.tags] : [];
-    newDoc.favorited = sourceDoc.favorited;
     
     // Copy all sections
-    if (sourceDoc.Draft) {
-      newDoc.Draft = JSON.parse(JSON.stringify(sourceDoc.Draft));
+    if (sourceDoc.draftEditorState) {
+      newDoc.draftEditorState = sourceDoc.draftEditorState;
     }
-    if (sourceDoc.Finished) {
-      newDoc.Finished = JSON.parse(JSON.stringify(sourceDoc.Finished));
+    if (sourceDoc.finishedEditorState) {
+      newDoc.finishedEditorState = sourceDoc.finishedEditorState;
     }
-    if (sourceDoc.Snippets) {
-      newDoc.Snippets = JSON.parse(JSON.stringify(sourceDoc.Snippets));
+    if (sourceDoc.snippets) {
+      newDoc.snippets = JSON.parse(JSON.stringify(sourceDoc.snippets));
     }
     
     // Insert after source document
@@ -1106,12 +1105,12 @@ export async function docDeleteTool(
     setChats(updatedChats);
     
     // Update current chat index if needed
-    if (currentChatIndex !== null) {
+    if (currentChatIndex !== null && currentChatIndex !== undefined) {
       if (currentChatIndex === docIndex) {
-        // Deleted current document - set to null or previous
+        // Deleted current document - set to previous or -1 if no documents left
         const newIndex = updatedChats.length > 0 
           ? Math.min(currentChatIndex, updatedChats.length - 1)
-          : null;
+          : -1;
         if (setCurrentChatIndex) {
           setCurrentChatIndex(newIndex);
         }

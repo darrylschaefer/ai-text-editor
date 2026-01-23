@@ -38,7 +38,7 @@ export interface DocumentSlice {
   setEditorInstance: (editor: LexicalEditor | null) => void;
   clearEditorInstance: () => void;
   setDocumentVersion: (documentId: string, version: DocumentVersion) => Promise<void>;
-  createSnippet: (documentId: string, content?: string) => string;
+  createSnippet: (documentId: string, content?: string, name?: string) => string;
   updateSnippet: (documentId: string, snippetId: string, updates: Partial<Snippet>) => void;
   deleteSnippet: (documentId: string, snippetId: string) => void;
   updateSnippetEditorState: (documentId: string, snippetId: string, editorState: string) => void;

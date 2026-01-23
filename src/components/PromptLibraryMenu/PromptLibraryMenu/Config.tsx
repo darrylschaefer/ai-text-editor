@@ -283,21 +283,21 @@ const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
                   ) : Array.isArray(_prompt) ? (
                     <>
                       {Array.isArray(prompts[index].prompt)
-                        ? prompts[index].prompt.map((item, idx) => (
+                        ? (prompts[index].prompt as {content: string, role: string}[]).map((item: {content: string, role: string}, idx: number) => (
                             <div key={idx} className="flex items-start gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-800/30 bg-gray-50 dark:bg-gray-800/30">
                               <select
                                 className="rounded-md bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-800/30 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all flex-shrink-0"
                                 value={item.role || "user"}
                                 onChange={e => {
                                   let updatedPrompts = [...prompts];
-                                  let promptArray = [...updatedPrompts[index].prompt];
+                                  let promptArray = Array.isArray(updatedPrompts[index].prompt) ? [...(updatedPrompts[index].prompt as {content: string, role: string}[])] : [];
                                   promptArray[idx] = {
                                     ...promptArray[idx],
                                     role: e.target.value,
                                   };
                                   updatedPrompts[index] = {
                                     ...updatedPrompts[index],
-                                    prompt: promptArray,
+                                    prompt: promptArray as {content: string, role: string}[],
                                   };
                                   setPrompts(updatedPrompts);
                                   _setPrompts(updatedPrompts);
@@ -314,14 +314,14 @@ const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
                                   className="resize-none rounded-md bg-transparent border border-gray-200 dark:border-gray-800/30 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all px-3 py-2 w-full"
                                   onChange={(value) => {
                                     let updatedPrompts = [...prompts];
-                                    let promptArray = [...updatedPrompts[index].prompt];
+                                    let promptArray = Array.isArray(updatedPrompts[index].prompt) ? [...(updatedPrompts[index].prompt as {content: string, role: string}[])] : [];
                                     promptArray[idx] = {
                                       ...promptArray[idx],
                                       content: value,
                                     };
                                     updatedPrompts[index] = {
                                       ...updatedPrompts[index],
-                                      prompt: promptArray,
+                                      prompt: promptArray as {content: string, role: string}[],
                                     };
                                     setPrompts(updatedPrompts);
                                     _setPrompts(updatedPrompts);
@@ -339,7 +339,7 @@ const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
                                 className="rounded-md px-3 py-2 text-sm bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                 onClick={() => {
                                   let updatedPrompts = [...prompts];
-                                  let promptArray = [...updatedPrompts[index].prompt];
+                                  let promptArray = Array.isArray(updatedPrompts[index].prompt) ? [...(updatedPrompts[index].prompt as {content: string, role: string}[])] : [];
                                   promptArray.splice(idx, 1);
                                   updatedPrompts[index] = {
                                     ...updatedPrompts[index],
@@ -386,7 +386,14 @@ const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
                                       _setPrompts(updatedPrompts);
                                       _updatePrompt(index, updatedPrompts[index]);
                                     }}
-                                    value={prompts[index].prompt}
+                                    value={(() => {
+                                      const prompt = prompts[index].prompt;
+                                      if (typeof prompt === 'string') return prompt;
+                                      if (Array.isArray(prompt)) {
+                                        return (prompt as {content: string, role: string}[]).map((m: {content: string, role: string}) => m.content).join('\n');
+                                      }
+                                      return '';
+                                    })()}
                                     rows={3}
                                     placeholder='Enter message content...'
                                     autoExpand={true}
@@ -403,7 +410,7 @@ const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
                                   updatedPrompts[index] = {
                                     ...updatedPrompts[index],
                                     prompt: [
-                                      { content: prompts[index].prompt, role: "user" },
+                                      { content: (typeof prompts[index].prompt === 'string' ? prompts[index].prompt : (Array.isArray(prompts[index].prompt) ? (prompts[index].prompt as {content: string, role: string}[]).map((m: {content: string, role: string}) => m.content).join('\n') : '')) as string, role: "user" },
                                       { content: "", role: "user" },
                                     ],
                                   };
@@ -424,11 +431,11 @@ const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
                           className="mt-2 rounded-md px-4 py-2 text-sm bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors"
                           onClick={() => {
                             let updatedPrompts = [...prompts];
-                            let promptArray = [...updatedPrompts[index].prompt];
+                            let promptArray = Array.isArray(updatedPrompts[index].prompt) ? [...(updatedPrompts[index].prompt as {content: string, role: string}[])] : [];
                             promptArray.push({ content: "", role: "user" });
                             updatedPrompts[index] = {
                               ...updatedPrompts[index],
-                              prompt: promptArray,
+                              prompt: promptArray as {content: string, role: string}[],
                             };
                             setPrompts(updatedPrompts);
                             _setPrompts(updatedPrompts);
@@ -598,20 +605,20 @@ export const PromptIndividualConfig = ({prompt, index, onApiEndpointChange}:{pro
        if (_apiEndpoint === 'completions') {
          _setModel('davinci-002');
          // Only set max_tokens if it's not already set or if switching from a different endpoint type
-         if (prevApiEndpointRef.current !== 'completions' && defaults.max_tokens !== undefined) {
+         if (prevApiEndpointRef.current !== 'completions' && ('max_tokens' in defaults && defaults.max_tokens !== undefined)) {
            _setMaxToken(defaults.max_tokens as number);
          }
        } else if (_apiEndpoint === 'chat_completions') {
          _setModel('gpt-3.5-turbo');
          // Only set defaults if switching from a different endpoint type
          if (prevApiEndpointRef.current !== 'chat_completions') {
-           if (defaults.max_completion_tokens !== undefined) _setMaxToken(defaults.max_completion_tokens as number);
+           if ('max_completion_tokens' in defaults && defaults.max_completion_tokens !== undefined) _setMaxToken(defaults.max_completion_tokens as number);
          }
        } else if (_apiEndpoint === 'responses') {
          _setModel('gpt-4o');
          // Only set defaults if switching from a different endpoint type
          if (prevApiEndpointRef.current !== 'responses') {
-           if (defaults.max_completion_tokens !== undefined) _setMaxToken(defaults.max_completion_tokens as number);
+           if ('max_completion_tokens' in defaults && defaults.max_completion_tokens !== undefined) _setMaxToken(defaults.max_completion_tokens as number);
          }
        }
        

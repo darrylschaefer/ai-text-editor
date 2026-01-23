@@ -16,7 +16,7 @@ const IncludeSelectionSend = () => {
   , []);
 
   useEffect(() => {
-  setSelection(editorSettings.includeSelection);
+  setSelection(editorSettings.includeSelection ?? false);
   }, [editorSettings.includeSelection]);
 
 

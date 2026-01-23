@@ -40,7 +40,7 @@ import { createPortal } from "react-dom";
 import {
   $isHeadingNode
 } from "@lexical/rich-text";
-import { $createBlockIdHeadingNode, $createBlockIdQuoteNode } from "@nodes/BlockIdNodes";
+import { $createBlockIdHeadingNode, $createBlockIdQuoteNode, $createBlockIdParagraphNode } from "@nodes/BlockIdNodes";
 import {
   $isCodeNode,
   getDefaultCodeLanguage,
@@ -770,7 +770,7 @@ function EditorToolbar() {
         {/* Save Status Indicator */}
         <SaveStatusIndicator status={autosaveStatus} onRetry={autosaveRetry ? () => autosaveRetry() : undefined} />
         {/* History Menu Button */}
-        {currentDoc && currentVersion !== 'Clips' && (
+        {currentDoc && currentVersion !== 'Snippets' && (
           <div className="relative" ref={historyMenuRef}>
             <button
               onClick={() => setShowHistoryMenu(!showHistoryMenu)}

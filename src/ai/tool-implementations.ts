@@ -280,7 +280,7 @@ export async function getDocMetadataTool(args: {
       tags: doc.tags || [],
       folder: doc.folder || '(no folder)',
       currentVersion: doc.currentVersion || 'Draft',
-      clipsCount: doc.clips?.length || 0,
+      clipsCount: doc.snippets?.length || 0,
     };
     
     return `Document Metadata:\n${JSON.stringify(metadata, null, 2)}`;

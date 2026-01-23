@@ -79,9 +79,9 @@ const EditableMessage: React.FC<EditableMessageProps> = ({
       setEditValue(content);
       setIsEditing(false);
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      handleBlur();
+      e.currentTarget.blur();
     }
-  }, [content, handleBlur]);
+  }, [content]);
 
   // Agent roles (assistant, system, developer) use full width with no border, text on background
   // User messages have a subtle background with rounded border

@@ -194,8 +194,6 @@ export const _defaultLegacyConfig: LegacyConfigInterface = {
   frequency_penalty: 0,
   apiEndpoint: "completions",
   provider: "openai",
-  notes: null,
-  stream: true
 };
 
 export const generateDefaultMessage = (config?: ConfigInterface, chatMessages?: MessageInterface[]): DocumentCurrent => {
@@ -251,7 +249,7 @@ export const generateWelcomeDocument = ({title, folder, prompt}: {title?: string
     draftEditorState: defaultEditorState,
     finishedEditorState: "",
     currentVersion: 'Draft',
-    clips: [],
+    snippets: [],
   };
 };
 
@@ -282,7 +280,7 @@ export const generateDefaultDocument = ({title, folder, prompt}: {title?: string
   draftEditorState: "",
   finishedEditorState: "",
   currentVersion: 'Draft',
-  clips: [],
+  snippets: [],
 });
 
 export const codeLanguageSubset = [
