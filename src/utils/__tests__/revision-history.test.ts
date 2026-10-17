@@ -2,7 +2,7 @@
  * Unit tests for revision history functionality
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   buildBeforeImages,
   updateBeforeImagesAfterInsert,
@@ -17,6 +17,30 @@ import { RevisionRecord, SectionHistory } from '@type/revision';
 
 describe('revision-history', () => {
   describe('buildBeforeImages', () => {
+    it('keeps captured content unchanged when the source document is edited', () => {
+      const preState = {
+        root: {
+          children: [{
+            type: 'paragraph',
+            block_id: 'b1',
+            children: [{ type: 'text', text: 'Original words' }],
+          }],
+        },
+      };
+      const before = buildBeforeImages(
+        [{ type: 'replace_block', block_id: 'b1', content: 'Replacement' }],
+        preState
+      );
+
+      preState.root.children[0].children[0].text = 'A later edit';
+
+      expect(before).toHaveLength(1);
+      expect(before[0]).toMatchObject({
+        op_type: 'replace_block',
+        old_block: { children: [{ text: 'Original words' }] },
+      });
+    });
+
     it('should build before image for replace_block', () => {
       const preState = {
         root: {
@@ -212,6 +236,27 @@ describe('revision-history', () => {
   });
   
   describe('invertRevision', () => {
+    it('undoes an insertion by deleting exactly the inserted block IDs', () => {
+      const record: RevisionRecord = {
+        revision_id: 'rev-insert',
+        parent_revision_id: null,
+        created_at: new Date().toISOString(),
+        ops: [{
+          type: 'insert_blocks_after',
+          after_block_id: 'existing',
+          blocks: [
+            { type: 'paragraph', content: 'First' },
+            { type: 'paragraph', content: 'Second' },
+          ],
+        }],
+        before: [{ op_type: 'insert_blocks_after', inserted_block_ids: ['new-1', 'new-2'] }],
+      };
+
+      expect(invertRevision(record)).toEqual([
+        { type: 'delete_blocks', block_ids: ['new-1', 'new-2'] },
+      ]);
+    });
+
     it('should invert replace_block', () => {
       const record: RevisionRecord = {
         revision_id: 'rev1',
@@ -276,6 +321,42 @@ describe('revision-history', () => {
   });
   
   describe('shouldCreateSnapshot', () => {
+    it('starts the revision count again after the most recent snapshot', () => {
+      const history: SectionHistory = {
+        revisions: Array.from({ length: 120 }, (_, i) => ({
+          revision_id: `rev${i}`,
+          parent_revision_id: i > 0 ? `rev${i - 1}` : null,
+          created_at: new Date().toISOString(),
+          ops: [],
+          before: [],
+        })),
+        snapshots: [{
+          snapshot_id: 'snapshot-1',
+          created_at: new Date().toISOString(),
+          base_revision_id: 'rev99',
+          blocks: [],
+          meta: {},
+        }],
+      };
+
+      expect(shouldCreateSnapshot(history)).toBe(false);
+    });
+
+    it('requests a snapshot for large edits even below the revision-count threshold', () => {
+      const history: SectionHistory = {
+        revisions: [{
+          revision_id: 'large-edit',
+          parent_revision_id: null,
+          created_at: new Date().toISOString(),
+          ops: [{ type: 'replace_block', block_id: 'b1', content: 'a'.repeat(200 * 1024) }],
+          before: [],
+        }],
+        snapshots: [],
+      };
+
+      expect(shouldCreateSnapshot(history)).toBe(true);
+    });
+
     it('should return true after 100 revisions', () => {
       const history: SectionHistory = {
         revisions: Array.from({ length: 100 }, (_, i) => ({
@@ -307,6 +388,29 @@ describe('revision-history', () => {
     });
   });
   
+  describe('createSnapshot', () => {
+    it('preserves block contents and IDs independently of later document edits', () => {
+      const state = {
+        root: {
+          children: [{
+            type: 'paragraph',
+            block_id: 'stable-block-id',
+            children: [{ type: 'text', text: 'Saved words' }],
+          }],
+        },
+      };
+      const snapshot = createSnapshot(state, 'rev-saved', { label: 'Chapter one' });
+      state.root.children[0].children[0].text = 'Changed later';
+
+      expect(snapshot.base_revision_id).toBe('rev-saved');
+      expect(snapshot.blocks).toMatchObject([{
+        block_id: 'stable-block-id',
+        children: [{ text: 'Saved words' }],
+      }]);
+      expect(snapshot.meta).toEqual({ label: 'Chapter one' });
+    });
+  });
+
   describe('getOrInitSectionHistory', () => {
     it('should initialize section history if missing', () => {
       const doc: any = {

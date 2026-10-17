@@ -1,0 +1,23 @@
+name: Bug report
+description: Report a reproducible problem.
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Use synthetic content. Do not include documents, API keys, or other private information.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: App version or commit, operating system, and browser or Electron version.
+    validations:
+      required: true
