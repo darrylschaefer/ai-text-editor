@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect, useId } from "react";
 import defaultStyles from '@components/style';
-import { TextAlignCenter, TextAlignLeft, TextAlignRight, TextAlignJustify, TextBold, TextItalic, TextStrikethrough, TextUnderline, ChevronDown } from '@carbon/icons-react';
+import { TextAlignCenter, TextAlignLeft, TextAlignRight, TextAlignJustify, TextBold, TextItalic, TextStrikethrough, TextUnderline, ChevronDown, RecentlyViewed } from '@carbon/icons-react';
 import { ListNode } from "@lexical/list";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import useStore from '@store/store';
@@ -359,6 +359,7 @@ function EditorToolbar() {
     const [checkpointMessage, setCheckpointMessage] = useState('');
     const [isCreatingCheckpoint, setIsCreatingCheckpoint] = useState(false);
     const historyMenuRef = useRef<HTMLDivElement>(null);
+    const historyMenuId = useId();
     
     const chats = useStore((state) => state.chats);
     const currentChatIndex = useStore((state) => state.currentChatIndex);
@@ -757,18 +758,19 @@ function EditorToolbar() {
         {currentDoc && currentVersion !== 'Snippets' && (
           <div className="relative" ref={historyMenuRef}>
             <button
+              type="button"
               onClick={() => setShowHistoryMenu(!showHistoryMenu)}
               className="workspace-history-button"
-              title="History"
+              title="Version history"
+              aria-label="Version history"
+              aria-expanded={showHistoryMenu}
+              aria-controls={showHistoryMenu ? historyMenuId : undefined}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
-                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
-              </svg>
-              <ChevronDown size={14} />
+              <RecentlyViewed size={16} aria-hidden="true" />
+              <ChevronDown size={16} aria-hidden="true" />
             </button>
             {showHistoryMenu && (
-              <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-800/30 z-50">
+              <div id={historyMenuId} role="group" aria-label="Version history actions" className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-800/30 z-50">
                 <button
                   onClick={() => {
                     setShowCheckpointDialog(true);
@@ -789,10 +791,7 @@ function EditorToolbar() {
                   }}
                   className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 last:rounded-b-md"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
-                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
-                  </svg>
+                  <RecentlyViewed size={16} aria-hidden="true" />
                   View History
                 </button>
               </div>
