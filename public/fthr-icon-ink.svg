@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <title>fthr Ink</title>
-  <rect width="64" height="64" rx="13" fill="#0A0A09"/>
-  <path d="M51 9C36 11 23 21 21 35c-.4 3 .1 6 1.5 8.5 11-1.5 22-12.7 26-24l-9 5 11-10c.4-2.1.6-3.9.5-5.5Z" stroke="#E5E1D8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M14 55C23 38 31 27 43 18" stroke="#E5E1D8" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="m12 58 9-14" stroke="#9FAFF0" stroke-width="3" stroke-linecap="round"/>
-</svg>

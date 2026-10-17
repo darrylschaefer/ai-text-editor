@@ -22,9 +22,19 @@ The wordmark uses Charis SIL italic, matching the app's existing literary typogr
 
 The product name, browser metadata, manifest, About mark, and desktop title/tray label use fthr. Internal storage keys, package name, repository links, and source credits retain their existing identifiers for compatibility and attribution.
 
-Two alternative identities are available for comparison without replacing the original:
+## Design decision
 
-- Ink (`?brand=ink`): a fine ivory quill with a cool ink tip, an upright serif wordmark, warmer black surfaces, and restrained periwinkle highlights.
-- Prism (`?brand=prism`): a faceted, saturated quill, a clean sans serif wordmark, cooler black surfaces, and more visible cyan/blue/violet accents.
+Original was selected on October 17, 2026. It is the single product identity. The comparison dock, URL selection hook, alternative styles, and unused preview assets have been removed. Older `?brand=ink` and `?brand=prism` links show the same Original identity as the regular app URL.
 
-The comparison dock switches between Original, Ink, and Prism. Its close button removes the preview parameter and restores the original identity. Pane state and document contents are shared across these views.
+The alternatives are retained as [design history](brand-studies.md). Their source artwork remains recoverable from Git history.
+
+## Validation
+
+The branding cleanup was checked on October 17, 2026, using Node 24.19.0 and npm 11.19.0.
+
+- `npm run check` passed application/test type checks, all 17 revision-history tests, and the production build.
+- The local browser at the regular app URL, `?brand=ink`, and `?brand=prism` showed the Original quill, italic wordmark, favicon, and theme color, with no comparison controls or alternative brand classes. The displayed document text was unchanged after navigation.
+- A scan of the generated JavaScript/CSS/HTML found no brand-study code or preview asset references. The four retired SVGs were absent from `dist`, and the two built Original SVGs matched their source files.
+- `git diff --check` passed. Existing Browserslist and large-chunk build warnings remain deferred.
+
+Pane interaction regression coverage and desktop/tray/installer artwork remain open in the [delivery plan](delivery-plan.md). This cleanup is a local feature-branch checkpoint, not a production release.

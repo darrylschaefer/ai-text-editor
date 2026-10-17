@@ -34,7 +34,7 @@ The following are release criteria for this specific update, not claims that eve
 
 | Area | Required work and evidence |
 | --- | --- |
-| Final identity | Remove the brand comparison dock, URL selection hook, alternative styles, and unused Ink/Prism assets from the shipped app. Preserve the useful design records separately. Original is the single product identity. |
+| Final identity | Implemented October 17: Original is the single identity; the comparison dock, URL selection hook, alternative styles, and unused Ink/Prism assets were removed. [Design history](brand-studies.md) preserves the alternatives and their Git checkpoint. |
 | Desktop visibility | `Workspace.tsx` currently calls both persisted hide setters whenever compact mode becomes active. Separate temporary mobile drawer state from desktop visibility preferences. Verify desktop → phone → desktop restores the prior arrangement, including after reload. |
 | Drawer accessibility | The new drawers use a visual backdrop but do not currently move focus into the open pane or contain keyboard interaction. Define modal or nonmodal behavior explicitly. With a blocking backdrop, provide dialog semantics, focus entry/containment, background isolation, and focus restoration. Handle nested menus/dialogs so Escape closes the topmost surface first. Backdrop dismissal should restore focus too. |
 | Pane sizing | Test bounds, fitting two panes around the editor, keyboard direction/steps, double-click reset, pointer cancellation/capture loss, window resizing during drag, malformed saved widths, and storage failures. Confirm content cannot collapse below the intended writing width. |

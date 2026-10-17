@@ -10,13 +10,10 @@ import VersionSwitcher from '@components/Document/EditorComponents/VersionSwitch
 import { DocumentVersion } from '@type/document';
 import { WorkspaceToolbarContext } from './WorkspaceContext';
 import Brand from './Brand';
-import BrandVariationPicker from './BrandVariationPicker';
-import { useBrandVariation } from './brand-variations';
 import { DEFAULT_PANE_WIDTHS, fitPaneWidths, PaneSide, PANE_LIMITS, usePaneLayout } from './usePaneLayout';
 import './workspace.css';
 
 const Workspace = () => {
-  const { variant, appearance } = useBrandVariation();
   const hideLeft = useStore(state => state.hideSideMenu);
   const hideRight = useStore(state => state.hideSideAIMenu);
   const setHideLeft = useStore(state => state.setHideSideMenu);
@@ -36,11 +33,6 @@ const Workspace = () => {
   useEffect(() => {
     document.title = currentDoc?.title ? `${currentDoc.title} — fthr` : 'fthr — A place for your words';
   }, [currentDoc?.title]);
-
-  useEffect(() => {
-    document.querySelector('link[rel="icon"]')?.setAttribute('href', appearance.icon);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', appearance.color);
-  }, [appearance]);
 
   useEffect(() => {
     const query = window.matchMedia('(max-width: 1023px)');
@@ -188,7 +180,7 @@ const Workspace = () => {
 
   return (
     <WorkspaceToolbarContext.Provider value={toolbarTarget}>
-      <div className={`workspace brand-${variant}${dragging ? ' workspace-resizing' : ''}`} data-brand={variant} style={layoutStyle}>
+      <div className={`workspace${dragging ? ' workspace-resizing' : ''}`} style={layoutStyle}>
         <header className="workspace-chrome">
           <div className="workspace-titlebar">
             <Brand />
@@ -240,7 +232,6 @@ const Workspace = () => {
             <AIMenu activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
           </aside>
         </div>
-        <BrandVariationPicker />
       </div>
     </WorkspaceToolbarContext.Provider>
   );

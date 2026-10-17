@@ -124,38 +124,3 @@
   .workspace-layout-controls { grid-column: 3; grid-row: 1; border: 0; padding-left: 0; }
   .workspace-document .editor-input { padding: 28px 22px 48px; }
 }
-
-/* Alternate identities are scoped to the brand-study URL. */
-.workspace.brand-ink { --accent: #a2b0ed; --fthr-gradient: linear-gradient(110deg, #899fda, #b8a8d0); }
-.dark .workspace.brand-ink { --chrome: #0a0a09; --surface: #0e0e0d; --line: #282824; --ink: #e5e1d8; --muted: #a09e96; --hover: #1c1c19; }
-.brand-ink .workspace-brand-name { font-style: normal; font-size: 26px; letter-spacing: -.8px; }
-.brand-ink .workspace-brand { gap: 8px; }
-.dark .workspace.brand-ink .workspace-editor { background: #0b0b0a; }
-.dark .workspace.brand-ink .editor-input { background: #121210; color: #dedbd3; box-shadow: 0 0 0 1px #29282250; }
-.dark .workspace.brand-ink .dark\:bg-gray-950 { background-color: #0e0e0d; }
-.workspace.brand-ink .fthr-ai-avatar { background-image: linear-gradient(145deg, #bdc3db, #918bab); }
-.workspace.brand-ink .workspace-ai-label { background: #a2b0ed0b; border-color: #a2b0ed30; }
-.workspace.brand-ink .workspace-tabs button[aria-pressed="true"]::after { height: 1px; }
-
-.workspace.brand-prism { --accent: #bda7ff; --fthr-gradient: linear-gradient(105deg, #4ae3ee, #648bff 35%, #a479ff 70%, #f0a0e0); }
-.dark .workspace.brand-prism { --chrome: #090910; --surface: #0c0d14; --line: #272537; --ink: #eeecf7; --muted: #a09bb3; --hover: #1d1b2c; }
-.brand-prism .workspace-brand-name { font-family: 'IBM Plex Sans', sans-serif; font-size: 24px; font-style: normal; font-weight: 500; letter-spacing: -1.3px; }
-.brand-prism .workspace-brand { gap: 7px; }
-.brand-prism .workspace-brand-mark { filter: drop-shadow(0 0 7px #9679ff35); }
-.dark .workspace.brand-prism .workspace-chrome { background: linear-gradient(110deg, #090910, #0d0b15 65%, #14101e); }
-.workspace.brand-prism .workspace-chrome::before { content: ''; position: absolute; inset: 0 0 auto; height: 1px; background: var(--fthr-gradient); opacity: .55; pointer-events: none; }
-.dark .workspace.brand-prism .workspace-editor { background: #090a10; }
-.dark .workspace.brand-prism .editor-input { background: #101018; color: #dfddec; box-shadow: 0 0 0 1px #2f294450; }
-.dark .workspace.brand-prism .dark\:bg-gray-950 { background-color: #0c0d14; }
-.workspace.brand-prism .fthr-ai-avatar { border-radius: 7px; box-shadow: 0 0 14px #8c76ff24, inset 0 0 0 1px #ffffff24; }
-.workspace.brand-prism .workspace-tabs button[aria-pressed="true"]::after { box-shadow: 0 0 9px #a17fff80; }
-.workspace.brand-prism .workspace-versions button[aria-pressed="true"] { background: linear-gradient(120deg, #648bff18, #a479ff24); box-shadow: 0 0 0 1px #a479ff42; }
-.workspace.brand-prism .workspace-ai-label { background: linear-gradient(115deg, #648bff25, #a479ff30); border-color: #a479ff70; color: #cfbfff; }
-
-.brand-study { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; align-items: center; gap: 3px; max-width: calc(100% - 24px); padding: 5px; border: 1px solid #ffffff20; border-radius: 10px; background: #111116ed; color: #c6c3d0; box-shadow: 0 6px 25px #0006; backdrop-filter: blur(16px); }
-.brand-study-label { padding: 0 9px; font-size: 10px; white-space: nowrap; color: #9995a8; }
-.brand-study button { padding: 7px 11px; border-radius: 6px; font-size: 11px; line-height: 16px; white-space: nowrap; transition: background .12s, color .12s; }
-.brand-study button:hover { background: #ffffff0d; color: #fff; }
-.brand-study button[aria-pressed="true"] { color: #eeeaff; background: #8d7bf52b; box-shadow: inset 0 0 0 1px #bbaaff28; }
-.brand-study .brand-study-close { display: grid; place-items: center; padding: 7px; margin-left: 3px; color: #9995a8; }
-@media (max-width: 540px) { .brand-study-label { display: none; } }
