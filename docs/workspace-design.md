@@ -10,6 +10,8 @@ Drag either divider to resize. Arrow keys adjust the focused divider by 10 pixel
 
 Below 1024 CSS pixels, panes become overlay drawers. Opening one closes the other; the close control, backdrop, and Escape dismiss the drawer. On narrow phones, document-section controls occupy a separate header row.
 
+Mobile drawer visibility is temporary and does not change saved desktop pane preferences. Crossing the compact breakpoint or reloading on mobile closes the drawers; returning to desktop restores the saved desktop combination. The [pane-preference validation record](workspace-pane-preferences.md) covers component regressions, real browser reload checks, and remaining accessibility work.
+
 Verification completed in the local browser: pointer and keyboard resizing, width constraints, pane close/reopen, focus restoration, preference restoration after reload, formatting menu placement, assistant view switching, Draft/Snippets switching with text preserved, narrow desktop width, phone layout, drawer switching, and Escape dismissal. The Windows production build and TypeScript check pass. Existing build output reports large chunks and outdated Browserslist metadata; optimization is deferred.
 
 The Vite alias conversion to fileURLToPath was necessary to run this checkout on Windows. No AI permission, document persistence, or revision-safety fixes were included in this design update.

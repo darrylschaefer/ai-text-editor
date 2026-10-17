@@ -4,7 +4,7 @@ Use a feature branch and a pull request for each related change. Keep the descri
 
 ## Install and run
 
-Use Node.js 24, as specified by `.nvmrc`, and npm 11.19.0, as recorded in `package.json`. Check both `node --version` and `npm --version` before installing; Windows can have multiple Node installations. An installation of npm next to an older `node.exe` can use that older runtime even when another Node executable is on PATH. CI and Docker explicitly install npm 11.19.0; the Vercel install command invokes the same version.
+Use Node.js 24.15.0 or newer within 24.x, as required by `package.json`, and npm 11.19.0. `.nvmrc` selects the current Node 24 release. The component test environment requires this minimum Node patch version. Check both `node --version` and `npm --version` before installing; Windows can have multiple Node installations. An installation of npm next to an older `node.exe` can use that older runtime even when another Node executable is on PATH. CI and Docker explicitly install npm 11.19.0; the Vercel install command invokes the same version.
 
 ```bash
 npm ci
@@ -28,6 +28,8 @@ The development server uses port 5173. An OpenAI API key is required for AI feat
 | `npm run check` | Run type checks, unit tests, and the production build in sequence. |
 
 The test runner uses a separate configuration so browser/WASM build plugins are not loaded for Node unit tests. Its aliases are derived from `tsconfig.json`. The tests have a separate TypeScript project so production exclusions cannot silently hide test type errors.
+
+Workspace visibility tests use the pinned jsdom development dependency to mount the real pane controls. They substitute document/AI children and a small observable preference store, so these tests do not read personal documents, use IndexedDB, or call paid APIs. Revision-history tests keep the Node environment. Component tests do not replace browser layout and accessibility checks.
 
 The initial suite exercises revision-history utilities, including captured content, inserted-block undo operations, snapshot thresholds, and snapshot isolation. Passing this suite does not prove full document persistence, every undo operation, AI tool permissions, or UI behavior. For example, the legacy deletion-undo test only checks that the result is an array; exact restoration needs a dedicated fix and regression test. Add browser regression tests with the workspace changes.
 

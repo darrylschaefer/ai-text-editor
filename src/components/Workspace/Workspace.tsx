@@ -14,8 +14,8 @@ import { DEFAULT_PANE_WIDTHS, fitPaneWidths, PaneSide, PANE_LIMITS, usePaneLayou
 import './workspace.css';
 
 const Workspace = () => {
-  const hideLeft = useStore(state => state.hideSideMenu);
-  const hideRight = useStore(state => state.hideSideAIMenu);
+  const desktopHideLeft = useStore(state => state.hideSideMenu);
+  const desktopHideRight = useStore(state => state.hideSideAIMenu);
   const setHideLeft = useStore(state => state.setHideSideMenu);
   const setHideRight = useStore(state => state.setHideSideAIMenu);
   const currentDoc = useStore(state => state.chats?.[state.currentChatIndex]);
@@ -23,6 +23,10 @@ const Workspace = () => {
   const [activeMenu, setActiveMenu] = useState('chat');
   const [toolbarTarget, setToolbarTarget] = useState<HTMLDivElement | null>(null);
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1023px)').matches);
+  // Drawer visibility is temporary; only desktop controls save pane preferences.
+  const [mobilePane, setMobilePane] = useState<PaneSide | null>(null);
+  const hideLeft = compact ? mobilePane !== 'left' : desktopHideLeft;
+  const hideRight = compact ? mobilePane !== 'right' : desktopHideRight;
   const [containerWidth, setContainerWidth] = useState(window.innerWidth);
   const [dragging, setDragging] = useState<PaneSide | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -36,17 +40,14 @@ const Workspace = () => {
 
   useEffect(() => {
     const query = window.matchMedia('(max-width: 1023px)');
-    const onChange = () => setCompact(query.matches);
+    const onChange = () => {
+      setCompact(query.matches);
+      setMobilePane(null);
+    };
     query.addEventListener('change', onChange);
+    onChange();
     return () => query.removeEventListener('change', onChange);
   }, []);
-
-  useEffect(() => {
-    if (compact) {
-      setHideLeft(true);
-      setHideRight(true);
-    }
-  }, [compact, setHideLeft, setHideRight]);
 
   useEffect(() => {
     const body = bodyRef.current;
@@ -57,34 +58,35 @@ const Workspace = () => {
   }, []);
 
   const closePane = (side: PaneSide) => {
-    (side === 'left' ? setHideLeft : setHideRight)(true);
+    if (compact) setMobilePane(null);
+    else (side === 'left' ? setHideLeft : setHideRight)(true);
     document.getElementById(`toggle-${side}-pane`)?.focus();
   };
 
   useEffect(() => {
-    if (!compact || (hideLeft && hideRight)) return;
+    if (!compact || !mobilePane) return;
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setHideLeft(true);
-        setHideRight(true);
-        document.getElementById(hideLeft ? 'toggle-right-pane' : 'toggle-left-pane')?.focus();
+      if (event.key === 'Escape' && !event.defaultPrevented) {
+        event.preventDefault();
+        setMobilePane(null);
+        document.getElementById(`toggle-${mobilePane}-pane`)?.focus();
       }
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [compact, hideLeft, hideRight, setHideLeft, setHideRight]);
+  }, [compact, mobilePane]);
 
   const togglePane = (side: PaneSide) => {
-    if (side === 'left') {
-      if (compact && hideLeft) setHideRight(true);
-      setHideLeft(!hideLeft);
-    } else {
-      if (compact && hideRight) setHideLeft(true);
-      setHideRight(!hideRight);
+    if (compact) {
+      setMobilePane(current => current === side ? null : side);
+      return;
     }
+    if (side === 'left') setHideLeft(!desktopHideLeft);
+    else setHideRight(!desktopHideRight);
   };
 
   const toggleFocus = () => {
+    if (compact) return;
     if (hideLeft && hideRight) {
       setHideLeft(!restorePanes.current.left);
       setHideRight(!restorePanes.current.right);
@@ -195,7 +197,7 @@ const Workspace = () => {
                 title={`${hideLeft ? 'Show' : 'Hide'} library pane`} onClick={() => togglePane('left')}>
                 <SidePanelOpen size={18} />
               </button>
-              <button type="button" className="workspace-icon-button workspace-focus-button"
+              <button type="button" className="workspace-icon-button workspace-focus-button" hidden={compact}
                 aria-pressed={hideLeft && hideRight} aria-label={hideLeft && hideRight ? 'Restore panes' : 'Focus on writing'}
                 title={hideLeft && hideRight ? 'Restore panes' : 'Focus on writing'} onClick={toggleFocus}>
                 {hideLeft && hideRight ? <Minimize size={17} /> : <Maximize size={17} />}
@@ -218,8 +220,8 @@ const Workspace = () => {
           </div>
         </header>
         <div className="workspace-body" ref={bodyRef}>
-          {compact && (!hideLeft || !hideRight) && <button type="button" className="workspace-backdrop"
-            aria-label="Close open pane" onClick={() => { setHideLeft(true); setHideRight(true); }} />}
+          {compact && mobilePane && <button type="button" className="workspace-backdrop"
+            aria-label="Close open pane" onClick={() => closePane(mobilePane)} />}
           <aside id="workspace-library" className="workspace-pane workspace-library" hidden={hideLeft} aria-label="Library">
             <div className="workspace-mobile-pane-heading"><EditorAgentsToggle />{closeButton('left')}</div>
             <DocumentMenu />
