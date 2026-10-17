@@ -1,0 +1,16 @@
+name: Feature request
+description: Propose an improvement with a clear outcome.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired behavior and acceptance criteria
+      description: Describe how someone could verify that the improvement works.
+    validations:
+      required: true

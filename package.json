@@ -3,17 +3,22 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "npm@11.19.0",
   "homepage": "./",
   "main": "electron/index.cjs",
   "author": "Darryl Schaefer <darrylwschaefer@gmail.com>",
   "description": "Open-source, AI-assisted word processor.",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit && tsc --project tsconfig.tests.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm test && npm run build",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "electron": "concurrently -k \"BROWSER=none yarn dev\" \"wait-on tcp:5173 && electron .\"",
-    "pack": "yarn build && electron-builder --dir",
-    "make": "yarn build && electron-builder"
+    "electron": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && electron .\"",
+    "pack": "npm run build && electron-builder --dir",
+    "make": "npm run build && electron-builder"
   },
   "build": {
     "appId": "aiTextEditor",
@@ -96,11 +101,13 @@
     "electron": "^23.2.0",
     "electron-builder": "^23.6.0",
     "postcss": "^8.4.21",
+    "serve": "14.2.6",
     "tailwindcss": "^3.2.7",
     "typescript": "^4.9.3",
     "vite": "^4.1.0",
     "vite-plugin-top-level-await": "^1.3.0",
     "vite-plugin-wasm": "^3.2.2",
+    "vitest": "3.2.7",
     "wait-on": "^7.0.1"
   },
   "optionalDependencies": {
@@ -116,6 +123,7 @@
     "@swc/core-win32-x64-msvc": "^1.4.2"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": "24.x",
+    "npm": ">=11.19.0 <12"
   }
 }

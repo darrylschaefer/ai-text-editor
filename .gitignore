@@ -26,3 +26,9 @@ dist-ssr
 release/
 
 .env
+
+# Test output
+coverage/
+.vitest/
+test-results/
+playwright-report/
