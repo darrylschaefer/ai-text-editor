@@ -1,2 +1,14 @@
 /.github
 /Dockerfile
+.git
+node_modules
+dist
+dist-ssr
+release
+coverage
+.vitest
+test-results
+playwright-report
+*.log
+.env*
+!.env.example

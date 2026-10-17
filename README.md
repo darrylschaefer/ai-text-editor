@@ -16,14 +16,14 @@ Local-first AI text editor for writers. Manage documents, run powerful macros, a
 Your documents and API key are stored locally on your device. When you use AI features (including agents, tools, and embeddings), the app sends relevant text/context and request payloads to the OpenAI API for processing; we don't store your content on our servers.
 
 ## Prerequisites
-- **Node.js**
-- **OpenAI API key**
+- **Node.js 24** (see `.nvmrc`) and npm
+- **OpenAI API key** for AI features; local unit tests do not require one
 
 ## Getting started (dev)
 ```bash
 git clone https://github.com/darrylschaefer/ai-text-editor
 cd ai-text-editor
-npm install
+npm ci
 npm run dev
 ```
 
@@ -33,7 +33,15 @@ Open: `http://localhost:5173`
 Use **Export** in the sidebar to save your data and **Import** to restore it.
 
 ## Contributing
-Issues and PRs welcome.
+Issues and PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for installation, checks, and the pull request process.
+
+Before submitting a change, run:
+
+```bash
+npm run check
+```
+
+This type-checks the application and tests, runs the unit tests, and creates the production web build. GitHub Actions runs the same command on Linux and Windows for pull requests and updates to `main`.
 
 ## License / Credits
 Inspired by and adapted from BetterChatGPT (CC0). This project is released under the MIT license.
