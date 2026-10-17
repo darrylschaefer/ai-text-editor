@@ -4,18 +4,18 @@ Decision recorded October 17, 2026: keep the Original fthr identity (gradient qu
 
 ## Current state
 
-- Work is local on `codex/unified-workspace`, based on `fe696e6bab77e14792313510f1ea1c87f3f54a41`. Initial checkpoint commits are `507243e` (Windows Vite alias fix) and `bf3a070` (unified workspace and branding studies). The documentation is saved separately. Nothing has been pushed, and no pull request has been created in this session.
-- The unified workspace and branding have received manual browser checks, documented in `workspace-design.md`. A fresh `npm run build` passed with Node 24.19.0 during this audit on October 17, 2026, including the application TypeScript check. `git diff --check` also passed. The build still warns about large chunks and outdated Browserslist metadata. These checks are not automated regression coverage.
-- There is no checked-in `.github` directory or CI workflow in this checkout. `package.json` has no test command. The existing revision-history tests import Vitest, which is not declared as a dependency, and test files are excluded from the production TypeScript configuration.
-- Both `package-lock.json` and `yarn.lock` are tracked. Vercel uses npm; Docker and desktop scripts use Yarn. Choose and document one installation path before relying on CI reproducibility.
-- This audit did not authenticate to GitHub or inspect the repository's private settings, rulesets, deployment connections, or collaborator permissions. Do not assume those controls are configured or absent.
+- Product work remains local on `codex/unified-workspace`. Initial checkpoint commits are `507243e` (Windows Vite alias fix) and `bf3a070` (unified workspace and branding studies). The documentation is checked in. The design branch has not been pushed and has no pull request yet.
+- Foundation [PR #5](https://github.com/darrylschaefer/ai-text-editor/pull/5) was squash merged into `main` as `07ebe98b3a6ab2879acfa140247d1168a91b843c`. Its post-merge Linux and Windows checks and Vercel Production deployment succeeded. On October 17, the foundation was merged into the design branch without conflicts in local commit `2caf89304cb3620f8941aa940d57f358f6cba548`.
+- This checkout now includes runnable revision-history tests, application/test type checks, the production build, CI, and contribution templates. npm 11.19.0 on Node 24 is the supported installation path; `package-lock.json` is authoritative and the Yarn lockfile has been removed.
+- The unified workspace and branding have received manual browser checks, documented in `workspace-design.md`. Those checks and the existing revision-history suite do not provide automated regression coverage for the workspace. The hardening criteria below remain open. Existing large-chunk and Browserslist build warnings remain deferred.
+- GitHub [Protect main](https://github.com/darrylschaefer/ai-text-editor/rules/25314529) is active: pull requests, resolved review threads, current successful Linux and Windows checks, blocked force pushes/deletion, and no bypass actors. Required human approvals are zero for the solo-maintainer workflow. Merging `main` triggers Vercel production deployment; branch pushes can create previews.
 - Earlier engineering risks remain in `engineering-backlog.md` and `engineering-review-2026-10-17.md`.
 
 The first learning step was to inspect the changed files, select related files for each commit (the staging area), inspect that selection, and commit locally. `git diff --check` passed, and a scan of the 42 changed/new files found no matches for the common credential patterns checked. Generated builds, dependency folders, local screenshots, and caches were not included. This checkpoint preserves the work in progress; the hardening checklist below remains open. A local commit does not publish changes or create an off-device backup.
 
-## PR 1: establish checks and contribution workflow
+## PR 1: establish checks and contribution workflow — merged
 
-Keep this independent of the visual redesign so it can merge first.
+Delivered independently of the visual redesign in PR #5. The items below preserve the original plan; browser regression coverage belongs in PR 2, and publishing backlog issues remains outstanding.
 
 - Standardize on Node 24 and one package manager. npm is the recommended choice given the existing npm lockfile and Vercel configuration. Update Docker, desktop scripts, install documentation, and deployment installation together before retiring the second lockfile.
 - Add a runnable test runner, resolve TypeScript aliases in tests, run the existing revision-history suite, and give tests their own type check. Record and fix failures rather than hiding them with exclusions or skipped tests.
