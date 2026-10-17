@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect } from "react";
 import useStore from '@store/store';
-import MobileBar from '../MobileBar';
 import { InitialEditorStateType } from '@lexical/react/LexicalComposer';
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
@@ -22,8 +21,6 @@ import lexicalTheme from "./LexicalTheme";
 import SnippetsView from './SnippetsComponents/SnippetsView';
 
 const Document = () => {
-  const hideSideMenu = useStore((state) => state.hideSideMenu);
-  const hideSideAIMenu = useStore((state) => state.hideSideAIMenu);
   const editRef = useRef(null);
   const currentChatIndex = useStore((state) => state.currentChatIndex);
   const chats = useStore((state) => state.chats);
@@ -145,15 +142,8 @@ const editorConfig = {
   // Render Snippets view if version is 'Snippets'
   if (isSnippetsView && currentDoc) {
     return (
-      <div
-        className={`flex flex-col h-full flex-1 ${
-          hideSideMenu ? 'md:pl-0' : 'md:pl-[260px]'
-        } ${
-          hideSideAIMenu ? 'md:pr-0' : 'md:pr-[365px]'
-        } transition-all ease-in-out duration-200`}
-      >
-        <MobileBar />
-        <main className='relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1'>
+      <div className="workspace-document">
+        <main className="workspace-document-main">
           <SnippetsView documentId={currentDoc.id} />
         </main>
       </div>
@@ -164,27 +154,20 @@ const editorConfig = {
   return (
     <>
       <LexicalComposer initialConfig={editorConfig}>
-        <div
-          className={`flex flex-col h-full flex-1 ${
-            hideSideMenu ? 'md:pl-0' : 'md:pl-[260px]'
-          } ${
-            hideSideAIMenu ? 'md:pr-0' : 'md:pr-[365px]'
-          } transition-all ease-in-out duration-200`}
-        >
-          <MobileBar />
-          <main className='relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1'>
-            <div className="flex w-full h-full">
-              <div className="flex-grow w-full h-full">
-                <div className='relative h-full flex flex-grow flex-col'>
+        <div className="workspace-document">
+          <main className="workspace-document-main">
+            <div className="flex w-full h-full min-h-0">
+              <div className="flex-grow w-full h-full min-h-0">
+                <div className='relative h-full min-h-0 flex flex-grow flex-col'>
                   <div 
                     ref={editorRef} 
-                    className="editor-inner flex flex-col flex-grow w-full h-full border-b border-gray-200 dark:border-gray-800/30 text-gray-800 dark:text-gray-100 group bg-gray-100 dark:bg-gray-950"
+                    className="editor-inner group"
                   >
                     <EditorToolbar />
                     <RichTextPlugin 
                       placeholder={<div />}
                       contentEditable={
-                        <ContentEditable className="editor-input overflow-auto w-full text-base px-4 py-6 md:px-6 md:py-8 md:mx-auto transition-all ease-in-out md:max-w-3xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none" />
+                        <ContentEditable className="editor-input text-base focus:outline-none" ariaLabel="Document content" />
                       }
                       ErrorBoundary={LexicalErrorBoundary}
                     />

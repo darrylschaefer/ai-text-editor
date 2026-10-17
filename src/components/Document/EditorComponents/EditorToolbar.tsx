@@ -6,7 +6,7 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import useStore from '@store/store';
 import { DocumentVersion } from '@type/document';
 import { SaveStatus } from '@hooks/useAutosave';
-import VersionSwitcher from './VersionSwitcher';
+import { useWorkspaceToolbar } from '@components/Workspace/WorkspaceContext';
 import CommitHistoryModal from './CommitHistoryModal';
 
 import {
@@ -91,10 +91,10 @@ function getSelectedNode(selection: RangeSelection) {
       const dropDown = dropDownRef.current;
   
       if (toolbar !== null && dropDown !== null) {
-        const { top, left } = toolbar.getBoundingClientRect();
-          //commented to force clearing of typescript errors
-         dropDown.style.top = `calc(${top + 0}px + 4rem)`;
-         dropDown.style.left = `calc(${left}px + 6rem)`;
+        const anchor = toolbar.querySelector('[aria-label="Formatting Options"]') || toolbar;
+        const { bottom, left } = anchor.getBoundingClientRect();
+        dropDown.style.top = `${bottom + 6}px`;
+        dropDown.style.left = `${left}px`;
       }
     }, [dropDownRef, toolbarRef]);
   
@@ -336,6 +336,7 @@ function SaveStatusIndicator({
 
 function EditorToolbar() {
     const [editor] = useLexicalComposerContext();
+    const toolbarTarget = useWorkspaceToolbar();
     const toolbarRef = useRef(null);
     const [canUndo, setCanUndo] = useState(false);
     const [canRedo, setCanRedo] = useState(false);
@@ -361,8 +362,6 @@ function EditorToolbar() {
     
     const chats = useStore((state) => state.chats);
     const currentChatIndex = useStore((state) => state.currentChatIndex);
-    const setDocumentVersion = useStore((state) => state.setDocumentVersion);
-    const setForceEditorRefresh = useStore((state) => state.setForceEditorRefresh);
     const autosaveStatus = useStore((state) => state.autosaveStatus);
     const autosaveFlush = useStore((state) => state.autosaveFlush);
     const autosaveRetry = useStore((state) => state.autosaveRetry);
@@ -374,25 +373,6 @@ function EditorToolbar() {
     const currentDoc = chats && chats[currentChatIndex] ? chats[currentChatIndex] : null;
     const currentVersion: DocumentVersion = currentDoc?.currentVersion || 'Draft';
     
-    const handleVersionChange = async (version: DocumentVersion) => {
-      if (currentDoc && version !== currentVersion) {
-        // Flush autosave before switching (setDocumentVersion also does this, but we do it here for immediate feedback)
-        if (autosaveFlush) {
-          try {
-            await autosaveFlush();
-          } catch (error) {
-            console.error('Failed to flush autosave:', error);
-          }
-        }
-        
-        // Switch version - setDocumentVersion will also flush and load the new version's state
-        await setDocumentVersion(currentDoc.id, version);
-        
-        // Force editor refresh to load the new version
-        setForceEditorRefresh(!useStore.getState().forceEditorRefresh);
-      }
-    };
-
     const handleCreateCheckpoint = async () => {
       if (!checkpointMessage.trim()) {
         alert('Please enter a message for this checkpoint.');
@@ -556,9 +536,9 @@ function EditorToolbar() {
       }
     }, [editor, isLink]);
   
-    return (
-      <div className="flex p-3 z-10 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800/30 gap-1.5 items-center w-full justify-between" ref={toolbarRef}>
-        <div className="flex gap-1.5 snap-x w-full overflow-x-auto md:overflow-hidden scrollbar-hide border-[1px] border-transparent">
+    const toolbar = (
+      <div className="workspace-formatting-toolbar" ref={toolbarRef} role="toolbar" aria-label="Document formatting">
+        <div className="workspace-formatting-controls">
         <button
           disabled={!canUndo}
           onClick={() => {
@@ -696,6 +676,7 @@ function EditorToolbar() {
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Format Bold"
+              aria-pressed={isBold}
             >
               <TextBold size={18} />
             </button>
@@ -705,6 +686,7 @@ function EditorToolbar() {
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Format Italics"
+              aria-pressed={isItalic}
             >
               <TextItalic size={18} />
             </button>
@@ -714,6 +696,7 @@ function EditorToolbar() {
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Format Underline"
+              aria-pressed={isUnderline}
             >
               <TextUnderline size={18} />
             </button>
@@ -723,6 +706,7 @@ function EditorToolbar() {
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Format Strikethrough"
+              aria-pressed={isStrikethrough}
             >
               <TextStrikethrough size={18} />
             </button>
@@ -765,7 +749,7 @@ function EditorToolbar() {
           </>
         )}
       </div>
-      <div className="flex gap-1.5 items-center">
+      <div className="workspace-document-actions">
         <Divider />
         {/* Save Status Indicator */}
         <SaveStatusIndicator status={autosaveStatus} onRetry={autosaveRetry ? () => autosaveRetry() : undefined} />
@@ -774,7 +758,7 @@ function EditorToolbar() {
           <div className="relative" ref={historyMenuRef}>
             <button
               onClick={() => setShowHistoryMenu(!showHistoryMenu)}
-              className="py-2 px-3 text-sm font-medium transition-colors border border-gray-200 dark:border-gray-800/30 rounded-md bg-white dark:bg-gray-950 text-gray-600 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-400 flex items-center gap-1.5"
+              className="workspace-history-button"
               title="History"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -815,11 +799,6 @@ function EditorToolbar() {
             )}
           </div>
         )}
-        {/* Version Switcher - Always on the right */}
-        <VersionSwitcher
-          currentVersion={currentVersion}
-          onVersionChange={handleVersionChange}
-        />
       </div>
       {/* Commit History Modal */}
       {currentDoc && showCommitHistory && (
@@ -883,7 +862,7 @@ function EditorToolbar() {
       </div> */}
       </div>
     );
+    return toolbarTarget ? createPortal(toolbar, toolbarTarget) : null;
   }
-
 
   export default EditorToolbar;

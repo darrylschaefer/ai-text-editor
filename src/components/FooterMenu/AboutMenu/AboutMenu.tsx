@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import PopupModal from '@components/PopupModal';
 import { Information, LogoGithub, FavoriteFilled } from '@carbon/icons-react';
 import useStore from '@store/store';
-import logoImage from './LogoImage';
+import Brand from '@components/Workspace/Brand';
 
 const AboutMenu = () => {
   const { t } = useTranslation('main');
@@ -38,7 +38,7 @@ const AboutMenu = () => {
       </a>
       {isModalOpen && (
         <PopupModal
-          title={logoImage()}
+          title={<Brand className="fthr-brand-about" />}
           setIsModalOpen={setIsModalOpen}
           cancelButton={false}
         >

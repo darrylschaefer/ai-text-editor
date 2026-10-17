@@ -76,7 +76,7 @@
 
   .dark body,
   .dark html {
-    background-color: rgb(35, 35, 35);
+    background-color: #08090b;
   }
 
   #root {

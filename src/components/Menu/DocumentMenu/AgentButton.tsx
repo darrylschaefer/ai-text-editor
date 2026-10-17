@@ -92,7 +92,7 @@ const AgentButton = ({ agent }: { agent: Agent }) => {
         }
       }}
     >
-      <div className='w-3.5 h-3.5 rounded-full bg-blue-500/70 dark:bg-blue-400/70 flex-shrink-0' />
+      <div className='fthr-ai-avatar w-3.5 h-3.5 rounded-full flex-shrink-0' />
       <div className='flex-1 text-ellipsis max-h-5 overflow-hidden break-all relative'>
         {isEdit ? (
           <input

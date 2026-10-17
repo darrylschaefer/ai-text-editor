@@ -1,4 +1,4 @@
-# ai-text-editor
+# fthr
 
 Local-first AI text editor for writers. Manage documents, run powerful macros, and collaborate with AI agents (with tools) using your own API key.
 

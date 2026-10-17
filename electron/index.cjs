@@ -21,6 +21,7 @@ function createWindow() {
 
   win = new BrowserWindow({
 	autoHideMenuBar: true,
+    title: 'fthr',
     show: false,
     icon: iconPath,
   });
@@ -76,7 +77,7 @@ const createTray = (window) => {
     win.maximize();
     window.show();
   });
-  tray.setToolTip('Better ChatGPT');
+  tray.setToolTip('fthr');
   tray.setContextMenu(contextMenu);
 
   return tray;

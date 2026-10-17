@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "aiTextEditor",
-    "productName": "AI Text Editor",
+    "productName": "fthr",
     "artifactName": "${os}-${name}-${version}-${arch}.${ext}",
     "directories": {
       "output": "release"

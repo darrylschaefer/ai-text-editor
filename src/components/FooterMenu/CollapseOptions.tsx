@@ -192,6 +192,8 @@ const CollapseOptions = () => {
       <div className='flex gap-2 p-3 border-b border-gray-200 dark:border-gray-800/30'>
         <button
           className='flex items-center justify-center py-2 px-3 text-sm font-medium transition-colors bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md'
+          aria-label="Workspace settings"
+          title="Workspace settings"
           onClick={() => setMenuOpen(!isMenuOpen)}
         >
           <Settings size={16} />
