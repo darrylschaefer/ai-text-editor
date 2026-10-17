@@ -1,5 +1,7 @@
 FROM node:24-alpine
 
+RUN npm install --global npm@11.19.0
+
 RUN addgroup -S appgroup && \
   adduser -S appuser -G appgroup && \
   mkdir -p /home/appuser/app && \

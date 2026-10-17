@@ -4,7 +4,7 @@ Use a feature branch and a pull request for each related change. Keep the descri
 
 ## Install and run
 
-Use Node.js 24, as specified by `.nvmrc`, and npm. Check `node --version` before installing; Windows can have multiple Node installations. An installation of npm next to an older `node.exe` can use that older runtime even when another Node executable is on PATH.
+Use Node.js 24, as specified by `.nvmrc`, and npm 11.19.0, as recorded in `package.json`. Check both `node --version` and `npm --version` before installing; Windows can have multiple Node installations. An installation of npm next to an older `node.exe` can use that older runtime even when another Node executable is on PATH. CI and Docker explicitly install npm 11.19.0; the Vercel install command invokes the same version.
 
 ```bash
 npm ci

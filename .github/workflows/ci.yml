@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-24.04, windows-2025]
     env:
       # These jobs validate web code; they do not package or launch Electron.
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
@@ -36,7 +36,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - name: Install locked dependencies
-        run: npm ci
+        run: npm install --global npm@11.19.0 && npm ci
       - name: Type-check, test, and build
         run: npm run check
       - name: Build the web container

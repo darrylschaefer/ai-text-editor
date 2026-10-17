@@ -16,7 +16,7 @@ Local-first AI text editor for writers. Manage documents, run powerful macros, a
 Your documents and API key are stored locally on your device. When you use AI features (including agents, tools, and embeddings), the app sends relevant text/context and request payloads to the OpenAI API for processing; we don't store your content on our servers.
 
 ## Prerequisites
-- **Node.js 24** (see `.nvmrc`) and npm
+- **Node.js 24** (see `.nvmrc`) and **npm 11.19.0** (see `package.json`)
 - **OpenAI API key** for AI features; local unit tests do not require one
 
 ## Getting started (dev)
