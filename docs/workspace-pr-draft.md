@@ -20,7 +20,8 @@ Scope and acceptance criteria are recorded in `docs/delivery-plan.md`. No public
 - [x] Reviewed the complete feature diff, asset references, dependency changes, and common credential patterns.
 - [x] Fix the mobile conversation-opening/preference regression with a shared responsive action, 14 real-caller regressions, and native phone/desktop verification. Macro opening uses the same action.
 - [x] Remove the competing browser-title updater, preserving folder expansion. Ten regression cases and native selection/rename/library-view checks passed; see `docs/brand.md`.
-- [ ] Verify heading contrast and the remaining visual/accessibility and preference compatibility criteria.
+- [x] Fix editor heading colors and verify h1–h6 in both themes on desktop/phone, preserving content and typography. See `docs/workspace-heading-contrast.md`.
+- [ ] Complete the remaining visual/accessibility and preference compatibility criteria.
 - [ ] Complete install/touch and intended desktop brand artwork checks.
 - [ ] Test the built output in a browser, including asset paths.
 - [ ] Attach synthetic before/after screenshots; current captures are local artifacts.

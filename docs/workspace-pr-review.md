@@ -2,7 +2,7 @@
 
 Reviewed October 18, 2026. Feature checkpoint: `ccaede431fe13310a00a5690656e17cb271e5842` on `codex/unified-workspace`. Fetched base: `origin/main` at `07ebe98b3a6ab2879acfa140247d1168a91b843c`, unchanged by the fetch. No branch push, PR creation, merge, or deployment was performed.
 
-**Disposition: prepare a draft PR; keep it unready for merge.** Two integration defects were confirmed during this review. Both the responsive assistant-opening and branded-title findings were subsequently fixed and verified. Heading contrast and the other release checks remain open. Passing the existing suite is evidence for its covered behaviors, not clearance for untested paths.
+**Disposition: prepare a draft PR; keep it unready for merge.** Two integration defects were confirmed during this review. Both the responsive assistant-opening and branded-title findings were subsequently fixed and verified. The editor heading-color finding is also resolved; other release checks remain open. Passing the existing suite is evidence for its covered behaviors, not clearance for untested paths.
 
 ## Required integration fixes
 
@@ -35,7 +35,7 @@ Follow-up October 18: removed only the competing document-list title assignment,
 
 ## Existing release findings
 
-- **P2, dark heading contrast:** Large Heading text is almost black on the dark writing surface. `src/main.css:602` hard-codes the heading color. Dark is now the default; include heading levels in the planned two-theme visual check before marking ready.
+- **Resolved P2, dark heading contrast:** The reviewed Large Heading was almost black on the dark writing surface because `src/main.css:602` hard-coded its color. Follow-up October 18: h1/h2 now explicitly inherit the editor's theme color. Native desktop/phone checks covered h1–h6 in both themes; text/markup and existing typography were preserved. Measured contrast is 13.84:1 in dark mode and 12.50:1 in light mode. Both type checks, all 169 tests, and the production build passed. See [heading validation and limits](workspace-heading-contrast.md); the broader visual/accessibility pass remains open.
 - **Brand completeness:** the browser icon/manifest use the selected SVG, but the touch/install PNG references were removed. Desktop/tray/installer configuration still uses the legacy `icon-rounded.png`. Restore supported platform artwork and verify built assets; this review did not certify installation or desktop packaging.
 - **Remaining evidence:** preference compatibility, long titles/no current document, broader viewport/zoom/keyboard/contrast checks, a browser smoke check of built output, PR screenshots, and remote Linux/Windows checks remain in the delivery plan. Automated browser regression setup is still outstanding; current native-browser evidence is manual.
 - **Separate backlog:** losing an unsent draft when switching assistant tabs, long-session EditorSelection cleanup, persistence durability, stable block identity, AI authority/revision checks, backups, and dependency remediation remain separate work. These are not silently declared fixed by this design PR.
