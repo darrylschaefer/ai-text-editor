@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import useSubmit from '@hooks/useSubmitPromptAdjust';
 import { Play, Settings, Document as DocumentIcon } from '@carbon/icons-react';
 import useStore from '@store/store';
+import { useOpenAssistant } from '@components/Workspace/WorkspaceContext';
 import useClearChatPrompt from '@hooks/useClearChatPrompt';
 import { PromptButtonConfig } from '@components/Menu/AIMenu/PromptLibrary/PromptButton/Config';
 import { extractMacroReferences, extractMacroReferencesWithPositions, executeMacroQueue, executeMacro, replaceMacroReferences, replaceSpecialCommands, MacroQueueItem } from '@utils/actionRunner';
@@ -19,7 +20,7 @@ const PromptButton = ({prompt, index, activeMenu, setActiveMenu}: {
   setActiveMenu: React.Dispatch<React.SetStateAction<string>>;
 }) => {
   
-  const setHideSideAIMenu = useStore((state) => state.setHideSideAIMenu);
+  const openAssistant = useOpenAssistant();
 
   const chats = useStore((state) => state.chats);
   const setChats = useStore((state) => state.setChats);
@@ -179,7 +180,7 @@ const PromptButton = ({prompt, index, activeMenu, setActiveMenu}: {
 
     // Switch to chat menu IMMEDIATELY
     setActiveMenu('chat');
-    setHideSideAIMenu(false);
+    openAssistant();
 
     // Get updateMessage function for updating messages as actions complete
     const updateMessage = useStore.getState().updateMessage;
@@ -938,7 +939,7 @@ const PromptButton = ({prompt, index, activeMenu, setActiveMenu}: {
   const handleClickButton = (e: any) => {
     e.stopPropagation();
     useClearChat(prompt.prompt);
-    setHideSideAIMenu(false);
+    openAssistant();
     if(chats){
       let tempSettings = editorSettings;
       tempSettings.activeMenu = 'chat';

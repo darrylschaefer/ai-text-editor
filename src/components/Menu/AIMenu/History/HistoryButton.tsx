@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import useStore from '@store/store';
+import { useOpenAssistant } from '@components/Workspace/WorkspaceContext';
 import { DocumentCurrent } from '@type/document';
 import useReplaceHistory from '@hooks/useReplaceHistory';
 
@@ -13,7 +14,7 @@ const HistoryButton = ({message, activeMenu, setActiveMenu, index}: {
 }) => {
 
   const replaceHistory = useReplaceHistory();  
-  const setHideSideAIMenu = useStore((state) => state.setHideSideAIMenu);
+  const openAssistant = useOpenAssistant();
   const chats = useStore((state) => state.chats);
   const setChats = useStore((state) => state.setChats);
   const currentChatIndex = useStore((state) => state.currentChatIndex);
@@ -85,7 +86,7 @@ const HistoryButton = ({message, activeMenu, setActiveMenu, index}: {
      e.stopPropagation();
      if(generating == false){
        replaceHistory(message);
-       setHideSideAIMenu(false);
+       openAssistant();
        if(chats){
         let tempSettings = editorSettings;
         tempSettings.activeMenu = 'chat';

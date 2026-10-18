@@ -15,10 +15,10 @@ Scope and acceptance criteria are recorded in `docs/delivery-plan.md`. No public
 
 ## Validation
 
-- [x] `npm run check` passed locally on Windows with Node 24.19.0 and npm 11.19.0: application/test types, 145 tests in seven files, and the production build.
+- [x] `npm run check` passed locally on Windows with Node 24.19.0 and npm 11.19.0: application/test types, 159 tests in seven files, and the production build.
 - [x] Synthetic-content browser verification covered resizing, desktop/phone transitions, drawer focus and nested dialogs, editor selection/formatting, history/checkpoint creation/preview, document/section switching, and pane close/reopen state. Evidence and limits are recorded in the `docs/workspace-*.md` validation records.
 - [x] Reviewed the complete feature diff, asset references, dependency changes, and common credential patterns.
-- [ ] Fix the mobile conversation-opening/preference regression confirmed by focused review probes.
+- [x] Fix the mobile conversation-opening/preference regression with a shared responsive action, 14 real-caller regressions, and native phone/desktop verification. Macro opening uses the same action.
 - [ ] Fix the competing browser-title updater confirmed by a focused review probe.
 - [ ] Verify heading contrast and the remaining visual/accessibility and preference compatibility criteria.
 - [ ] Complete install/touch and intended desktop brand artwork checks.
@@ -26,7 +26,7 @@ Scope and acceptance criteria are recorded in `docs/delivery-plan.md`. No public
 - [ ] Attach synthetic before/after screenshots; current captures are local artifacts.
 - [ ] Latest GitHub Actions checks pass on Linux and Windows. This remains a draft until those runs and the readiness work complete.
 
-The existing suite passes its covered cases. Three additional diagnostic probes exposed the two integration defects above; they are recorded as unresolved findings, not represented as passing tests. Browser verification was in the Windows in-app development browser. Other browsers, screen readers, native touch/pen hardware, and packaged desktop builds have not been certified. Existing Browserslist and large-chunk build warnings remain.
+The suite passes its covered cases. Focused review probes exposed mobile-opening and branded-title defects; mobile opening is fixed with permanent regression coverage, while the title finding remains unresolved. Macro Run's immediate UI transition is tested with its execution timer held; no AI request runs. Browser verification was in the Windows in-app development browser. Other browsers, screen readers, native touch/pen hardware, and packaged desktop builds have not been certified. Existing Browserslist and large-chunk build warnings remain.
 
 ## Risks and rollback
 

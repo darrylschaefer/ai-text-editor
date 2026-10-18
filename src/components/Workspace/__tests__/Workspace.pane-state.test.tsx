@@ -8,7 +8,7 @@ import type { ChatConversation, ChatType } from '@store/chat-slice';
 import type { DocumentInterface } from '@type/document';
 import Workspace from '../Workspace';
 
-const services = vi.hoisted(() => ({ submit: vi.fn(), stream: vi.fn(), tool: vi.fn() }));
+const services = vi.hoisted(() => ({ submit: vi.fn(), stream: vi.fn(), tool: vi.fn(), macro: vi.fn() }));
 
 // Keep the workspace, store, tabs, library/search, chat/completion composer,
 // metadata fields and macro search real. Editor/footer actions, AI execution
@@ -17,11 +17,18 @@ vi.mock('@components/Document/Document', () => ({ default: () => <p>Synthetic do
 vi.mock('@components/FooterMenu', () => ({ default: () => null }));
 vi.mock('@components/Chat/ChatContent/ChatContent', () => ({ default: () => <p>No conversation selected</p> }));
 vi.mock('@hooks/useUnifiedSubmit', () => ({ default: () => ({ handleSubmit: services.submit, generating: false }) }));
-vi.mock('@api/api', () => ({ getResponseStream: services.stream, getLegacyCompletionStream: services.stream }));
+vi.mock('@hooks/useSubmitPromptAdjust', () => ({ default: () => ({ handleFunction: services.submit }) }));
+vi.mock('@api/api', () => ({ getResponseStream: services.stream, getLegacyCompletionStream: services.stream, getChatCompletionStream: services.stream }));
 vi.mock('@api/tools', () => ({ executeTool: services.tool, getEnabledToolDefinitions: () => [] }));
 vi.mock('@api/tools/context-builder', () => ({ buildToolContext: vi.fn() }));
-vi.mock('@utils/actionRunner', () => ({ replaceSpecialCommands: vi.fn() }));
-vi.mock('@components/Menu/AIMenu/PromptLibrary/PromptButton', () => ({ default: () => null }));
+vi.mock('@utils/actionRunner', () => ({
+  extractMacroReferences: () => [], extractMacroReferencesWithPositions: () => [],
+  executeMacroQueue: services.macro, executeMacro: services.macro,
+  replaceMacroReferences: (text: string) => text,
+  replaceSpecialCommands: (text: string) => ({ result: text }),
+}));
+vi.mock('@utils/messageUtils', () => ({ limitMessageTokens: vi.fn() }));
+vi.mock('@components/Menu/AIMenu/PromptLibrary/PromptButton/Config', () => ({ PromptButtonConfig: () => null }));
 vi.mock('react-scroll-to-bottom', () => ({ default: ({ children }: PropsWithChildren) => <div>{children}</div> }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 
@@ -152,6 +159,136 @@ afterEach(() => {
   expect(services.submit).not.toHaveBeenCalled();
   expect(services.stream).not.toHaveBeenCalled();
   expect(services.tool).not.toHaveBeenCalled();
+  expect(services.macro).not.toHaveBeenCalled();
+  vi.useRealTimers();
+});
+
+async function addAlternativeConversation(type: ChatType = 'regular') {
+  await act(async () => {
+    useStore.setState({ conversations: [...useStore.getState().conversations,
+      { ...conversation(type), id: 'another-conversation', title: 'Another synthetic conversation' }] });
+    await tick();
+  });
+}
+
+async function selectAlternativeConversation() {
+  const target = [...container.querySelectorAll<HTMLAnchorElement>('#workspace-library a')]
+    .find(link => link.textContent?.trim() === 'Another synthetic conversation');
+  if (!target) throw new Error('Missing synthetic conversation');
+  await act(async () => { target.click(); await tick(); });
+}
+
+describe('programmatic assistant opening', () => {
+  it.each([
+    { hideSideMenu: false, hideSideAIMenu: false },
+    { hideSideMenu: false, hideSideAIMenu: true },
+    { hideSideMenu: true, hideSideAIMenu: false },
+    { hideSideMenu: true, hideSideAIMenu: true },
+  ])('opens a phone conversation without changing saved arrangement %j', async preferences => {
+    useStore.setState(preferences);
+    await mount();
+    await addAlternativeConversation();
+    viewport(390);
+    await open('left');
+    await selectAlternativeConversation();
+    expect(useStore.getState().activeConversationId).toBe('another-conversation');
+    // Check preferences separately too, so a drawer fix cannot hide a write.
+    expect(useStore.getState().hideSideMenu).toBe(preferences.hideSideMenu);
+    expect(useStore.getState().hideSideAIMenu).toBe(preferences.hideSideAIMenu);
+    expectPanes(false, true);
+    expectTab('Assistant', 'Chat');
+    expect(document.activeElement).toBe(element('#workspace-assistant [data-pane-close]'));
+    expect(element('.workspace-editor').closest('[inert]')).not.toBeNull();
+    await act(async () => {
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await tick();
+    });
+    expectPanes(false, false);
+    expect(document.activeElement).toBe(element('#toggle-right-pane'));
+    viewport(1280);
+    expectPanes(!preferences.hideSideMenu, !preferences.hideSideAIMenu);
+  });
+
+  it.each(['agent', 'completion'] as const)('opens the selected %s conversation on a phone', async type => {
+    await mount(390);
+    await addAlternativeConversation(type);
+    await open('left');
+    await selectAlternativeConversation();
+    expectPanes(false, true);
+    expect(useStore.getState().getActiveConversation()!.type).toBe(type);
+    expect(element('#workspace-assistant').textContent).toContain('Another synthetic conversation');
+  });
+
+  it('opens the assistant on desktop while retaining the library', async () => {
+    useStore.setState({ hideSideAIMenu: true });
+    await mount();
+    await addAlternativeConversation();
+    await selectAlternativeConversation();
+    expectPanes(true, true);
+    expect(useStore.getState().hideSideAIMenu).toBe(false);
+  });
+
+  it.each(['Meta', 'Macros'])('returns to Chat when a conversation is chosen after viewing %s', async view => {
+    await mount(390);
+    await addAlternativeConversation();
+    await open('right');
+    await tab('Assistant', view);
+    await close('right');
+    await open('left');
+    await selectAlternativeConversation();
+    expectPanes(false, true);
+    expectTab('Assistant', 'Chat');
+    expect(element('#workspace-assistant').textContent).toContain('Another synthetic conversation');
+  });
+
+  it('leaves the drawer and selection unchanged when generation blocks conversation selection', async () => {
+    useStore.setState({ hideSideAIMenu: true });
+    await mount(390);
+    await addAlternativeConversation();
+    await open('left');
+    await act(async () => { useStore.setState({ generating: true }); await tick(); });
+    await selectAlternativeConversation();
+    expectPanes(true, false);
+    expect(useStore.getState().activeConversationId).toBe('pane-conversation');
+    expect(useStore.getState().hideSideAIMenu).toBe(true);
+  });
+
+  it.each(layouts)('opens Chat when loading a macro on $name', async ({ width }) => {
+    useStore.setState({ hideSideAIMenu: true, prompts: [{ id: 'routing-macro', name: 'Synthetic macro', prompt: 'Synthetic prompt', config: null }] });
+    await mount(width);
+    await open('right');
+    const saved = useStore.getState().hideSideAIMenu;
+    await tab('Assistant', 'Macros');
+    const target = [...container.querySelectorAll<HTMLElement>('#workspace-assistant div')]
+      .find(item => item.textContent === 'Synthetic macro' && item.classList.contains('truncate'))!;
+    await act(async () => { target.click(); await tick(); });
+    expectPanes(width <= 1023 ? false : true, true);
+    expectTab('Assistant', 'Chat');
+    expect(useStore.getState().hideSideAIMenu).toBe(saved);
+    expect(useStore.getState().chats![0].messageCurrent.messages[0].content).toBe('Synthetic prompt');
+  });
+
+  it.each(layouts)('opens Chat when starting a macro on $name before AI execution', async ({ width }) => {
+    useStore.setState({ hideSideAIMenu: true, prompts: [{ id: 'routing-macro', name: 'Synthetic macro', prompt: 'Synthetic prompt', config: null }] });
+    await mount(width);
+    await open('right');
+    const saved = useStore.getState().hideSideAIMenu;
+    await tab('Assistant', 'Macros');
+    // Exercise the real Run handler's immediate UI transition. Hold its 100ms
+    // execution timer so this test cannot start a provider request.
+    vi.useFakeTimers();
+    try {
+      await act(async () => { element<HTMLButtonElement>('button[title="Run macro"]').click(); await Promise.resolve(); });
+      expectPanes(width <= 1023 ? false : true, true);
+      expectTab('Assistant', 'Chat');
+      expect(useStore.getState().hideSideAIMenu).toBe(saved);
+      expect(useStore.getState().getActiveConversation()!.title).toBe('Synthetic macro');
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe.each(layouts)('pane contents on $name', ({ width }) => {

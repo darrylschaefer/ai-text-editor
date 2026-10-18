@@ -8,7 +8,7 @@ import AssistantTabs from '@components/Menu/AIMenu/Header';
 import EditorAgentsToggle from '@components/Menu/DocumentMenu/EditorAgentsToggle';
 import VersionSwitcher from '@components/Document/EditorComponents/VersionSwitcher';
 import { DocumentVersion } from '@type/document';
-import { WorkspaceToolbarContext } from './WorkspaceContext';
+import { WorkspaceAssistantContext, WorkspaceToolbarContext } from './WorkspaceContext';
 import { ModalLayerContext, useModalLayer } from '@components/ModalLayer/ModalLayer';
 import Brand from './Brand';
 import { clampPaneWidth, DEFAULT_PANE_WIDTHS, fitPaneWidths, maxPaneWidth, PaneSide, PANE_DIVIDER_WIDTH, PANE_LIMITS, usePaneLayout } from './usePaneLayout';
@@ -127,6 +127,12 @@ const Workspace = () => {
     else setHideRight(!desktopHideRight);
   };
 
+  const openAssistant = useCallback(() => {
+    setActiveMenu('chat');
+    if (compact) setMobilePane('right');
+    else setHideRight(false);
+  }, [compact, setHideRight]);
+
   const toggleFocus = () => {
     if (compact) return;
     if (hideLeft && hideRight) {
@@ -228,6 +234,7 @@ const Workspace = () => {
   } as CSSProperties;
 
   return (
+    <WorkspaceAssistantContext.Provider value={openAssistant}>
     <WorkspaceToolbarContext.Provider value={toolbarTarget}>
       <div className={`workspace${dragging ? ' workspace-resizing' : ''}`} style={layoutStyle}>
         <header className="workspace-chrome">
@@ -289,6 +296,7 @@ const Workspace = () => {
         </div>
       </div>
     </WorkspaceToolbarContext.Provider>
+    </WorkspaceAssistantContext.Provider>
   );
 };
 

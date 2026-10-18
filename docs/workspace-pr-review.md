@@ -2,11 +2,11 @@
 
 Reviewed October 18, 2026. Feature checkpoint: `ccaede431fe13310a00a5690656e17cb271e5842` on `codex/unified-workspace`. Fetched base: `origin/main` at `07ebe98b3a6ab2879acfa140247d1168a91b843c`, unchanged by the fetch. No branch push, PR creation, merge, or deployment was performed.
 
-**Disposition: prepare a draft PR; keep it unready for merge.** Two integration defects were confirmed during this review. The heading contrast and other release checks already recorded in the delivery plan also remain open. Passing the existing suite is evidence for its covered behaviors, not clearance for these untested paths.
+**Disposition: prepare a draft PR; keep it unready for merge.** Two integration defects were confirmed during this review. The responsive assistant-opening finding was subsequently fixed and verified; the branded-title finding remains open. Heading contrast and the other release checks also remain open. Passing the existing suite is evidence for its covered behaviors, not clearance for untested paths.
 
 ## Required integration fixes
 
-### P2: route assistant-opening actions through the responsive workspace
+### Resolved P2: route assistant-opening actions through the responsive workspace
 
 The new workspace uses local `mobilePane` state on compact screens (`Workspace.tsx:32–36`). Existing callers still use `setHideSideAIMenu(false)`, which now controls only saved desktop visibility.
 
@@ -20,6 +20,8 @@ Confirmed reproduction with the real workspace, store, library list, and convers
 The direct call is in `src/components/Menu/DocumentMenu/ConversationButton.tsx:93`. `src/components/Menu/AIMenu/PromptLibrary/PromptButton.tsx:182` and `:941` have the same preference-writing pattern; their execution paths were inspected but not run because macro/AI execution is outside this review's reproduction.
 
 Acceptance: conversation selection opens the assistant's temporary drawer and closes the library on mobile, without saving desktop visibility. Desktop selection continues to open the assistant normally. Audit the remaining programmatic open callers using the same rule, with regression coverage at the caller/workspace boundary. Do not connect mobile actions to persistence merely to make the drawer appear.
+
+Follow-up October 18: implemented a workspace-owned open-chat action for conversation, macro, and legacy history callers. Fourteen real-caller regressions and native desktop/phone checks passed, including focus and saved-layout restoration. The complete suite now has 159 passing tests. See [implementation, evidence, and limits](workspace-assistant-opening.md). The reproduction above preserves the original review evidence.
 
 ### P2: give the workspace sole ownership of the branded browser title
 
