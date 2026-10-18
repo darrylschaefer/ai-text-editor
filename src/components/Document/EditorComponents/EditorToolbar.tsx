@@ -416,7 +416,7 @@ function EditorToolbar() {
       setShowCheckpointDialog(false);
       setCheckpointMessage('');
     };
-    
+
     const handleCreateCheckpoint = async () => {
       if (creatingRef.current) return;
       if (!checkpointMessage.trim()) {
