@@ -29,10 +29,10 @@
     },
     "dmg": {
       "title": "${productName} ${version}",
-      "icon": "dist/icon-rounded.png"
+      "icon": "public/fthr.icns"
     },
     "mac": {
-      "icon": "dist/icon-rounded.png"
+      "icon": "public/fthr.icns"
     },
     "linux": {
       "target": [
@@ -40,11 +40,11 @@
         "AppImage"
       ],
       "category": "Chat",
-      "icon": "dist/icon-rounded.png"
+      "icon": "public/fthr-desktop.png"
     },
     "win": {
       "target": "NSIS",
-      "icon": "dist/icon-rounded.png"
+      "icon": "public/favicon.ico"
     }
   },
   "dependencies": {

@@ -15,7 +15,7 @@ Scope and acceptance criteria are recorded in `docs/delivery-plan.md`. No public
 
 ## Validation
 
-- [x] `npm run check` passed locally on Windows with Node 24.19.0 and npm 11.19.0: application/test types, 189 tests in eight files, and the production build. A final production rebuild verified the row minimum-height refinement.
+- [x] `npm run check` passed locally on Windows with Node 24.19.0 and npm 11.19.0: application/test types, 189 tests in eight files, and the production build. The latest run includes the icon exports and a separate pane-state test timer cleanup fix.
 - [x] Synthetic-content browser verification covered resizing, desktop/phone transitions, drawer focus and nested dialogs, editor selection/formatting, history/checkpoint creation/preview, document/section switching, and pane close/reopen state. Evidence and limits are recorded in the `docs/workspace-*.md` validation records.
 - [x] Reviewed the complete feature diff, asset references, dependency changes, and common credential patterns.
 - [x] Fix the mobile conversation-opening/preference regression with a shared responsive action, 14 real-caller regressions, and native phone/desktop verification. Macro opening uses the same action.
@@ -24,12 +24,13 @@ Scope and acceptance criteria are recorded in `docs/delivery-plan.md`. No public
 - [x] Verify saved themes, older missing preferences, real-editor empty/untitled/legacy document states, serialization round trips, and normal browser reload behavior. See `docs/workspace-compatibility.md` for coverage and limits.
 - [x] Fix long library-label/action crowding, rename cancellation, and row action names. Six real-row regressions and native pane-size/phone checks passed; see `docs/workspace-library-rows.md`.
 - [ ] Complete the remaining visual/accessibility checks. Whole-application denied-storage startup and the intermittent published-site white screen remain separate investigations.
-- [ ] Complete install/touch and intended desktop brand artwork checks.
-- [ ] Test the built output in a browser, including asset paths.
+- [x] Complete browser/install/touch/desktop/tray icon exports, update references, and verify their formats and built asset paths. See `docs/brand-icons.md` for reproducibility and browser evidence.
+- [ ] Verify native installation and packaged desktop appearance on intended release platforms.
+- [ ] Test built-product interactions in a browser beyond the completed icon/metadata asset smoke check.
 - [ ] Attach synthetic before/after screenshots; current captures are local artifacts.
 - [ ] Latest GitHub Actions checks pass on Linux and Windows. This remains a draft until those runs and the readiness work complete.
 
-The suite passes its covered cases. Focused review probes exposed mobile-opening and branded-title defects; both are fixed with permanent regression coverage. Macro Run's immediate UI transition is tested with its execution timer held; no AI request runs. Browser verification was in the Windows in-app development browser. Other browsers, screen readers, native touch/pen hardware, and packaged desktop builds have not been certified. Existing Browserslist and large-chunk build warnings remain.
+The suite passes its covered cases. Focused review probes exposed mobile-opening and branded-title defects; both are fixed with permanent regression coverage. Macro Run's immediate UI transition is tested with its execution timer held; no AI request runs. Workspace interaction verification used the Windows in-app development browser; icon/metadata verification also loaded the production build locally. Other browsers, screen readers, native touch/pen hardware, and packaged desktop builds have not been certified. Existing Browserslist and large-chunk build warnings remain.
 
 ## Risks and rollback
 

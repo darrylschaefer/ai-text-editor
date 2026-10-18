@@ -37,7 +37,7 @@ The branding cleanup was checked on October 17, 2026, using Node 24.19.0 and npm
 - A scan of the generated JavaScript/CSS/HTML found no brand-study code or preview asset references. The four retired SVGs were absent from `dist`, and the two built Original SVGs matched their source files.
 - `git diff --check` passed. Existing Browserslist and large-chunk build warnings remain deferred.
 
-Pane interaction regression coverage is recorded in the [delivery plan](delivery-plan.md); desktop/tray/installer artwork remains open. This cleanup is a local feature-branch checkpoint, not a production release.
+Pane interaction regression coverage is recorded in the [delivery plan](delivery-plan.md). Browser, install/touch, desktop, and tray exports were completed October 18; see [asset verification and regeneration](brand-icons.md). Platform installation and packaged-app appearance still need native checks. These are local feature-branch checkpoints, not a production release.
 
 ## Browser title ownership
 
