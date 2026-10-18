@@ -33,7 +33,7 @@ vi.mock('react-scroll-to-bottom', () => ({ default: ({ children }: PropsWithChil
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 
 const initialStore = useStore.getState();
-const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+const tick = () => vi.advanceTimersByTimeAsync(0);
 const layouts = [{ name: 'desktop', width: 1280 }, { name: 'phone', width: 390 }];
 let container: HTMLDivElement;
 let modalRoot: HTMLDivElement;
@@ -131,6 +131,7 @@ function expectPanes(left: boolean, right: boolean) {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers();
   vi.clearAllMocks();
   compact = false;
   mediaListeners.clear();
@@ -150,8 +151,11 @@ beforeEach(() => {
   document.body.append(container, modalRoot);
 });
 
-afterEach(() => {
-  act(() => root?.unmount());
+afterEach(async () => {
+  // Finish deferred UI/blur work while jsdom still exists. The Macro Run
+  // checks explicitly cancel their provider-execution timer before this.
+  await act(async () => { root?.unmount(); await vi.runOnlyPendingTimersAsync(); });
+  expect(vi.getTimerCount()).toBe(0);
   root = undefined;
   container.remove();
   modalRoot.remove();
@@ -276,7 +280,6 @@ describe('programmatic assistant opening', () => {
     await tab('Assistant', 'Macros');
     // Exercise the real Run handler's immediate UI transition. Hold its 100ms
     // execution timer so this test cannot start a provider request.
-    vi.useFakeTimers();
     try {
       await act(async () => { element<HTMLButtonElement>('button[title="Run macro"]').click(); await Promise.resolve(); });
       expectPanes(width <= 1023 ? false : true, true);
@@ -286,7 +289,6 @@ describe('programmatic assistant opening', () => {
       expect(vi.getTimerCount()).toBeGreaterThan(0);
     } finally {
       vi.clearAllTimers();
-      vi.useRealTimers();
     }
   });
 });
