@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PopupModal from '@components/PopupModal';
 import useStore from '@store/store';
 import { DocumentCommit } from '@type/commit';
 import { computeEditorStateDiff, getSectionTextPreview } from '@utils/diff';
@@ -27,9 +28,9 @@ export default function CommitHistoryModal({
   const restoreCommit = useStore((state) => state.restoreCommit);
   const deleteCommit = useStore((state) => state.deleteCommit);
   const chats = useStore((state) => state.chats);
-  const currentChatIndex = useStore((state) => state.currentChatIndex);
+
   
-  const currentDoc = chats && chats[currentChatIndex] ? chats[currentChatIndex] : null;
+  const currentDoc = chats?.find(doc => doc.id === documentId) || null;
   
   useEffect(() => {
     if (isOpen && documentId) {
@@ -116,21 +117,8 @@ export default function CommitHistoryModal({
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800/30">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Version History
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            ✕
-          </button>
-        </div>
-        
+    <PopupModal title="Version History" setIsModalOpen={() => onClose()} fullWidth cancelButton={false}>
+      <div className="w-full max-h-[70vh] flex flex-col">
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
@@ -165,8 +153,8 @@ export default function CommitHistoryModal({
                   key={commit.commit_id}
                   className="border border-gray-200 dark:border-gray-800/30 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           commit.actor === 'user'
@@ -179,7 +167,7 @@ export default function CommitHistoryModal({
                           {formatDate(commit.created_at)}
                         </span>
                       </div>
-                      <p className="text-gray-900 dark:text-gray-100 font-medium mb-2">
+                      <p className="text-gray-900 dark:text-gray-100 font-medium mb-2 break-words">
                         {commit.message}
                       </p>
                       {commit.snapshot.textPreview && (
@@ -192,7 +180,7 @@ export default function CommitHistoryModal({
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-2 ml-4">
+                    <div className="flex flex-wrap gap-2 sm:ml-4">
                       <button
                         onClick={() => handlePreviewDiff(commit)}
                         className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors"
@@ -219,6 +207,6 @@ export default function CommitHistoryModal({
           )}
         </div>
       </div>
-    </div>
+    </PopupModal>
   );
 }

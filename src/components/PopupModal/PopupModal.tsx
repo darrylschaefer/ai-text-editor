@@ -14,6 +14,7 @@ const PopupModal = ({
   cancelButton = true,
   children,
   fullWidth = false,
+  initialFocus,
 }: {
   title?: string | React.ReactElement;
   message?: string;
@@ -24,6 +25,7 @@ const PopupModal = ({
   cancelButton?: boolean;
   children?: React.ReactElement;
   fullWidth?: boolean;
+  initialFocus?: string;
 }) => {
   const modalRoot = document.getElementById('modal-root');
   const { t } = useTranslation();
@@ -40,7 +42,7 @@ const PopupModal = ({
     if (handleClickBackdrop) handleClickBackdrop();
     else _handleClose();
   };
-  const scope = useModalLayer({ enabled: !!modalRoot, rootRef: dialogRef, onDismiss: _handleClose });
+  const scope = useModalLayer({ enabled: !!modalRoot, rootRef: dialogRef, onDismiss: _handleClose, initialFocus });
 
   if (modalRoot) {
     return ReactDOM.createPortal(

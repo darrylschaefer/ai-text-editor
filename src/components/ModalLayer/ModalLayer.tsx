@@ -99,7 +99,13 @@ function createManager(doc: Document) {
       redirecting = false;
     }
   };
-  const observer = new MutationObserver(isolate);
+  const observer = new MutationObserver(() => {
+    isolate();
+    const layer = top();
+    // Replacing a dialog view can remove its focused control without firing
+    // focusin (the browser falls back to body). Keep that transition in scope.
+    if (layer?.root && !layer.root.contains(doc.activeElement)) focusInside(layer);
+  });
   return {
     add(layer: Layer) {
       restore();

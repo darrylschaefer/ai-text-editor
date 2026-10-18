@@ -140,10 +140,9 @@ const Workspace = () => {
   };
 
   const changeVersion = async (version: DocumentVersion) => {
-    if (currentDoc && version !== (currentDoc.currentVersion || 'Draft')) {
-      await setDocumentVersion(currentDoc.id, version);
-      useStore.getState().setForceEditorRefresh(!useStore.getState().forceEditorRefresh);
-    }
+    // Even the currently selected button can supersede a pending switch.
+    // The keyed document editor loads the winning section without a refresh.
+    if (currentDoc) await setDocumentVersion(currentDoc.id, version);
   };
 
   const resizePane = (side: PaneSide, requested: number) => {

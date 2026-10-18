@@ -13,6 +13,7 @@ Recorded October 17, 2026, from the review of upstream commit fe696e6bab77e14792
 - [ ] Triage dependency advisories by actual usage and exposure, remove unused dependencies, and update retained tooling and desktop runtime.
 - [ ] Add a runnable test command and CI; cover persistence failures, permission rejection, stale proposals, stable IDs, and backup restoration.
 - [ ] Consolidate repeated tool metadata, AI submission paths, and large configuration components.
+- [ ] Audit `EditorSelection` command registration and DOM listener cleanup over long editing sessions. Its selection command is currently registered during render; the toolbar hardening work identified this follow-up on October 18, 2026. Add lifecycle coverage before changing the overlay implementation.
 - [ ] Clarify background embedding behavior and optional cloud synchronization. Exclude API credentials from cloud serialization; avoid private shared secrets in VITE_* client configuration.
 - [ ] Measure typing, persistence, retrieval, embedding work, and recovery performance with larger writing projects.
 - [x] Correct Windows Vite filesystem aliases. Completed as a prerequisite for the local design preview; the production build now succeeds on Windows.

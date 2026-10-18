@@ -8,6 +8,7 @@ import { DocumentVersion } from '@type/document';
 import { SaveStatus } from '@hooks/useAutosave';
 import { useWorkspaceToolbar } from '@components/Workspace/WorkspaceContext';
 import CommitHistoryModal from './CommitHistoryModal';
+import PopupModal from '@components/PopupModal';
 
 import {
   CAN_REDO_COMMAND,
@@ -18,10 +19,12 @@ import {
   FORMAT_TEXT_COMMAND,
   FORMAT_ELEMENT_COMMAND,
   $getSelection,
+  $setSelection,
   $isRangeSelection,
   $createParagraphNode,
   $getNodeByKey,
-  RangeSelection
+  RangeSelection,
+  LexicalCommand
 } from "lexical";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import {
@@ -34,19 +37,18 @@ import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
   REMOVE_LIST_COMMAND,
-  $isListNode, insertList
+  $isListNode
 } from "@lexical/list";
 import { createPortal } from "react-dom";
 import {
-  $isHeadingNode
+  $isHeadingNode, $createHeadingNode, $createQuoteNode
 } from "@lexical/rich-text";
-import { $createBlockIdHeadingNode, $createBlockIdQuoteNode, $createBlockIdParagraphNode } from "@nodes/BlockIdNodes";
 import {
   $isCodeNode,
+  $createCodeNode,
   getDefaultCodeLanguage,
   getCodeLanguages
 } from "@lexical/code";
-import { $createBlockIdCodeNode } from "@nodes/BlockIdNodes";
 
 const LowPriority = 1;
 
@@ -77,12 +79,16 @@ function getSelectedNode(selection: RangeSelection) {
     editor,
     blockType,
     toolbarRef,
-    setShowBlockOptionsDropDown
+    setShowBlockOptionsDropDown,
+    restoreSelection,
+    menuId
   }: {
     editor: any;
     blockType: string;
     toolbarRef: any;
     setShowBlockOptionsDropDown: any;
+    restoreSelection: () => void;
+    menuId: string;
     }) {
     const dropDownRef = useRef<HTMLDivElement>(null);
   
@@ -92,9 +98,12 @@ function getSelectedNode(selection: RangeSelection) {
   
       if (toolbar !== null && dropDown !== null) {
         const anchor = toolbar.querySelector('[aria-label="Formatting Options"]') || toolbar;
-        const { bottom, left } = anchor.getBoundingClientRect();
-        dropDown.style.top = `${bottom + 6}px`;
-        dropDown.style.left = `${left}px`;
+        const { bottom, top, left } = anchor.getBoundingClientRect();
+        const bounds = dropDown.getBoundingClientRect();
+        dropDown.style.position = 'fixed';
+        dropDown.style.top = `${bottom + bounds.height + 6 <= window.innerHeight ? bottom + 6 : Math.max(6, top - bounds.height - 6)}px`;
+        dropDown.style.left = `${Math.max(6, Math.min(left, window.innerWidth - bounds.width - 6))}px`;
+        dropDown.querySelector<HTMLButtonElement>('button')?.focus();
       }
     }, [dropDownRef, toolbarRef]);
   
@@ -119,14 +128,25 @@ function getSelectedNode(selection: RangeSelection) {
         };
       }
     }, [dropDownRef, setShowBlockOptionsDropDown, toolbarRef]);
+
+    useEffect(() => {
+      const close = () => setShowBlockOptionsDropDown(false);
+      window.addEventListener('resize', close);
+      document.addEventListener('scroll', close, true);
+      return () => {
+        window.removeEventListener('resize', close);
+        document.removeEventListener('scroll', close, true);
+      };
+    }, [setShowBlockOptionsDropDown]);
   
     const formatParagraph = () => {
       if (blockType !== "paragraph") {
         editor.update(() => {
+          restoreSelection();
           const selection = $getSelection();
   
           if ($isRangeSelection(selection)) {
-            $wrapNodes(selection, () => $createBlockIdParagraphNode());
+            $wrapNodes(selection, () => $createParagraphNode());
           }
         });
       }
@@ -136,10 +156,11 @@ function getSelectedNode(selection: RangeSelection) {
     const formatLargeHeading = () => {
       if (blockType !== "h1") {
         editor.update(() => {
+          restoreSelection();
           const selection = $getSelection();
   
           if ($isRangeSelection(selection)) {
-            $wrapNodes(selection, () => $createBlockIdHeadingNode("h1"));
+            $wrapNodes(selection, () => $createHeadingNode("h1"));
           }
         });
       }
@@ -149,52 +170,43 @@ function getSelectedNode(selection: RangeSelection) {
     const formatSmallHeading = () => {
       if (blockType !== "h2") {
         editor.update(() => {
+          restoreSelection();
           const selection = $getSelection();
   
           if ($isRangeSelection(selection)) {
-            $wrapNodes(selection, () => $createBlockIdHeadingNode("h2"));
+            $wrapNodes(selection, () => $createHeadingNode("h2"));
           }
         });
       }
       setShowBlockOptionsDropDown(false);
     };
     
-    editor.registerCommand(INSERT_UNORDERED_LIST_COMMAND, () => {
-      insertList(editor, 'bullet');
-      return true;
-  }, LowPriority);
-  
-  editor.registerCommand(INSERT_ORDERED_LIST_COMMAND, () => {
-    insertList(editor, 'number');
-    return true;
-  }, LowPriority);
-  
-  
     const formatBulletList = () => {
-      if (blockType !== "ul") {
-        editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND);
-      } else {
-        editor.dispatchCommand(REMOVE_LIST_COMMAND);
-      }
+      editor.update(() => {
+        restoreSelection();
+        if (blockType !== "ul") editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND);
+        else editor.dispatchCommand(REMOVE_LIST_COMMAND);
+      });
       setShowBlockOptionsDropDown(false);
     };
   
     const formatNumberedList = () => {
-      if (blockType !== "ol") {
-        editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND);
-      } else {
-        editor.dispatchCommand(REMOVE_LIST_COMMAND);
-      }
+      editor.update(() => {
+        restoreSelection();
+        if (blockType !== "ol") editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND);
+        else editor.dispatchCommand(REMOVE_LIST_COMMAND);
+      });
       setShowBlockOptionsDropDown(false);
     };
   
     const formatQuote = () => {
       if (blockType !== "quote") {
         editor.update(() => {
+          restoreSelection();
           const selection = $getSelection();
   
           if ($isRangeSelection(selection)) {
-            $wrapNodes(selection, () => $createBlockIdQuoteNode());
+            $wrapNodes(selection, () => $createQuoteNode());
           }
         });
       }
@@ -204,10 +216,11 @@ function getSelectedNode(selection: RangeSelection) {
     const formatCode = () => {
       if (blockType !== "code") {
         editor.update(() => {
+          restoreSelection();
           const selection = $getSelection();
   
           if ($isRangeSelection(selection)) {
-            $wrapNodes(selection, () => $createBlockIdCodeNode());
+            $wrapNodes(selection, () => $createCodeNode());
           }
         });
       }
@@ -215,7 +228,12 @@ function getSelectedNode(selection: RangeSelection) {
     };
   
     return (
-      <div className="dropdown" ref={dropDownRef}>
+      <div className="dropdown" ref={dropDownRef} id={menuId} role="group" aria-label="Block formatting options"
+        onBlur={event => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node) &&
+            !(toolbarRef.current as HTMLDivElement | null)?.contains(event.relatedTarget as Node)) setShowBlockOptionsDropDown(false);
+        }}
+        onMouseDown={event => { if (event.button === 0) event.preventDefault(); }}>
         <button className="item" onClick={formatParagraph}>
           <span className="icon paragraph" />
           <span className="text">Normal</span>
@@ -360,6 +378,26 @@ function EditorToolbar() {
     const [isCreatingCheckpoint, setIsCreatingCheckpoint] = useState(false);
     const historyMenuRef = useRef<HTMLDivElement>(null);
     const historyMenuId = useId();
+    const blockMenuId = useId();
+    const historyTriggerRef = useRef<HTMLButtonElement>(null);
+    const selectionRef = useRef<RangeSelection | null>(null);
+    const creatingRef = useRef(false);
+    const checkpointGeneration = useRef(0);
+    const aliveRef = useRef(true);
+    useEffect(() => {
+      aliveRef.current = true;
+      return () => { aliveRef.current = false; };
+    }, []);
+
+    const restoreSelection = useCallback(() => {
+      if ($getSelection() === null && selectionRef.current) {
+        const saved = selectionRef.current;
+        if ($getNodeByKey(saved.anchor.key) && $getNodeByKey(saved.focus.key)) $setSelection(saved.clone());
+      }
+    }, []);
+    const dispatchWithSelection = useCallback(<T,>(command: LexicalCommand<T>, payload: T) => {
+      editor.update(() => { restoreSelection(); editor.dispatchCommand(command, payload); });
+    }, [editor, restoreSelection]);
     
     const chats = useStore((state) => state.chats);
     const currentChatIndex = useStore((state) => state.currentChatIndex);
@@ -373,8 +411,14 @@ function EditorToolbar() {
     
     const currentDoc = chats && chats[currentChatIndex] ? chats[currentChatIndex] : null;
     const currentVersion: DocumentVersion = currentDoc?.currentVersion || 'Draft';
+    const closeCheckpoint = () => {
+      checkpointGeneration.current += 1;
+      setShowCheckpointDialog(false);
+      setCheckpointMessage('');
+    };
     
     const handleCreateCheckpoint = async () => {
+      if (creatingRef.current) return;
       if (!checkpointMessage.trim()) {
         alert('Please enter a message for this checkpoint.');
         return;
@@ -382,6 +426,8 @@ function EditorToolbar() {
       
       if (!currentDoc) return;
       
+      creatingRef.current = true;
+      const generation = ++checkpointGeneration.current;
       setIsCreatingCheckpoint(true);
       
       try {
@@ -393,9 +439,11 @@ function EditorToolbar() {
         if (autosaveFlush) {
           await autosaveFlush();
         }
+        if (!aliveRef.current || generation !== checkpointGeneration.current) return;
         
         // Create commit
         await createUserCommit(currentDoc.id, checkpointMessage.trim(), stateJson);
+        if (!aliveRef.current || generation !== checkpointGeneration.current) return;
         
         // Show success toast
         setToastMessage('Checkpoint created successfully');
@@ -403,18 +451,37 @@ function EditorToolbar() {
         setToastStatus('success');
         
         // Reset
-        setCheckpointMessage('');
-        setShowCheckpointDialog(false);
+        closeCheckpoint();
         setShowHistoryMenu(false);
       } catch (error) {
         console.error('Failed to create checkpoint:', error);
+        if (!aliveRef.current || generation !== checkpointGeneration.current) return;
         setToastMessage('Failed to create checkpoint');
         setToastShow(true);
         setToastStatus('error');
       } finally {
-        setIsCreatingCheckpoint(false);
+        creatingRef.current = false;
+        if (aliveRef.current) setIsCreatingCheckpoint(false);
       }
     };
+
+    useEffect(() => {
+      if (!showBlockOptionsDropDown && !showHistoryMenu) return;
+      const close = (event: globalThis.KeyboardEvent) => {
+        if (event.key !== 'Escape' || event.defaultPrevented) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (showBlockOptionsDropDown) {
+          setShowBlockOptionsDropDown(false);
+          (toolbarRef.current as HTMLDivElement | null)?.querySelector<HTMLButtonElement>('[aria-label="Formatting Options"]')?.focus();
+        } else {
+          setShowHistoryMenu(false);
+          historyTriggerRef.current?.focus();
+        }
+      };
+      document.addEventListener('keydown', close);
+      return () => document.removeEventListener('keydown', close);
+    }, [showBlockOptionsDropDown, showHistoryMenu]);
 
     // Close history menu when clicking outside
     useEffect(() => {
@@ -436,6 +503,7 @@ function EditorToolbar() {
       const selection = $getSelection();
   
       if ($isRangeSelection(selection)) {
+        selectionRef.current = selection.clone();
         const anchorNode = selection.anchor.getNode();
         const element =
           anchorNode.getKey() === "root"
@@ -539,7 +607,9 @@ function EditorToolbar() {
   
     const toolbar = (
       <div className="workspace-formatting-toolbar" ref={toolbarRef} role="toolbar" aria-label="Document formatting">
-        <div className="workspace-formatting-controls">
+        <div className="workspace-formatting-controls" onMouseDown={event => {
+          if (event.button === 0 && (event.target as HTMLElement).closest('button')) event.preventDefault();
+        }}>
         <button
           disabled={!canUndo}
           onClick={() => {
@@ -571,10 +641,13 @@ function EditorToolbar() {
           <>
             <button
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
-              onClick={() =>
-                setShowBlockOptionsDropDown(!showBlockOptionsDropDown)
-              }
+              onClick={() => {
+                setShowHistoryMenu(false);
+                setShowBlockOptionsDropDown(!showBlockOptionsDropDown);
+              }}
               aria-label="Formatting Options"
+              aria-expanded={showBlockOptionsDropDown}
+              aria-controls={showBlockOptionsDropDown ? blockMenuId : undefined}
             >
   
             {blockType === "paragraph" ? (
@@ -653,6 +726,8 @@ function EditorToolbar() {
                   blockType={blockType}
                   toolbarRef={toolbarRef}
                   setShowBlockOptionsDropDown={setShowBlockOptionsDropDown}
+                  restoreSelection={restoreSelection}
+                  menuId={blockMenuId}
                 />,
                 document.body
               )}
@@ -673,7 +748,7 @@ function EditorToolbar() {
           <>
             <button
               onClick={() => {
-                editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold");
+                dispatchWithSelection(FORMAT_TEXT_COMMAND, "bold");
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Format Bold"
@@ -683,7 +758,7 @@ function EditorToolbar() {
             </button>
             <button
               onClick={() => {
-                editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic");
+                dispatchWithSelection(FORMAT_TEXT_COMMAND, "italic");
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Format Italics"
@@ -693,7 +768,7 @@ function EditorToolbar() {
             </button>
             <button
               onClick={() => {
-                editor.dispatchCommand(FORMAT_TEXT_COMMAND, "underline");
+                dispatchWithSelection(FORMAT_TEXT_COMMAND, "underline");
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Format Underline"
@@ -703,7 +778,7 @@ function EditorToolbar() {
             </button>
             <button
               onClick={() => {
-                editor.dispatchCommand(FORMAT_TEXT_COMMAND, "strikethrough");
+                dispatchWithSelection(FORMAT_TEXT_COMMAND, "strikethrough");
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Format Strikethrough"
@@ -713,7 +788,7 @@ function EditorToolbar() {
             </button>
             <button
               onClick={() => {
-                editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "left");
+                dispatchWithSelection(FORMAT_ELEMENT_COMMAND, "left");
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Left Align"
@@ -722,7 +797,7 @@ function EditorToolbar() {
             </button>
             <button
               onClick={() => {
-                editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "center");
+                dispatchWithSelection(FORMAT_ELEMENT_COMMAND, "center");
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Center Align"
@@ -731,7 +806,7 @@ function EditorToolbar() {
             </button>
             <button
               onClick={() => {
-                editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "right");
+                dispatchWithSelection(FORMAT_ELEMENT_COMMAND, "right");
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Right Align"
@@ -740,7 +815,7 @@ function EditorToolbar() {
             </button>
             <button
               onClick={() => {
-                editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "justify");
+                dispatchWithSelection(FORMAT_ELEMENT_COMMAND, "justify");
               }}
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               aria-label="Justify Align"
@@ -759,7 +834,8 @@ function EditorToolbar() {
           <div className="relative" ref={historyMenuRef}>
             <button
               type="button"
-              onClick={() => setShowHistoryMenu(!showHistoryMenu)}
+              ref={historyTriggerRef}
+              onClick={() => { setShowBlockOptionsDropDown(false); setShowHistoryMenu(!showHistoryMenu); }}
               className="workspace-history-button"
               title="Version history"
               aria-label="Version history"
@@ -773,6 +849,7 @@ function EditorToolbar() {
               <div id={historyMenuId} role="group" aria-label="Version history actions" className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-800/30 z-50">
                 <button
                   onClick={() => {
+                    historyTriggerRef.current?.focus();
                     setShowCheckpointDialog(true);
                     setShowHistoryMenu(false);
                   }}
@@ -786,6 +863,7 @@ function EditorToolbar() {
                 </button>
                 <button
                   onClick={() => {
+                    historyTriggerRef.current?.focus();
                     setShowCommitHistory(true);
                     setShowHistoryMenu(false);
                   }}
@@ -810,11 +888,9 @@ function EditorToolbar() {
       )}
       {/* Checkpoint Dialog */}
       {showCheckpointDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Create Checkpoint
-            </h3>
+        <PopupModal title="Create Checkpoint" cancelButton={false} initialFocus='[aria-label="Checkpoint message"]'
+          setIsModalOpen={closeCheckpoint}>
+          <div className="w-full max-w-md p-6">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Save a snapshot of your document at this point in time. You can restore it later.
             </p>
@@ -822,24 +898,20 @@ function EditorToolbar() {
               type="text"
               value={checkpointMessage}
               onChange={(e) => setCheckpointMessage(e.target.value)}
+              aria-label="Checkpoint message"
               placeholder="Checkpoint message (e.g., 'Before major rewrite')"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
+                  e.preventDefault();
                   handleCreateCheckpoint();
-                } else if (e.key === 'Escape') {
-                  setShowCheckpointDialog(false);
-                  setCheckpointMessage('');
                 }
               }}
               autoFocus
             />
             <div className="flex gap-2 justify-end">
               <button
-                onClick={() => {
-                  setShowCheckpointDialog(false);
-                  setCheckpointMessage('');
-                }}
+                onClick={closeCheckpoint}
                 className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                 disabled={isCreatingCheckpoint}
               >
@@ -854,7 +926,7 @@ function EditorToolbar() {
               </button>
             </div>
           </div>
-        </div>
+        </PopupModal>
       )}
       {/* <div>
         <ActionBar />

@@ -31,6 +31,8 @@ The test runner uses a separate configuration so browser/WASM build plugins are 
 
 Workspace visibility tests use the pinned jsdom development dependency to mount the real pane controls. They substitute document/AI children and a small observable preference store, so these tests do not read personal documents, use IndexedDB, or call paid APIs. Revision-history tests keep the Node environment. Component tests do not replace browser layout and accessibility checks.
 
+Editor-toolbar integration tests mount the real editor, autosave hook, and document slice with synthetic documents. Commit storage and background indexing are replaced in memory. The test environment enables Lexical's development assertions so incompatible node registrations fail in CI as well as in the Vite preview. Test selection geometry is stubbed; verify native selection, focus, and popup layout in the browser too.
+
 The initial suite exercises revision-history utilities, including captured content, inserted-block undo operations, snapshot thresholds, and snapshot isolation. Passing this suite does not prove full document persistence, every undo operation, AI tool permissions, or UI behavior. For example, the legacy deletion-undo test only checks that the result is an array; exact restoration needs a dedicated fix and regression test. Add browser regression tests with the workspace changes.
 
 Tests should use synthetic content and run without paid AI calls. Cover behavior that can break for a user. Do not weaken an assertion or skip a failing test merely to make CI green.
