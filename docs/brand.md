@@ -37,4 +37,15 @@ The branding cleanup was checked on October 17, 2026, using Node 24.19.0 and npm
 - A scan of the generated JavaScript/CSS/HTML found no brand-study code or preview asset references. The four retired SVGs were absent from `dist`, and the two built Original SVGs matched their source files.
 - `git diff --check` passed. Existing Browserslist and large-chunk build warnings remain deferred.
 
-Pane interaction regression coverage and desktop/tray/installer artwork remain open in the [delivery plan](delivery-plan.md). This cleanup is a local feature-branch checkpoint, not a production release.
+Pane interaction regression coverage is recorded in the [delivery plan](delivery-plan.md); desktop/tray/installer artwork remains open. This cleanup is a local feature-branch checkpoint, not a production release.
+
+## Browser title ownership
+
+Verified October 18, 2026. The workspace is the sole browser-title owner. Removed the older document-list assignment that stripped the fthr suffix when switching from Agents to Documents. The list's folder-expansion logic is unchanged.
+
+- Ten new regression cases cover repeated desktop/phone library view changes, real document selection and inline rename, title changes while the library is hidden, missing/empty/unavailable/untitled document fallbacks, and active-folder expansion. Five failed before the fix; all ten pass afterward. The tests use the real workspace, library, and store with the existing editor/network boundaries mocked.
+- `npm run check` passed both TypeScript projects, all 169 tests in seven files, and the production build on Windows with Node 24.19.0 and npm 11.19.0. Existing Browserslist and large-chunk warnings remain deferred.
+- In the native in-app development browser, disposable documents on port 5174 retained `<document title> — fthr` through Agents/Documents switching, document selection, inline rename to `Title check`, and another library view change. The document text remained unchanged. The screenshot `fthr-browser-title.jpg` is saved outside the checkout.
+- The temporary browser tab and server were closed. The original preview on port 5173 remains running. No AI request, branch push, or deployment was performed.
+
+Phone title behavior and no-document fallbacks have component coverage; this step did not repeat native phone checks or certify broader preference compatibility, production-output browsing, or platform icon packaging. Those release checks remain in the delivery plan.

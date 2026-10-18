@@ -351,6 +351,92 @@ describe.each(layouts)('pane contents on $name', ({ width }) => {
   });
 });
 
+describe('branded browser title', () => {
+  it.each(layouts)('retains the brand through library view remounts on $name', async ({ width }) => {
+    await mount(width);
+    expect(document.title).toBe('Synthetic pane document — fthr');
+    await open('left');
+    for (let cycle = 0; cycle < 2; cycle++) {
+      await tab('Library', 'Documents');
+      expect(document.title).toBe('Synthetic pane document — fthr');
+      await tab('Library', 'Agents');
+      expect(document.title).toBe('Synthetic pane document — fthr');
+    }
+  });
+
+  it('updates the branded title when selecting a document from the real list', async () => {
+    useStore.setState({ chats: [fixtureDocument(), { ...fixtureDocument(), id: 'second-document', title: 'Second document' }] });
+    await mount();
+    await tab('Library', 'Documents');
+    const target = [...container.querySelectorAll<HTMLAnchorElement>('#workspace-library a')]
+      .find(link => link.textContent?.trim() === 'Second document')!;
+    await act(async () => { target.click(); await tick(); });
+    expect(useStore.getState().currentChatIndex).toBe(1);
+    expect(document.title).toBe('Second document — fthr');
+    expect(element('.workspace-document-title').textContent).toBe('Second document');
+  });
+
+  it('retains the brand after an inline rename and a library view change', async () => {
+    await mount();
+    await tab('Library', 'Documents');
+    const target = [...container.querySelectorAll<HTMLAnchorElement>('#workspace-library a')]
+      .find(link => link.textContent?.trim() === 'Synthetic pane document')!;
+    await act(async () => { target.querySelector('button')!.click(); await tick(); });
+    await enter('#workspace-library input[maxlength="12"]', 'Notes — 2');
+    await act(async () => {
+      element('#workspace-library input[maxlength="12"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      await tick();
+    });
+    expect(useStore.getState().chats![0].title).toBe('Notes — 2');
+    expect(document.title).toBe('Notes — 2 — fthr');
+    await tab('Library', 'Agents');
+    await tab('Library', 'Documents');
+    expect(document.title).toBe('Notes — 2 — fthr');
+  });
+
+  it('updates the title while the library is closed', async () => {
+    useStore.setState({ hideSideMenu: true });
+    await mount();
+    await act(async () => {
+      useStore.getState().setChats([{ ...fixtureDocument(), title: 'Renamed elsewhere' }]);
+      await tick();
+    });
+    expect(element('#workspace-library').hidden).toBe(true);
+    expect(document.title).toBe('Renamed elsewhere — fthr');
+  });
+
+  it.each([
+    { name: 'no loaded documents', chats: undefined, currentChatIndex: -1 },
+    { name: 'an empty list', chats: [], currentChatIndex: 0 },
+    { name: 'an unavailable active index', chats: [fixtureDocument()], currentChatIndex: 99 },
+  ])('keeps the fallback title with $name', async state => {
+    useStore.setState({ chats: state.chats, currentChatIndex: state.currentChatIndex });
+    await mount();
+    expect(document.title).toBe('fthr — A place for your words');
+    await tab('Library', 'Documents');
+    expect(document.title).toBe('fthr — A place for your words');
+  });
+
+  it('keeps the fallback title for an untitled active document', async () => {
+    useStore.setState({ chats: [{ ...fixtureDocument(), title: '' }] });
+    await mount();
+    await tab('Library', 'Documents');
+    expect(document.title).toBe('fthr — A place for your words');
+    expect(element('.workspace-document-title').textContent).toBe('Untitled document');
+  });
+
+  it('still expands the active document folder when Documents mounts', async () => {
+    useStore.setState({ chats: [{ ...fixtureDocument(), folder: 'draft-folder' }],
+      folders: { 'draft-folder': { id: 'draft-folder', name: 'Drafts', expanded: false, order: 0 } } });
+    await mount();
+    expect(useStore.getState().folders['draft-folder'].expanded).toBe(false);
+    await tab('Library', 'Documents');
+    expect(useStore.getState().folders['draft-folder'].expanded).toBe(true);
+    expect(element('#workspace-library').textContent).toContain('Synthetic pane document');
+    expect(document.title).toBe('Synthetic pane document — fthr');
+  });
+});
+
 describe('Focus mode restores the desktop arrangement', () => {
   it.each([
     { name: 'both panes', left: true, right: true },

@@ -2,7 +2,7 @@
 
 Reviewed October 18, 2026. Feature checkpoint: `ccaede431fe13310a00a5690656e17cb271e5842` on `codex/unified-workspace`. Fetched base: `origin/main` at `07ebe98b3a6ab2879acfa140247d1168a91b843c`, unchanged by the fetch. No branch push, PR creation, merge, or deployment was performed.
 
-**Disposition: prepare a draft PR; keep it unready for merge.** Two integration defects were confirmed during this review. The responsive assistant-opening finding was subsequently fixed and verified; the branded-title finding remains open. Heading contrast and the other release checks also remain open. Passing the existing suite is evidence for its covered behaviors, not clearance for untested paths.
+**Disposition: prepare a draft PR; keep it unready for merge.** Two integration defects were confirmed during this review. Both the responsive assistant-opening and branded-title findings were subsequently fixed and verified. Heading contrast and the other release checks remain open. Passing the existing suite is evidence for its covered behaviors, not clearance for untested paths.
 
 ## Required integration fixes
 
@@ -21,15 +21,17 @@ The direct call is in `src/components/Menu/DocumentMenu/ConversationButton.tsx:9
 
 Acceptance: conversation selection opens the assistant's temporary drawer and closes the library on mobile, without saving desktop visibility. Desktop selection continues to open the assistant normally. Audit the remaining programmatic open callers using the same rule, with regression coverage at the caller/workspace boundary. Do not connect mobile actions to persistence merely to make the drawer appear.
 
-Follow-up October 18: implemented a workspace-owned open-chat action for conversation, macro, and legacy history callers. Fourteen real-caller regressions and native desktop/phone checks passed, including focus and saved-layout restoration. The complete suite now has 159 passing tests. See [implementation, evidence, and limits](workspace-assistant-opening.md). The reproduction above preserves the original review evidence.
+Follow-up October 18: implemented a workspace-owned open-chat action for conversation, macro, and legacy history callers. Fourteen real-caller regressions and native desktop/phone checks passed, including focus and saved-layout restoration. The complete suite at that checkpoint had 159 passing tests. See [implementation, evidence, and limits](workspace-assistant-opening.md). The reproduction above preserves the original review evidence.
 
-### P2: give the workspace sole ownership of the branded browser title
+### Resolved P2: give the workspace sole ownership of the branded browser title
 
-`Workspace.tsx:90–92` sets `<document title> — fthr` when the active document title changes. The older `DocumentList.tsx:109` effect also writes `document.title`, using only the document name.
+At the reviewed checkpoint, `Workspace.tsx:90–92` sets `<document title> — fthr` when the active document title changes. The older `DocumentList.tsx:109` effect also writes `document.title`, using only the document name.
 
 Confirmed reproduction: start in the Agents library view with the branded title, then select Documents. Mounting DocumentList changes `Synthetic pane document — fthr` to `Synthetic pane document`; the workspace's title dependency has not changed, so it does not restore the suffix.
 
 Acceptance: use one title owner; retain the suffix through library view changes and document selection/rename, and keep the no-document fallback. Leave the document list's folder-expansion behavior intact.
+
+Follow-up October 18: removed only the competing document-list title assignment, retaining its folder-expansion logic. Ten permanent regression cases cover the title and folder behavior; five reproduced failures before the fix. Native browser selection, rename, and library-view checks passed with disposable content. Both type checks, all 169 tests, and the production build passed. See [title validation and limits](brand.md#browser-title-ownership). The reproduction above preserves the original review evidence.
 
 ## Existing release findings
 
