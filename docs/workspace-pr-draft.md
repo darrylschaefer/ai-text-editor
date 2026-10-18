@@ -15,13 +15,14 @@ Scope and acceptance criteria are recorded in `docs/delivery-plan.md`. No public
 
 ## Validation
 
-- [x] `npm run check` passed locally on Windows with Node 24.19.0 and npm 11.19.0: application/test types, 169 tests in seven files, and the production build.
+- [x] `npm run check` passed locally on Windows with Node 24.19.0 and npm 11.19.0: application/test types, 183 tests in eight files, and the production build.
 - [x] Synthetic-content browser verification covered resizing, desktop/phone transitions, drawer focus and nested dialogs, editor selection/formatting, history/checkpoint creation/preview, document/section switching, and pane close/reopen state. Evidence and limits are recorded in the `docs/workspace-*.md` validation records.
 - [x] Reviewed the complete feature diff, asset references, dependency changes, and common credential patterns.
 - [x] Fix the mobile conversation-opening/preference regression with a shared responsive action, 14 real-caller regressions, and native phone/desktop verification. Macro opening uses the same action.
 - [x] Remove the competing browser-title updater, preserving folder expansion. Ten regression cases and native selection/rename/library-view checks passed; see `docs/brand.md`.
 - [x] Fix editor heading colors and verify h1–h6 in both themes on desktop/phone, preserving content and typography. See `docs/workspace-heading-contrast.md`.
-- [ ] Complete the remaining visual/accessibility and preference compatibility criteria.
+- [x] Verify saved themes, older missing preferences, real-editor empty/untitled/legacy document states, serialization round trips, and normal browser reload behavior. See `docs/workspace-compatibility.md` for coverage and limits.
+- [ ] Fix long library-label/action crowding and complete the remaining visual/accessibility checks. Whole-application denied-storage startup and the intermittent published-site white screen remain separate investigations.
 - [ ] Complete install/touch and intended desktop brand artwork checks.
 - [ ] Test the built output in a browser, including asset paths.
 - [ ] Attach synthetic before/after screenshots; current captures are local artifacts.
