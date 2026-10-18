@@ -494,7 +494,7 @@ const AgentChat = () => {
       <div className='flex flex-col h-full bg-white dark:bg-gray-950'>
         {/* Header - Compact for sidebar */}
         <div className='flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-800/30 bg-white dark:bg-gray-950'>
-          <div className='w-6 h-6 rounded-full bg-purple-500 flex-shrink-0' />
+          <div className='fthr-ai-avatar w-6 h-6 rounded-full flex-shrink-0' />
           <div className='flex-1 min-w-0'>
             <div className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
               {displayTitle}
@@ -536,7 +536,7 @@ const AgentChat = () => {
     <div className='flex flex-col h-full bg-white dark:bg-gray-950 relative'>
       {/* Header - Compact for sidebar */}
       <div className='flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-800/30 bg-white dark:bg-gray-950 flex-shrink-0'>
-        <div className={`w-6 h-6 rounded-full ${iconColor} flex-shrink-0`} />
+        <div className={`fthr-ai-avatar w-6 h-6 rounded-full ${iconColor} flex-shrink-0`} />
         <div className='flex-1 min-w-0'>
           <div className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
             {displayTitle}

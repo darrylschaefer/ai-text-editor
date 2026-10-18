@@ -13,6 +13,8 @@ const alias = Object.fromEntries(
 export default defineConfig({
   resolve: { alias },
   test: {
+    // Lexical's development invariants must run here, as they do in Vite.
+    env: { NODE_ENV: 'development' },
     environment: 'node',
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     allowOnly: !process.env.CI,

@@ -1,0 +1,92 @@
+# Delivering the fthr workspace changes
+
+Decision recorded October 17, 2026: keep the Original fthr identity (gradient quill, italic serif wordmark, neutral black surfaces). Ink and Prism were design studies, not additional product settings.
+
+## Current state
+
+- Product work remains local on `codex/unified-workspace`. Initial checkpoint commits are `507243e` (Windows Vite alias fix) and `bf3a070` (unified workspace and branding studies). The documentation is checked in. The design branch has not been pushed and has no pull request yet.
+- Foundation [PR #5](https://github.com/darrylschaefer/ai-text-editor/pull/5) was squash merged into `main` as `07ebe98b3a6ab2879acfa140247d1168a91b843c`. Its post-merge Linux and Windows checks and Vercel Production deployment succeeded. On October 17, the foundation was merged into the design branch without conflicts in local commit `2caf89304cb3620f8941aa940d57f358f6cba548`.
+- This checkout now includes runnable revision-history and workspace component tests, application/test type checks, the production build, CI, and contribution templates. npm 11.19.0 on Node 24.15.0 or newer within 24.x is the supported installation path; `package-lock.json` is authoritative and the Yarn lockfile has been removed.
+- The unified workspace and branding have received manual browser checks, documented in `workspace-design.md`. Desktop/mobile visibility and drawer accessibility now have 22 workspace component cases plus browser keyboard, nested-popup, transition, and reload checks. See `workspace-pane-preferences.md` and `workspace-drawer-accessibility.md`. Remaining hardening criteria are below. Existing large-chunk and Browserslist build warnings remain deferred.
+- Pane resizing has 55 additional regression cases and native pointer/keyboard, constrained-layout, reset, and reload verification. See `workspace-pane-sizing.md` for fixes, evidence, and limits.
+- The relocated editor toolbar has 32 integration cases using the real editor, autosave hook, and document slice with in-memory storage boundaries. Native selection, formatting, history/checkpoint, section/document, and phone-layout checks passed. See `workspace-editor-toolbar.md`; the total local suite at that checkpoint had 126 cases.
+- Pane contents and Focus restoration have 19 additional cases using the real pane views/store, plus native desktop/phone checks. No application change was needed at that checkpoint. See `workspace-pane-state.md`; that checkpoint had 145 passing cases.
+- Programmatic assistant opening now follows the responsive layout policy for conversations and macro actions, with 14 additional real-caller cases and native phone/desktop checks. See `workspace-assistant-opening.md`; that checkpoint had 159 passing cases.
+- The workspace now owns the branded browser title without a competing document-list assignment. Ten additional cases and native selection/rename/library-view checks passed; folder expansion is preserved. See [title validation](brand.md#browser-title-ownership); that checkpoint had 169 passing cases, with both type checks and the production build passing.
+- Editor h1/h2 now inherit the existing theme-aware text color. Native desktop/phone checks covered h1–h6 in dark and light themes, with unchanged document markup and typography. See [heading contrast validation](workspace-heading-contrast.md). At that checkpoint, all 169 existing tests, both type checks, and the production build passed.
+- Fourteen additional compatibility cases use the real persisted store, workspace, editor, and theme control. Native fresh-default and saved-theme reload checks preserved synthetic content and pane arrangements; long header titles fit desktop/phone layouts. See [compatibility evidence and limits](workspace-compatibility.md). That checkpoint had 183 passing tests in eight files, with both type checks and the production build passing.
+- Long document labels now truncate beside an in-flow action group; row heights remain consistent, full-name tooltips and accessible action names are available, and cancelling rename restores the saved label. Six new real-row regressions and native narrow/default/wide and phone checks passed. See [library-row evidence](workspace-library-rows.md). The complete local suite now has 189 passing tests in eight files, with both type checks and the production build passing.
+- Browser, install/touch, desktop, and tray artwork now derives from the approved quill masters. The built asset paths, image formats, mask padding, and reproducible exports passed checks; see [icon evidence and platform limits](brand-icons.md). All 189 tests, both type checks, and the production build passed again. Separate prerequisite commit `950de04` fixes pane-state test timer teardown without changing application behavior. Native packaging/installation and broader built-product interaction checks remain open.
+- GitHub [Protect main](https://github.com/darrylschaefer/ai-text-editor/rules/25314529) is active: pull requests, resolved review threads, current successful Linux and Windows checks, blocked force pushes/deletion, and no bypass actors. Required human approvals are zero for the solo-maintainer workflow. Merging `main` triggers Vercel production deployment; branch pushes can create previews.
+- Earlier engineering risks remain in `engineering-backlog.md` and `engineering-review-2026-10-17.md`.
+- October 18 pre-publication review: [review findings](workspace-pr-review.md) and a [draft PR body](workspace-pr-draft.md) are prepared locally. The confirmed mobile conversation-opening/preference, branded browser-title, and editor heading-color defects are fixed; remaining release checks are still open. The branch is suitable for draft review, not release approval.
+
+The first learning step was to inspect the changed files, select related files for each commit (the staging area), inspect that selection, and commit locally. `git diff --check` passed, and a scan of the 42 changed/new files found no matches for the common credential patterns checked. Generated builds, dependency folders, local screenshots, and caches were not included. This checkpoint preserves the work in progress; the hardening checklist below remains open. A local commit does not publish changes or create an off-device backup.
+
+Scope checkpoint, October 18: keep this branch focused on Original fthr branding and the unified workspace. The pane-state step adds tests/documentation only. Compared with the locally available `origin/main`, the preceding branch checkpoint (`dc7b64e`) changes 59 files; most additions are tests, documentation, and the test dependency lockfile. Application changes cover branding/layout, sizing, focus/dialog handling, and the editor controls moved into the header. The next step is reviewing the full diff and preparing the design PR; remaining release checks below stay visible, and unrelated findings become separate backlog work. The unsent-draft loss when switching assistant tabs was recorded separately rather than expanding this commit.
+
+## PR 1: establish checks and contribution workflow — merged
+
+Delivered independently of the visual redesign in PR #5. The items below preserve the original plan; browser regression coverage belongs in PR 2, and publishing backlog issues remains outstanding.
+
+- Standardize on Node 24 and one package manager. npm is the recommended choice given the existing npm lockfile and Vercel configuration. Update Docker, desktop scripts, install documentation, and deployment installation together before retiring the second lockfile.
+- Add a runnable test runner, resolve TypeScript aliases in tests, run the existing revision-history suite, and give tests their own type check. Record and fix failures rather than hiding them with exclusions or skipped tests.
+- Add explicit `typecheck`, `test`, and browser-test commands. Reuse the production build command rather than duplicating its build logic.
+- Add GitHub Actions for pull requests and pushes to the default branch: reproducible install, application/test type checks, unit tests, and production builds on Linux and Windows. Run browser tests in an isolated browser profile with synthetic documents and no paid AI API requirement.
+- Use read-only workflow permissions, bounded job timeouts, cancellation of superseded runs, and maintained actions pinned through an appropriate dependency-locking policy. Do not introduce deployment credentials into ordinary PR checks.
+- Add a pull request template covering problem/behavior, validation, screenshots for UI changes, known limitations, and rollback. Add `CONTRIBUTING.md` with local commands and the issue → branch → PR → checks → merge workflow.
+- Add bug and feature issue templates. Track the saved engineering risks as prioritized issues with reproduction steps and acceptance criteria; redact any sensitive examples before publishing issues.
+- Configure Dependabot for the chosen package manager and Actions, with a manageable PR limit. Dependency upgrades should be separate, reviewed changes rather than an automatic bulk fix in the design PR.
+
+Acceptance: a clean checkout installs reproducibly, the existing test suite actually runs, and the PR shows passing checks on both operating systems.
+
+## PR 2: finish and harden Original fthr + the unified workspace
+
+Scope frozen October 18 after the final scope review: deliver the unified toolbar, pane controls/resizing, mobile drawers, approved fthr identity, and directly related regression fixes. Existing tests and evidence stay with the change. Do not add features or expand into the engineering backlog. The earlier checklist below records completed work and follow-ups; exhaustive platform/accessibility certification is not a gate for this web update.
+
+The final bounded production-build browser smoke passed: editing/formatting and undo/redo, document switching with content/formatting retained, Draft/Finished isolation, keyboard resizing, pane close/restore, phone drawers, and nested dialog Escape/focus restoration. Desktop/phone and existing document-row before/after captures are prepared for the PR. Latest `main` was fetched and is already contained in the branch. Remaining delivery work is publishing the draft, required Linux/Windows CI, and review; fix concrete failures in this update rather than broadening scope.
+
+| Area | Required work and evidence |
+| --- | --- |
+| Final identity | Implemented October 17: Original is the single identity; the comparison dock, URL selection hook, alternative styles, and unused Ink/Prism assets were removed. [Design history](brand-studies.md) preserves the alternatives and their Git checkpoint. |
+| Desktop visibility | Drawer controls and all four desktop arrangements have component/browser transition and reload coverage. The October 18 caller-integration fix routes conversation/macro opening through the workspace: phone actions open the temporary assistant drawer without changing desktop visibility, and desktop actions retain their normal behavior. See [assistant-opening validation](workspace-assistant-opening.md) and [prior preference validation](workspace-pane-preferences.md). |
+| Drawer accessibility | Implemented and verified October 17–18: mobile panes are named modal dialogs with focus entry/containment, background isolation, and restoration on close/backdrop/Escape. Shared popup handling, local menus, and command suggestions preserve nested dismissal order. Desktop panes remain nonmodal. See [validation and limits](workspace-drawer-accessibility.md). |
+| Pane sizing | Implemented and verified October 18: pointer ownership and lifecycle cleanup, movement without a grab-position jump, current keyboard/accessibility limits, and preferred-width preservation/reset. Tests cover bounds, fitting, cancellation/capture loss, layout changes, malformed saved widths, and storage failures; browser checks confirmed a 360-pixel editor at the narrow desktop boundary. See [validation and limits](workspace-pane-sizing.md). |
+| Relocated editor controls | Implemented and verified October 18: selection recovery, managed list commands, compatible formatting nodes, editor ownership by document/section, ordered pending section requests, and portal-based history/checkpoint dialogs. Integration tests and native browser checks cover formatting, undo/redo, menus, snapshots/history preview, document/section switching, and phone fit. See [validation and limits](workspace-editor-toolbar.md). |
+| Hidden pane state | Verified October 18: real chat/agent/completion input, Meta/Macros selection and input, library view/search, and all three nonempty Focus arrangements have regression coverage. Native desktop/phone checks passed. This covers pane close/reopen within a mounted workspace; tab changes and reload durability are separate. See [validation and limits](workspace-pane-state.md). |
+| Preferences and compatibility | Verified normal dark startup and saved light/dark reloads in the browser; real-store/editor component cases cover older missing fields, serialization round trips, empty/untitled/long-title states, and denied pane-width storage. See [compatibility evidence](workspace-compatibility.md). Full-application startup under denied storage and IndexedDB failure recovery remain separate startup/persistence follow-ups. The reported published-site white screen has its own investigation. Existing storage keys and identity are retained. |
+| Brand surfaces | Browser-title ownership and library selection/rename behavior were verified October 18; see [title validation](brand.md#browser-title-ownership). Browser/install/touch/desktop/tray exports and configuration now use the approved quill. All 20 checked public/built/HTTP asset files matched, and the built toolbar/About marks loaded. See [icon validation](brand-icons.md). Packaged-app appearance and native installation still require platform checks where those artifacts will be released. |
+| Visual/accessibility QA | Editor heading colors were corrected and checked for h1–h6 in both themes on desktop/phone; see [heading evidence](workspace-heading-contrast.md). Long main-header titles fit desktop/phone layouts; library-row crowding is fixed with rename/delete-confirmation checks across pane sizes. See [row evidence](workspace-library-rows.md). Complete broader phone, tablet, narrow/wide desktop, zoom, keyboard-only, focus visibility, and interface contrast checks in both themes. Include original/new screenshots in the PR. |
+| Production smoke test | Test the built output and asset paths, not just Vite development mode. Launch the desktop app on Windows and inspect the packaged build if desktop artifacts will be released. Record untested platforms honestly. |
+
+Add unit tests for pane sizing/preference behavior and a small browser regression suite for the highest-risk interactions above. Tests should assert user-visible behavior and content preservation, not merely match component structure.
+
+Avoid unrelated refactors, storage migrations, AI permission changes, dependency sweeps, or a repository/package rename in this PR. The Vite Windows alias correction can be an isolated prerequisite commit or PR with its own build evidence.
+
+## GitHub settings to verify and apply
+
+After the CI check names have appeared on a real PR:
+
+- Protect the default branch with a ruleset requiring a pull request, passing checks, and resolved conversations; block branch deletion and force pushes. Apply rules to normal maintainer work as well.
+- For a solo maintainer, do not require an approval from a second human who does not exist. Keep the PR/check gate; add a required independent reviewer when a collaborator is available. AI review is useful feedback, not a substitute for reading the change.
+- Prefer squash merging so each completed PR is easy to identify and revert. Delete merged feature branches.
+- Verify GitHub Actions permissions and dependency/security alerts. Enable secret scanning/push protection where available. Add code ownership requirements when there is a second maintainer who can fulfill them.
+- Inspect Vercel and any other connected deployment triggers before pushing: a branch push can create a preview, and a default-branch merge can deploy automatically. Keep release publishing as a separate, deliberate workflow.
+
+## Delivery sequence
+
+1. Save the selected design and hardening acceptance criteria in issues. Implement and validate the foundation PR.
+2. Keep the product work on its feature branch. Fetch the latest default branch, inspect changes, and integrate the merged foundation without losing local work.
+3. Finish the scoped hardening work and tests. Review the complete diff, including untracked assets; exclude build output, caches, personal test documents, and credentials.
+4. Create descriptive commits, push the feature branch, and open a draft PR linked to its issue. A draft push is backup and a place for review; it is not a declaration of release readiness.
+5. Resolve findings, obtain passing CI on the latest commit, attach screenshots, and mark ready for review. Record material limitations in the PR body.
+6. Merge through the protected branch workflow, verify any resulting deployment, and keep a rollback path by reverting the PR. Tag/publish a release only after its additional release checks are satisfied.
+
+The unresolved persistence and AI mutation risks may affect whether the whole application should be released. A passing UI PR does not certify those parts of the application. Keep their decisions visible in the release notes/backlog rather than folding all remediation into this design change.
+
+## References
+
+- [GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow)
+- [Rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)
+- [Protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [Secure use of GitHub Actions](https://docs.github.com/en/actions/reference/security/secure-use)

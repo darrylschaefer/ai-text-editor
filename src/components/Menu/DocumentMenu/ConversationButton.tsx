@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import useStore from '@store/store';
+import { useOpenAssistant } from '@components/Workspace/WorkspaceContext';
 import { ChatConversation } from '@store/chat-slice';
 import { TrashCan, Close, Edit, Checkmark, Chat, Code } from '@carbon/icons-react';
 
@@ -23,7 +24,7 @@ const ConversationButton = ({ conversation }: { conversation: ChatConversation }
   const conversations = useStore((state) => state.conversations);
   const generating = useStore((state) => state.generating);
   const editorAgentsMode = useStore((state) => state.editorAgentsMode);
-  const setHideSideAIMenu = useStore((state) => state.setHideSideAIMenu);
+  const openAssistant = useOpenAssistant();
 
   const [isDelete, setIsDelete] = useState<boolean>(false);
   const [isEdit, setIsEdit] = useState<boolean>(false);
@@ -90,7 +91,7 @@ const ConversationButton = ({ conversation }: { conversation: ChatConversation }
             setActiveConversationId(conversation.id);
             // If in agents mode, automatically open the chat window
             if (editorAgentsMode === 'agents') {
-              setHideSideAIMenu(false);
+              openAssistant();
             }
           }
         }

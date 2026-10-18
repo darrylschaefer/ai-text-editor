@@ -5,7 +5,7 @@ import { normalizeBlockIds } from '@utils/block-ids';
 /**
  * Plugin that normalizes block IDs in the editor state
  * Ensures all addressable blocks have block_id properties
- * Runs once on mount and when editor state is loaded to migrate old documents
+ * Runs once on mount. Refresh/import and autosave normalize their own snapshots.
  */
 export default function BlockIdNormalizationPlugin() {
   const [editor] = useLexicalComposerContext();
@@ -58,29 +58,9 @@ export default function BlockIdNormalizationPlugin() {
     // Normalize on mount
     normalizeOnce();
 
-    // Also normalize when editor state is set externally (e.g., on document load)
-    const unregister = editor.registerUpdateListener(({ editorState, prevEditorState }) => {
-      // Only normalize if this is a significant state change (not just typing)
-      if (prevEditorState) {
-        editorState.read(() => {
-          const currentJson = editorState.toJSON();
-          const prevJson = prevEditorState.toJSON();
-          
-          // If the JSON structure changed significantly (not just text content), re-check
-          const currentBlocks = JSON.stringify(currentJson.root?.children?.map((c: any) => c.type));
-          const prevBlocks = JSON.stringify(prevJson.root?.children?.map((c: any) => c.type));
-          
-          if (currentBlocks !== prevBlocks) {
-            hasNormalizedRef.current = false;
-            normalizeOnce();
-          }
-        });
-      }
-    });
-
-    return () => {
-      unregister();
-    };
+    // Do not reparse the live editor after formatting/list changes: that replaces
+    // node keys and drops its selection. Import/refresh and autosave already
+    // normalize serialized states at their boundaries.
   }, [editor]);
 
   return null;

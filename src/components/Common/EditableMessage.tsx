@@ -76,6 +76,8 @@ const EditableMessage: React.FC<EditableMessageProps> = ({
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
       setEditValue(content);
       setIsEditing(false);
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {

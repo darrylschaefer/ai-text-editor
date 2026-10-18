@@ -67,7 +67,7 @@ export interface ConfigSlice {
 
 export const createConfigSlice: StoreSlice<ConfigSlice> = (set, get) => ({
   openConfig: false,
-  theme: 'light',
+  theme: 'dark',
   activeMenu: 'chat',
   hideMenuOptions: false,
   hideSideMenu: false,

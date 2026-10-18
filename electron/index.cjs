@@ -9,18 +9,15 @@ const instanceLock = app.requestSingleInstanceLock();
 if (require('electron-squirrel-startup')) app.quit();
 
 const PORT = isDev ? '5173' : '51735';
+const iconAsset = (name) => path.join(__dirname, isDev ? '../public' : '../dist', name);
 
 function createWindow() {
-  let iconPath = '';
-  if (isDev) {
-    iconPath = path.join(__dirname, '../public/icon-rounded.png');
-  } else {
-    iconPath = path.join(__dirname, '../dist/icon-rounded.png');
-  }
+  const iconPath = iconAsset(process.platform === 'win32' ? 'favicon.ico' : 'fthr-desktop.png');
   autoUpdater.checkForUpdatesAndNotify();
 
   win = new BrowserWindow({
 	autoHideMenuBar: true,
+    title: 'fthr',
     show: false,
     icon: iconPath,
   });
@@ -49,12 +46,9 @@ function createWindow() {
 }
 
 const createTray = (window) => {
-  const tray = new Tray(
-    path.join(
-      __dirname,
-      isDev ? '../public/icon-rounded.png' : '../dist/icon-rounded.png'
-    )
-  );
+  const trayIcon = process.platform === 'darwin' ? 'fthrTrayTemplate.png'
+    : process.platform === 'win32' ? 'favicon.ico' : 'favicon-32x32.png';
+  const tray = new Tray(iconAsset(trayIcon));
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Show',
@@ -76,7 +70,7 @@ const createTray = (window) => {
     win.maximize();
     window.show();
   });
-  tray.setToolTip('Better ChatGPT');
+  tray.setToolTip('fthr');
   tray.setContextMenu(contextMenu);
 
   return tray;

@@ -30,14 +30,18 @@ const MenuItem = ({
   indicator?: React.ReactNode;
 }) => {
   return (
-    <a
-      className='flex mb-1 py-2 px-2 items-center gap-3 rounded-md hover:bg-gray-500/10 dark:hover:bg-gray-500/10 transition-colors duration-200 text-gray-900 dark:text-white cursor-pointer text-sm relative'
-      onClick={onClick}
+    <button type="button"
+      className='flex w-full text-left mb-1 py-2 px-2 items-center gap-3 rounded-md hover:bg-gray-500/10 dark:hover:bg-gray-500/10 transition-colors duration-200 text-gray-900 dark:text-white cursor-pointer text-sm relative'
+      onClick={event => {
+        // The item unmounts before its popup opens; return focus to the stable trigger.
+        event.currentTarget.closest('[data-workspace-settings]')?.querySelector<HTMLButtonElement>('[aria-label="Workspace settings"]')?.focus();
+        onClick();
+      }}
     >
       {icon}
       <span className='flex-1'>{label}</span>
       {indicator}
-    </a>
+    </button>
   );
 };
 
@@ -188,10 +192,13 @@ const CollapseOptions = () => {
   }, [embeddingsEnabled, apiKey, apiEndpoint]);
 
   return (
-    <div className='relative' ref={menuRef}>
+    <div className='relative' ref={menuRef} data-workspace-settings>
       <div className='flex gap-2 p-3 border-b border-gray-200 dark:border-gray-800/30'>
         <button
           className='flex items-center justify-center py-2 px-3 text-sm font-medium transition-colors bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md'
+          aria-label="Workspace settings"
+          aria-expanded={isMenuOpen}
+          title="Workspace settings"
           onClick={() => setMenuOpen(!isMenuOpen)}
         >
           <Settings size={16} />
@@ -301,23 +308,23 @@ const CollapseOptions = () => {
         onClose={() => setClearConversationOpen(false)}
       />
       {/* Hidden SettingsMenu that we trigger programmatically */}
-      <div ref={settingsMenuRef} style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+      <div ref={settingsMenuRef} hidden>
         <SettingsMenuHidden />
       </div>
       {/* Render components outside dropdown so they persist when menu closes */}
-      <div ref={aboutMenuRef} style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+      <div ref={aboutMenuRef} hidden>
         <AboutMenu />
       </div>
-      <div ref={importExportRef} style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+      <div ref={importExportRef} hidden>
         <ImportExportChat />
       </div>
-      <div ref={apiRef} style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+      <div ref={apiRef} hidden>
         <Api />
       </div>
-      <div ref={agentSetupRef} style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+      <div ref={agentSetupRef} hidden>
         <AgentSetup />
       </div>
-      <div ref={embeddingsSettingsRef} style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+      <div ref={embeddingsSettingsRef} hidden>
         <EmbeddingsSettings />
       </div>
       <style>{`

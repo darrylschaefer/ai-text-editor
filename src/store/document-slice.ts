@@ -71,7 +71,9 @@ export interface Agent {
   updatedAt: string;
 }
 
-export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => ({
+export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
+  const versionRequests = new Map<string, symbol>();
+  return ({
   documentCurrent: {
     id: '',
     folder: '',
@@ -178,6 +180,8 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => ({
     }));
   },
   setDocumentVersion: async (documentId: string, version: DocumentVersion) => {
+    const request = Symbol('document-version');
+    versionRequests.set(documentId, request);
     // Flush any pending autosave before switching sections
     const flush = get().autosaveFlush;
     if (flush) {
@@ -187,6 +191,11 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => ({
         console.error('Failed to flush autosave before version switch:', error);
       }
     }
+
+    // A later request may have arrived while autosave was flushing. Only that
+    // request chooses the section, including a click back to the current one.
+    if (versionRequests.get(documentId) !== request) return;
+    versionRequests.delete(documentId);
     
     set((prev: DocumentSlice) => {
       if (!prev.chats) return prev;
@@ -564,4 +573,5 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => ({
   pruneDocumentCommits: async (documentId: string, keepLastN: number = 50) => {
     return await pruneCommits(documentId, keepLastN);
   },
-});
+  });
+};

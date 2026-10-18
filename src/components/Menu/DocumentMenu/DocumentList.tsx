@@ -105,9 +105,6 @@ const DocumentList = () => {
       currentDocumentIndex >= 0 &&
       currentDocumentIndex < documentTitles.length
     ) {
-      // set title
-      document.title = documentTitles[currentDocumentIndex];
-
       // expand folder of current chat
       const documents = useStore.getState().chats;
       if (documents) {

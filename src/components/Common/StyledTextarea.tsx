@@ -1,7 +1,8 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import useStore from '@store/store';
 import { debug } from '@utils/debug';
+import { useModalPortalTarget } from '@components/ModalLayer/ModalLayer';
 
 const dbg = debug.tag('StyledTextarea');
 
@@ -168,6 +169,8 @@ const StyledTextarea: React.FC<StyledTextareaProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const autocompleteRef = useRef<HTMLDivElement>(null);
+  const autocompleteId = useId();
+  const portalTarget = useModalPortalTarget();
   const [isFocused, setIsFocused] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => 
     document.documentElement.classList.contains('dark')
@@ -402,9 +405,11 @@ const StyledTextarea: React.FC<StyledTextareaProps> = ({
       // Calculate position for dropdown - position it below the textarea
       const paddingLeft = parseFloat(getComputedStyle(textarea).paddingLeft) || 0;
       
-      // Position it at the bottom of the textarea, accounting for scroll
-      const top = rect.bottom + window.scrollY + 4;
-      const left = rect.left + window.scrollX + paddingLeft;
+      // Keep this fixed-position popup in the viewport, above the field if needed.
+      const suggestionHeight = Math.min(200, options.length * 36 + 8);
+      const top = rect.bottom + suggestionHeight + 4 <= window.innerHeight
+        ? rect.bottom + 4 : Math.max(4, rect.top - suggestionHeight - 4);
+      const left = Math.max(4, Math.min(rect.left + paddingLeft, window.innerWidth - 304));
       
       dbg.log('Setting autocomplete state:', {
         show: true,
@@ -522,6 +527,7 @@ const StyledTextarea: React.FC<StyledTextareaProps> = ({
   const showPlaceholder = !value && !isFocused;
   
   const highlightedContent = textToHighlighted(value, prompts, isDarkMode);
+  const autocompleteOptions = autocompleteState ? getAutocompleteOptions(autocompleteState.query) : [];
   // Check if there are any ${...} patterns (commands or actions)
   const hasHighlighting = SPECIAL_COMMANDS.some(cmd => value.includes(cmd)) || 
     /\$\{[^}]+\}/.test(value);
@@ -616,6 +622,11 @@ const StyledTextarea: React.FC<StyledTextareaProps> = ({
       {/* Actual textarea */}
       <textarea
         ref={textareaRef}
+        aria-autocomplete="list"
+        aria-haspopup="listbox"
+        aria-controls={autocompleteState?.show ? autocompleteId : undefined}
+        aria-activedescendant={autocompleteState?.show && autocompleteOptions[autocompleteState.selectedIndex]
+          ? `${autocompleteId}-${autocompleteState.selectedIndex}` : undefined}
         value={value}
         onChange={handleChange}
         onKeyDown={handleAutocompleteKeyDown}
@@ -661,6 +672,9 @@ const StyledTextarea: React.FC<StyledTextareaProps> = ({
       {autocompleteState && autocompleteState.show && typeof document !== 'undefined' && createPortal(
         <div
           ref={autocompleteRef}
+          id={autocompleteId}
+          role="listbox"
+          aria-label="Command suggestions"
           className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800/30 py-1 min-w-[200px] max-w-[300px] max-h-[200px] overflow-y-auto"
           style={{
             top: `${autocompleteState.position.top}px`,
@@ -669,8 +683,11 @@ const StyledTextarea: React.FC<StyledTextareaProps> = ({
           }}
           onMouseDown={(e) => e.preventDefault()}
         >
-          {getAutocompleteOptions(autocompleteState.query).map((option, index) => (
+          {autocompleteOptions.map((option, index) => (
             <div
+              id={`${autocompleteId}-${index}`}
+              role="option"
+              aria-selected={index === autocompleteState.selectedIndex}
               key={`${option.type}-${option.value}`}
               className={`px-3 py-1.5 cursor-pointer text-sm transition-colors ${
                 index === autocompleteState.selectedIndex
@@ -700,7 +717,7 @@ const StyledTextarea: React.FC<StyledTextareaProps> = ({
             </div>
           ))}
         </div>,
-        document.body
+        portalTarget
       )}
     </div>
   );

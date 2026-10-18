@@ -8,13 +8,9 @@ import { set } from 'lodash';
 
 const DocumentButtonClass = {
   normal:
-    'flex py-1.5 pr-2 pl-2 items-center gap-2.5 relative bg-transparent hover:bg-gray-100/70 dark:hover:bg-gray-800/30 break-all group transition-colors text-gray-700 dark:text-gray-400 rounded-md',
+    'flex min-w-0 min-h-[2.25rem] py-1.5 px-2 items-center gap-2.5 relative bg-transparent hover:bg-gray-100/70 dark:hover:bg-gray-800/30 group transition-colors text-gray-700 dark:text-gray-400 rounded-md',
   active:
-    'flex py-1.5 pr-2 pl-2 items-center gap-2.5 relative break-all pr-12 bg-gray-100 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 group transition-colors text-gray-900 dark:text-gray-200 rounded-md',
-  normalGradient:
-    'absolute inset-y-0 right-0 w-8 z-10 bg-gradient-to-l from-transparent group-hover:from-gray-100/60 dark:group-hover:from-gray-800/40',
-  activeGradient:
-    'absolute inset-y-0 right-0 w-8 z-10 bg-gradient-to-l from-gray-100/80 dark:from-gray-800/60',
+    'flex min-w-0 min-h-[2.25rem] py-1.5 px-2 items-center gap-2.5 relative bg-gray-100 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 group transition-colors text-gray-900 dark:text-gray-200 rounded-md',
 };
 
 const DocumentButton = React.memo(
@@ -96,6 +92,7 @@ const DocumentButton = React.memo(
 
     return (
       <a
+        title={title}
         className={`${
           active ? DocumentButtonClass.active : DocumentButtonClass.normal
         } ${
@@ -109,15 +106,15 @@ const DocumentButton = React.memo(
         draggable
         onDragStart={handleDragStart}
       >
-        <Document size={16} />
+        <Document size={16} className='shrink-0' />
         {isEdited ? (
-          <span className='text-xs text-gray-500 dark:text-gray-500'>•</span>
+          <span className='shrink-0 text-xs text-gray-500 dark:text-gray-500'>•</span>
         ) : null}
-        <div className='flex-1 text-ellipsis max-h-5 overflow-hidden break-all relative'>
+        <div className='min-w-0 flex-1 truncate'>
         {isEdit ? (
             <input
               type='text'
-              className='focus:outline-blue-600 text-sm border-none bg-transparent p-0 m-0 w-full'
+              className='focus:outline-blue-600 text-sm border-none bg-transparent p-0 m-0 min-w-0 w-full'
               value={_title}
               onChange={(e) => {
                 _setTitle(e.target.value);
@@ -127,43 +124,39 @@ const DocumentButton = React.memo(
               maxLength={12}
             />
           ) : (
-            _title
-          )}
-
-          {isEdit || (
-            <div
-              className={
-                active
-                  ? DocumentButtonClass.activeGradient
-                  : DocumentButtonClass.normalGradient
-              }
-            />
+            title
           )}
         </div>
         {active && (
-          <div className='absolute flex right-2 z-10 text-gray-600 dark:text-gray-300 visible'>
+          <div className='flex shrink-0 text-gray-600 dark:text-gray-300'>
             {isDelete || isEdit ? (
               <>
-                <button className='p-1 hover:text-gray-900 dark:hover:text-white' onClick={handleTick}>
-                  <Checkmark />
+                <button type='button' aria-label={isEdit ? 'Confirm rename' : 'Confirm deletion'}
+                  className='p-1 hover:text-gray-900 dark:hover:text-white' onClick={handleTick}>
+                  <Checkmark size={16} />
                 </button>
-                <button className='p-1 hover:text-gray-900 dark:hover:text-white' onClick={handleCross}>
-                  <Close />
+                <button type='button' aria-label={isEdit ? 'Cancel rename' : 'Cancel deletion'}
+                  className='p-1 hover:text-gray-900 dark:hover:text-white' onClick={handleCross}>
+                  <Close size={16} />
                 </button>
               </>
             ) : (
               <>
                 <button
+                  type='button'
+                  aria-label='Rename document'
                   className='p-1 hover:text-gray-900 dark:hover:text-white'
-                  onClick={() => setIsEdit(true)}
+                  onClick={() => { _setTitle(title); setIsEdit(true); }}
                 >
-                  <Edit />
+                  <Edit size={16} />
                 </button>
                 <button
+                  type='button'
+                  aria-label='Delete document'
                   className='p-1 hover:text-gray-900 dark:hover:text-white'
                   onClick={() => setIsDelete(true)}
                 >
-                  <TrashCan />
+                  <TrashCan size={16} />
                 </button>
               </>
             )}

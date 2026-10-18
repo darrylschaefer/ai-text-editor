@@ -60,6 +60,7 @@ export const createPartializedState = (state: StoreState) => ({
   hideMenuOptions: state.hideMenuOptions,
   firstVisit: state.firstVisit,
   hideSideMenu: state.hideSideMenu,
+  hideSideAIMenu: state.hideSideAIMenu,
   folders: state.folders,
   enterToSubmit: state.enterToSubmit,
   inlineLatex: state.inlineLatex,

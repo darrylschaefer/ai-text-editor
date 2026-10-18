@@ -5,9 +5,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import {
   BrowserRouter, Routes, Route,
 } from "react-router-dom";
-import Document from '@components/Document/Document';
-import DocumentMenu from '@components/Menu/DocumentMenu';
-import AIMenu from '@components/Menu/AIMenu/AIMenu';
+import Workspace from '@components/Workspace/Workspace';
 
 import useInitialiseNewDocument from '@hooks/useInitialiseNewDocument';
 import { DocumentInterface } from '@type/document';
@@ -25,9 +23,7 @@ const Home = () => {
   
   return (
   <>
-  <DocumentMenu />
-  <Document />
-  <AIMenu />
+  <Workspace />
   <ApiPopup />
   <Toast />
   <ActionQueue queue={actionQueue} isVisible={isVisible} />

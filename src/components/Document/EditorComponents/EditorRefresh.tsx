@@ -5,6 +5,7 @@ import {
     CLEAR_HISTORY_COMMAND,
   } from "lexical";
 import { normalizeBlockIds } from '@utils/block-ids';
+import { documentEditorState } from '../editorState';
 
 const EditorRefresh = () => {
     const [editor] = useLexicalComposerContext();
@@ -16,15 +17,7 @@ const EditorRefresh = () => {
       // Focus the editor when the effect fires!
       if(chats && chats[currentChatIndex]){
         const currentDoc = chats[currentChatIndex];
-        const currentVersion = currentDoc.currentVersion || 'Draft';
-        
-        // Get the appropriate version's editor state
-        let editorStateString: string | undefined;
-        if (currentVersion === 'Draft') {
-          editorStateString = currentDoc.draftEditorState || currentDoc.editorState;
-        } else {
-          editorStateString = currentDoc.finishedEditorState || currentDoc.editorState;
-        }
+        let editorStateString = documentEditorState(currentDoc);
         
         if(editorStateString !== undefined && editorStateString !== null && editorStateString !== ""){
           // Normalize block IDs before loading
@@ -41,7 +34,7 @@ const EditorRefresh = () => {
           editor.dispatchCommand(CLEAR_HISTORY_COMMAND, undefined);
         }
       }
-    }, [currentChatIndex, editorRefresh, chats?.[currentChatIndex]?.currentVersion]);
+    }, [editor, currentChatIndex, editorRefresh, chats?.[currentChatIndex]?.id, chats?.[currentChatIndex]?.currentVersion]);
   return null;
   }
 
