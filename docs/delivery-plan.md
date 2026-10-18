@@ -42,7 +42,9 @@ Acceptance: a clean checkout installs reproducibly, the existing test suite actu
 
 ## PR 2: finish and harden Original fthr + the unified workspace
 
-The following are release criteria for this specific update, not claims that every earlier application risk has been fixed.
+Scope frozen October 18 after the final scope review: deliver the unified toolbar, pane controls/resizing, mobile drawers, approved fthr identity, and directly related regression fixes. Existing tests and evidence stay with the change. Do not add features or expand into the engineering backlog. The earlier checklist below records completed work and follow-ups; exhaustive platform/accessibility certification is not a gate for this web update.
+
+The final bounded production-build browser smoke passed: editing/formatting and undo/redo, document switching with content/formatting retained, Draft/Finished isolation, keyboard resizing, pane close/restore, phone drawers, and nested dialog Escape/focus restoration. Desktop/phone and existing document-row before/after captures are prepared for the PR. Latest `main` was fetched and is already contained in the branch. Remaining delivery work is publishing the draft, required Linux/Windows CI, and review; fix concrete failures in this update rather than broadening scope.
 
 | Area | Required work and evidence |
 | --- | --- |

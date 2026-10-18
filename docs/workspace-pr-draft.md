@@ -1,43 +1,33 @@
 <!-- Proposed title: feat(workspace): introduce the fthr writing workspace -->
-<!-- Publication status: local draft text only; no GitHub PR has been created. -->
+<!-- Ready-to-copy PR body; publication status is tracked on GitHub. -->
 
 ## Problem and resulting behavior
 
-The library, editor formatting controls, and assistant occupy separate interface blocks. This change brings them into a shared fthr workspace with a continuous header, independently closable panes, pointer/keyboard resizing, remembered desktop widths/visibility, and Focus mode. Compact layouts use one temporary modal drawer at a time.
+The library, editor controls, and assistant occupy separate interface blocks. This change brings them into a continuous fthr header with independently closable and resizable panes, remembered desktop layout, Focus mode, and temporary mobile drawers.
 
-The approved identity uses a gradient quill, lowercase italic wordmark, neutral black surfaces, and restrained cool accents. Original is the sole identity; the Ink/Prism comparison controls and assets are removed. Browser metadata, About, and desktop product labels use fthr while internal identifiers and storage keys remain compatible.
+The approved identity uses the Original gradient quill, lowercase italic wordmark, black surfaces, and cool accents. Browser/touch/desktop artwork uses that identity. The redundant AI badge and branding comparison controls are removed; the history control fits the shared toolbar.
 
-The relocated editor controls preserve text selection and use registered Lexical nodes/list handling. Editors and undo/toolbar state belong to each document and section. History/checkpoint dialogs use the shared modal focus system; pending section/checkpoint requests have guards against stale UI actions.
+The relocated toolbar preserves formatting selection and document/section ownership. Related fixes cover mobile assistant opening, browser titles, heading colors, document-row crowding, and nested dialog focus.
 
 ## Related issue
 
-Scope and acceptance criteria are recorded in `docs/delivery-plan.md`. No public tracking issue has been created for this design branch. `docs/workspace-pr-review.md` records the pre-publication review and required fixes; the broader saved engineering risks remain separate.
+This PR delivers the agreed toolbar/pane redesign and fthr identity. Scope and prior findings are recorded in `docs/delivery-plan.md` and `docs/workspace-pr-review.md`; no separate public issue was created. Scope is frozen: unrelated engineering risks and further polish remain follow-ups.
 
 ## Validation
 
-- [x] `npm run check` passed locally on Windows with Node 24.19.0 and npm 11.19.0: application/test types, 189 tests in eight files, and the production build. The latest run includes the icon exports and a separate pane-state test timer cleanup fix.
-- [x] Synthetic-content browser verification covered resizing, desktop/phone transitions, drawer focus and nested dialogs, editor selection/formatting, history/checkpoint creation/preview, document/section switching, and pane close/reopen state. Evidence and limits are recorded in the `docs/workspace-*.md` validation records.
-- [x] Reviewed the complete feature diff, asset references, dependency changes, and common credential patterns.
-- [x] Fix the mobile conversation-opening/preference regression with a shared responsive action, 14 real-caller regressions, and native phone/desktop verification. Macro opening uses the same action.
-- [x] Remove the competing browser-title updater, preserving folder expansion. Ten regression cases and native selection/rename/library-view checks passed; see `docs/brand.md`.
-- [x] Fix editor heading colors and verify h1–h6 in both themes on desktop/phone, preserving content and typography. See `docs/workspace-heading-contrast.md`.
-- [x] Verify saved themes, older missing preferences, real-editor empty/untitled/legacy document states, serialization round trips, and normal browser reload behavior. See `docs/workspace-compatibility.md` for coverage and limits.
-- [x] Fix long library-label/action crowding, rename cancellation, and row action names. Six real-row regressions and native pane-size/phone checks passed; see `docs/workspace-library-rows.md`.
-- [ ] Complete the remaining visual/accessibility checks. Whole-application denied-storage startup and the intermittent published-site white screen remain separate investigations.
-- [x] Complete browser/install/touch/desktop/tray icon exports, update references, and verify their formats and built asset paths. See `docs/brand-icons.md` for reproducibility and browser evidence.
-- [ ] Verify native installation and packaged desktop appearance on intended release platforms.
-- [ ] Test built-product interactions in a browser beyond the completed icon/metadata asset smoke check.
-- [ ] Attach synthetic before/after screenshots; current captures are local artifacts.
-- [ ] Latest GitHub Actions checks pass on Linux and Windows. This remains a draft until those runs and the readiness work complete.
+- [x] `npm run check` passed on Windows with Node 24.19.0/npm 11.19.0: both TypeScript projects, 189 tests in eight files, and the production build.
+- [x] Final production-build browser smoke passed at desktop and 390 x 844: editing, Bold, undo/redo, document switching with content/formatting retained, empty Finished section and return to Draft, keyboard resizing, pane close/restore, phone library/assistant drawers, and nested dialog dismissal/focus restoration.
+- [x] All 20 checked icon/metadata files matched between source assets, built output, and HTTP responses; icon formats and repeatable generation were verified.
+- [x] Fetched `main` on October 18: still `07ebe98`; already contained in this branch. Working tree was clean before recording this final evidence.
+- [x] Prior regression/browser evidence is retained in the `docs/workspace-*.md` records. Final captures use a disposable document on loopback; the original development preview was untouched. No credentials or paid AI requests were used.
+- [ ] Latest GitHub Actions checks pass on Linux and Windows; keep this PR draft until they complete.
 
-The suite passes its covered cases. Focused review probes exposed mobile-opening and branded-title defects; both are fixed with permanent regression coverage. Macro Run's immediate UI transition is tested with its execution timer held; no AI request runs. Workspace interaction verification used the Windows in-app development browser; icon/metadata verification also loaded the production build locally. Other browsers, screen readers, native touch/pen hardware, and packaged desktop builds have not been certified. Existing Browserslist and large-chunk build warnings remain.
+Representative desktop, phone, and document-row before/after screenshots accompany the GitHub PR. This is a bounded manual smoke check, not an exhaustive browser/device certification.
 
 ## Risks and rollback
 
-Keep this PR draft while the required review findings and remaining release criteria are open. The shared modal implementation affects all PopupModal consumers, and the editor changes alter lifecycle/undo ownership; they need the stated integration coverage and remaining QA.
+Editor lifecycle and shared modal changes are the main integration risks. Internal package/app/storage identifiers and existing document formats are retained. jsdom is development-only; Node's supported minimum is 24.15.0 within 24.x. Runtime dependency declarations are unchanged.
 
-jsdom 30.1.3 is a new development dependency and requires Node 24.15.0 or newer within 24.x. The lockfile adds its development dependency graph and re-resolves shared punycode from 2.3.0 to 2.3.1. Application runtime dependency declarations are unchanged.
+Native desktop packaging/installers, additional browser/accessibility coverage, and browser automation are follow-ups, not gates for this web update. The published-site white screen, unsent drafts across assistant tab changes, persistence/backup risks, AI authority/stale revisions, stable block identity, and dependency/performance remediation remain separate work. Existing Browserslist and large-chunk warnings remain.
 
-Pane close/reopen retains in-session drafts. Switching assistant tabs can still lose an unsent chat draft; that separate follow-up is saved. Passing UI tests does not resolve the existing IndexedDB durability, stable block ID, AI authority/stale revision, backup, or dependency backlog. Checkpoint restore/delete were not validated by this change's native browser checks.
-
-Internal storage/app/package identifiers are retained; no new storage-key migration is introduced. After an eventual protected squash merge, revert the squash commit to roll back the code. Inspect deployment state after any merge/revert because main can deploy automatically. Pushing this feature branch can create a preview; it does not authorize a production merge or release.
+Merge through the protected workflow after review and required checks. Revert the eventual squash commit to roll back. A branch push may create a Vercel preview; merging `main` may deploy production. This draft does not authorize a production merge or desktop release.
