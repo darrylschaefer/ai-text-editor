@@ -1,4 +1,4 @@
-import { CSSProperties, KeyboardEvent, PointerEvent, useEffect, useRef, useState } from 'react';
+import { CSSProperties, KeyboardEvent, PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Close, Maximize, Minimize, SidePanelClose, SidePanelOpen } from '@carbon/icons-react';
 import useStore from '@store/store';
 import Document from '@components/Document/Document';
@@ -11,8 +11,14 @@ import { DocumentVersion } from '@type/document';
 import { WorkspaceToolbarContext } from './WorkspaceContext';
 import { ModalLayerContext, useModalLayer } from '@components/ModalLayer/ModalLayer';
 import Brand from './Brand';
-import { DEFAULT_PANE_WIDTHS, fitPaneWidths, PaneSide, PANE_LIMITS, usePaneLayout } from './usePaneLayout';
+import { clampPaneWidth, DEFAULT_PANE_WIDTHS, fitPaneWidths, maxPaneWidth, PaneSide, PANE_DIVIDER_WIDTH, PANE_LIMITS, usePaneLayout } from './usePaneLayout';
 import './workspace.css';
+
+type PaneDrag = { side: PaneSide; pointerId: number; startX: number; startWidth: number; element: HTMLDivElement };
+
+function releaseResizeCapture(drag: PaneDrag | null) {
+  if (drag?.element.hasPointerCapture(drag.pointerId)) drag.element.releasePointerCapture(drag.pointerId);
+}
 
 const Workspace = () => {
   const desktopHideLeft = useStore(state => state.hideSideMenu);
@@ -30,6 +36,7 @@ const Workspace = () => {
   const hideRight = compact ? mobilePane !== 'right' : desktopHideRight;
   const [containerWidth, setContainerWidth] = useState(window.innerWidth);
   const [dragging, setDragging] = useState<PaneSide | null>(null);
+  const activeDrag = useRef<PaneDrag | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const libraryRef = useRef<HTMLElement>(null);
   const assistantRef = useRef<HTMLElement>(null);
@@ -45,6 +52,40 @@ const Workspace = () => {
   const restorePanes = useRef({ left: true, right: true });
   const { widths, resize } = usePaneLayout();
   const fitted = fitPaneWidths(containerWidth, hideLeft ? 0 : widths.left, hideRight ? 0 : widths.right);
+  const limits = {
+    left: maxPaneWidth('left', containerWidth, fitted.right),
+    right: maxPaneWidth('right', containerWidth, fitted.left),
+  };
+  const stopResize = useCallback((pointerId?: number) => {
+    const drag = activeDrag.current;
+    if (!drag || (pointerId !== undefined && drag.pointerId !== pointerId)) return;
+    activeDrag.current = null;
+    setDragging(null);
+    releaseResizeCapture(drag);
+  }, []);
+
+  // A changed layout invalidates the starting coordinates of a captured drag.
+  useEffect(() => { stopResize(); }, [containerWidth, compact, hideLeft, hideRight, stopResize]);
+  useEffect(() => () => {
+    const drag = activeDrag.current;
+    activeDrag.current = null;
+    releaseResizeCapture(drag);
+  }, []);
+  useEffect(() => {
+    if (!dragging) return;
+    const onEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault();
+      stopResize();
+    };
+    const onBlur = () => stopResize();
+    document.addEventListener('keydown', onEscape);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      document.removeEventListener('keydown', onEscape);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [dragging, stopResize]);
 
   useEffect(() => {
     document.title = currentDoc?.title ? `${currentDoc.title} — fthr` : 'fthr — A place for your words';
@@ -106,23 +147,29 @@ const Workspace = () => {
   };
 
   const resizePane = (side: PaneSide, requested: number) => {
-    const other = side === 'left' ? fitted.right : fitted.left;
-    const available = containerWidth - other - 360 - 6 - (other ? 6 : 0);
-    resize(side, Math.min(requested, Math.max(PANE_LIMITS[side].min, available)));
+    const next = clampPaneWidth(side, Math.min(requested, limits[side]));
+    // An arrow or pointer move against a fitted boundary must not overwrite a
+    // larger saved preference when nothing actually moves on screen.
+    if (next !== fitted[side]) resize(side, next);
   };
 
   const onPointerDown = (side: PaneSide, event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || !event.isPrimary || activeDrag.current || compact ||
+      (side === 'left' ? hideLeft : hideRight)) return;
     event.preventDefault();
     event.currentTarget.focus();
     event.currentTarget.setPointerCapture(event.pointerId);
+    activeDrag.current = { side, pointerId: event.pointerId, startX: event.clientX,
+      startWidth: fitted[side], element: event.currentTarget };
     setDragging(side);
   };
 
   const onPointerMove = (side: PaneSide, event: PointerEvent<HTMLDivElement>) => {
-    if (dragging !== side || !bodyRef.current) return;
-    const bounds = bodyRef.current.getBoundingClientRect();
-    resizePane(side, side === 'left' ? event.clientX - bounds.left : bounds.right - event.clientX);
+    const drag = activeDrag.current;
+    if (!drag || drag.side !== side || drag.pointerId !== event.pointerId) return;
+    if (event.buttons === 0) { stopResize(event.pointerId); return; }
+    const delta = (event.clientX - drag.startX) * (side === 'left' ? 1 : -1);
+    resizePane(side, drag.startWidth + delta);
   };
 
   const onResizeKey = (side: PaneSide, event: KeyboardEvent<HTMLDivElement>) => {
@@ -135,6 +182,7 @@ const Workspace = () => {
     else if (event.key === 'End') next = PANE_LIMITS[side].max;
     else return;
     event.preventDefault();
+    stopResize();
     resizePane(side, next);
   };
 
@@ -148,19 +196,18 @@ const Workspace = () => {
       aria-orientation="vertical"
       aria-controls={`workspace-${side === 'left' ? 'library' : 'assistant'}`}
       aria-valuemin={PANE_LIMITS[side].min}
-      aria-valuemax={PANE_LIMITS[side].max}
+      aria-valuemax={limits[side]}
       aria-valuenow={fitted[side]}
       aria-valuetext={`${fitted[side]} pixels`}
       title="Drag to resize · Double-click to reset · Arrow keys to adjust"
       onPointerDown={event => onPointerDown(side, event)}
       onPointerMove={event => onPointerMove(side, event)}
       onPointerUp={event => {
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-        setDragging(null);
+        if (activeDrag.current?.side === side) stopResize(event.pointerId);
       }}
-      onPointerCancel={() => setDragging(null)}
-      onLostPointerCapture={() => setDragging(null)}
-      onDoubleClick={() => resizePane(side, DEFAULT_PANE_WIDTHS[side])}
+      onPointerCancel={event => { if (activeDrag.current?.side === side) stopResize(event.pointerId); }}
+      onLostPointerCapture={event => { if (activeDrag.current?.side === side) stopResize(event.pointerId); }}
+      onDoubleClick={() => { stopResize(); resize(side, DEFAULT_PANE_WIDTHS[side]); }}
       onKeyDown={event => onResizeKey(side, event)}
     ><span /></div>
   );
@@ -175,8 +222,8 @@ const Workspace = () => {
   const layoutStyle = {
     '--library-width': `${fitted.left}px`,
     '--assistant-width': `${fitted.right}px`,
-    '--library-divider': hideLeft ? '0px' : '6px',
-    '--assistant-divider': hideRight ? '0px' : '6px',
+    '--library-divider': hideLeft ? '0px' : `${PANE_DIVIDER_WIDTH}px`,
+    '--assistant-divider': hideRight ? '0px' : `${PANE_DIVIDER_WIDTH}px`,
     '--mobile-library-width': `${widths.left}px`,
     '--mobile-assistant-width': `${widths.right}px`,
   } as CSSProperties;
