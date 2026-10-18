@@ -351,6 +351,73 @@ describe.each(layouts)('pane contents on $name', ({ width }) => {
   });
 });
 
+describe('library document row actions', () => {
+  function row() {
+    return [...container.querySelectorAll<HTMLAnchorElement>('#workspace-library a')]
+      .find(link => link.querySelector('button'))!;
+  }
+
+  async function action(index: number) {
+    await act(async () => { row().querySelectorAll('button')[index].click(); await tick(); });
+  }
+
+  it('discards an unsaved rename when Cancel is pressed', async () => {
+    await mount(); await tab('Library', 'Documents');
+    const saved = JSON.stringify(useStore.getState().chats);
+    await action(0);
+    await enter('#workspace-library input[maxlength="12"]', 'Unsaved name');
+    await action(1);
+    expect(row().textContent).toBe('Synthetic pane document');
+    expect(row().querySelector('input')).toBeNull();
+    expect(JSON.stringify(useStore.getState().chats)).toBe(saved);
+  });
+
+  it.each(['confirm button', 'Enter key'])('saves a rename through the %s', async method => {
+    await mount(); await tab('Library', 'Documents');
+    const saved = useStore.getState().chats![0];
+    await action(0);
+    await enter('#workspace-library input[maxlength="12"]', 'Row notes');
+    if (method === 'confirm button') await action(0);
+    else await act(async () => {
+      element('#workspace-library input[maxlength="12"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      await tick();
+    });
+    expect(useStore.getState().chats![0]).toEqual({ ...saved, title: 'Row notes' });
+    expect(row().textContent).toBe('Row notes');
+    expect(element('.workspace-document-title').textContent).toBe('Row notes');
+  });
+
+  it('cancels delete confirmation without changing the document', async () => {
+    await mount(); await tab('Library', 'Documents');
+    const saved = JSON.stringify(useStore.getState().chats);
+    await action(1);
+    expect(row().querySelectorAll('button')).toHaveLength(2);
+    await action(1);
+    expect(JSON.stringify(useStore.getState().chats)).toBe(saved);
+    expect(row().textContent).toBe('Synthetic pane document');
+  });
+
+  it('retains the full long name in tooltips for active and inactive rows', async () => {
+    const title = Array(8).fill('A long chapter name').join(' — ');
+    useStore.setState({ chats: [{ ...fixtureDocument(), title },
+      { ...fixtureDocument(), id: 'other-row', title: `${title} two` }] });
+    await mount(); await tab('Library', 'Documents');
+    const rows = [...container.querySelectorAll<HTMLAnchorElement>('#workspace-library a')]
+      .filter(link => link.textContent?.includes('A long chapter name'));
+    expect(rows.map(link => link.title)).toEqual([title, `${title} two`]);
+  });
+
+  it('names each row action in normal, rename and delete-confirmation states', async () => {
+    await mount(); await tab('Library', 'Documents');
+    const labels = () => [...row().querySelectorAll('button')].map(button => button.getAttribute('aria-label'));
+    expect(labels()).toEqual(['Rename document', 'Delete document']);
+    await action(0);
+    expect(labels()).toEqual(['Confirm rename', 'Cancel rename']);
+    await action(1); await action(1);
+    expect(labels()).toEqual(['Confirm deletion', 'Cancel deletion']);
+  });
+});
+
 describe('branded browser title', () => {
   it.each(layouts)('retains the brand through library view remounts on $name', async ({ width }) => {
     await mount(width);

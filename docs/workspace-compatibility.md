@@ -28,7 +28,7 @@ Used a fresh local origin on port 5175 in the in-app development browser. The fi
 - At desktop width 1280 and phone size 390 × 844, the titlebar's scroll width equaled its client width. The long title was visually truncated, with its full value retained in the header tooltip and browser title. Phone drawers started closed; returning to desktop restored the saved arrangement.
 - Saved `fthr-compatibility-light.jpg`, `fthr-compatibility-dark.jpg`, `fthr-compatibility-phone.jpg`, and `workspace-compatibility-browser-evidence.json` outside the checkout. Reset the viewport, closed the temporary tab/server, and kept the original port 5173 preview running without editing its document or preferences. No AI request was made.
 
-Visual follow-up: the active library row's long label crowds the edit/delete controls in the light-theme capture. `DocumentButton.tsx` is unchanged from the fetched main branch. Keep this finding in the remaining visual pass; the successful header-fit check does not certify every library row layout.
+Visual follow-up at this checkpoint: the active library row's long label crowds the edit/delete controls in the light-theme capture. `DocumentButton.tsx` was unchanged from the fetched main branch. Subsequently resolved October 18 with a separate [row layout and action-state fix](workspace-library-rows.md). The successful header-fit check above did not certify every library row layout.
 
 ## Checks and limits
 
