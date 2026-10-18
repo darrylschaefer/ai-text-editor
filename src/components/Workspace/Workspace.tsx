@@ -9,6 +9,7 @@ import EditorAgentsToggle from '@components/Menu/DocumentMenu/EditorAgentsToggle
 import VersionSwitcher from '@components/Document/EditorComponents/VersionSwitcher';
 import { DocumentVersion } from '@type/document';
 import { WorkspaceToolbarContext } from './WorkspaceContext';
+import { ModalLayerContext, useModalLayer } from '@components/ModalLayer/ModalLayer';
 import Brand from './Brand';
 import { DEFAULT_PANE_WIDTHS, fitPaneWidths, PaneSide, PANE_LIMITS, usePaneLayout } from './usePaneLayout';
 import './workspace.css';
@@ -30,6 +31,17 @@ const Workspace = () => {
   const [containerWidth, setContainerWidth] = useState(window.innerWidth);
   const [dragging, setDragging] = useState<PaneSide | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const libraryRef = useRef<HTMLElement>(null);
+  const assistantRef = useRef<HTMLElement>(null);
+  const backdropRef = useRef<HTMLButtonElement>(null);
+  const drawerScope = useModalLayer({
+    enabled: compact && mobilePane !== null,
+    rootRef: mobilePane === 'right' ? assistantRef : libraryRef,
+    backdropRef,
+    onDismiss: () => setMobilePane(null),
+    initialFocus: '[data-pane-close]',
+    returnFocus: () => document.getElementById(`toggle-${mobilePane}-pane`),
+  });
   const restorePanes = useRef({ left: true, right: true });
   const { widths, resize } = usePaneLayout();
   const fitted = fitPaneWidths(containerWidth, hideLeft ? 0 : widths.left, hideRight ? 0 : widths.right);
@@ -59,22 +71,11 @@ const Workspace = () => {
 
   const closePane = (side: PaneSide) => {
     if (compact) setMobilePane(null);
-    else (side === 'left' ? setHideLeft : setHideRight)(true);
-    document.getElementById(`toggle-${side}-pane`)?.focus();
+    else {
+      (side === 'left' ? setHideLeft : setHideRight)(true);
+      document.getElementById(`toggle-${side}-pane`)?.focus();
+    }
   };
-
-  useEffect(() => {
-    if (!compact || !mobilePane) return;
-    const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape' && !event.defaultPrevented) {
-        event.preventDefault();
-        setMobilePane(null);
-        document.getElementById(`toggle-${mobilePane}-pane`)?.focus();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [compact, mobilePane]);
 
   const togglePane = (side: PaneSide) => {
     if (compact) {
@@ -165,7 +166,7 @@ const Workspace = () => {
   );
 
   const closeButton = (side: PaneSide) => (
-    <button type="button" className="workspace-icon-button workspace-close" onClick={() => closePane(side)}
+    <button type="button" data-pane-close className="workspace-icon-button workspace-close" onClick={() => closePane(side)}
       aria-label={`Close ${side === 'left' ? 'library' : 'assistant'} pane`} title="Close pane">
       <Close size={16} />
     </button>
@@ -220,18 +221,24 @@ const Workspace = () => {
           </div>
         </header>
         <div className="workspace-body" ref={bodyRef}>
-          {compact && mobilePane && <button type="button" className="workspace-backdrop"
+          {compact && mobilePane && <button type="button" className="workspace-backdrop" ref={backdropRef} tabIndex={-1} aria-hidden="true"
             aria-label="Close open pane" onClick={() => closePane(mobilePane)} />}
-          <aside id="workspace-library" className="workspace-pane workspace-library" hidden={hideLeft} aria-label="Library">
-            <div className="workspace-mobile-pane-heading"><EditorAgentsToggle />{closeButton('left')}</div>
-            <DocumentMenu />
+          <aside id="workspace-library" ref={libraryRef} className="workspace-pane workspace-library" hidden={hideLeft} aria-label="Library"
+            role={compact && !hideLeft ? 'dialog' : undefined} aria-modal={compact && !hideLeft ? true : undefined} tabIndex={-1}>
+            <ModalLayerContext.Provider value={drawerScope}>
+              <div className="workspace-mobile-pane-heading"><EditorAgentsToggle />{closeButton('left')}</div>
+              <DocumentMenu />
+            </ModalLayerContext.Provider>
           </aside>
           {separator('left', hideLeft)}
           <section className="workspace-editor" aria-label="Document editor"><Document /></section>
           {separator('right', hideRight)}
-          <aside id="workspace-assistant" className="workspace-pane workspace-assistant" hidden={hideRight} aria-label="Assistant">
-            <div className="workspace-mobile-pane-heading"><AssistantTabs activeMenu={activeMenu} setActiveMenu={setActiveMenu} />{closeButton('right')}</div>
-            <AIMenu activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
+          <aside id="workspace-assistant" ref={assistantRef} className="workspace-pane workspace-assistant" hidden={hideRight} aria-label="Assistant"
+            role={compact && !hideRight ? 'dialog' : undefined} aria-modal={compact && !hideRight ? true : undefined} tabIndex={-1}>
+            <ModalLayerContext.Provider value={drawerScope}>
+              <div className="workspace-mobile-pane-heading"><AssistantTabs activeMenu={activeMenu} setActiveMenu={setActiveMenu} />{closeButton('right')}</div>
+              <AIMenu activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
+            </ModalLayerContext.Provider>
           </aside>
         </div>
       </div>

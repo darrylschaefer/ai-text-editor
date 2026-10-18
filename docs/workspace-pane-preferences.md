@@ -30,4 +30,6 @@ The pinned jsdom 30.1.3 development dependency provides the component test envir
 
 ## Remaining work
 
-Drawer dialog semantics, focus entry/trapping, background isolation, and complete nested-surface Escape handling remain in the [delivery plan](delivery-plan.md). The component fixtures do not establish full editor/assistant state preservation, real browser layout bounds, or desktop packaging correctness. Those checks remain separate release criteria.
+Follow-up completed October 17–18: drawer semantics, focus entry/containment, background isolation, restoration, and nested popup/menu/autocomplete handling are recorded in [drawer accessibility validation](workspace-drawer-accessibility.md). That follow-up replaces header-toggle dismissal while a mobile drawer is open with modal background isolation and expands the workspace suite to 22 cases. The counts above preserve the evidence for the original preference fix.
+
+The component fixtures do not establish full editor/assistant state preservation, real browser layout bounds, or desktop packaging correctness. Those checks remain separate release criteria in the [delivery plan](delivery-plan.md).

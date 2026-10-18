@@ -115,7 +115,8 @@
   .workspace-library { left: 0; width: min(max(280px, var(--mobile-library-width)), calc(100% - 40px)); border-right: 1px solid var(--line); }
   .workspace-assistant { right: 0; width: min(max(320px, var(--mobile-assistant-width)), calc(100% - 40px)); border-left: 1px solid var(--line); }
   .workspace-mobile-pane-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--chrome); flex: none; }
-  .workspace-backdrop { display: block; position: absolute; inset: 0; z-index: 20; background: #11182745; backdrop-filter: blur(2px); cursor: default; }
+  .workspace-pane[aria-modal="true"] { z-index: 50; }
+  .workspace-backdrop { display: block; position: fixed; inset: 0; z-index: 45; background: #11182745; backdrop-filter: blur(2px); cursor: default; }
 }
 @media (max-width: 540px) {
   .workspace-titlebar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; height: auto; min-height: 84px; gap: 8px 10px; padding-top: 9px; padding-bottom: 8px; }
