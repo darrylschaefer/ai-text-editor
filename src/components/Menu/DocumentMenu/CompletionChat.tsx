@@ -134,7 +134,7 @@ const CompletionChat = () => {
         });
         
         // Replace special commands at runtime before sending to API
-        const currentSelection = useStore.getState().currentSelection;
+        const currentSelection = useStore.getState().getCurrentSelection();
         const specialCommandsResult = replaceSpecialCommands(inputValue, currentSelection);
         const processedInput = specialCommandsResult.result;
         

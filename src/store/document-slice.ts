@@ -5,6 +5,7 @@ import { SaveStatus } from '@hooks/useAutosave';
 import { createCommit, listCommits, getCommitSnapshot, deleteCommit, pruneCommits, getCommit } from './commit-store';
 import { DocumentCommit } from '@type/commit';
 import { LexicalEditor } from 'lexical';
+import { $resolveDocumentSelection, type DocumentSelection } from '@utils/editor-selection';
 
 export interface Agent {
   id: string;
@@ -25,6 +26,10 @@ export interface DocumentSlice {
   folders: FolderCollection;
   editorSettings: EditorSettings;
   currentSelection: string;
+  editorSelection: DocumentSelection | null;
+  setEditorSelection: (selection: DocumentSelection | null) => void;
+  getEditorSelection: () => DocumentSelection | null;
+  getCurrentSelection: () => string;
   editorInstance: LexicalEditor | null;
   setDocumentCurrent: (documentCurrent: DocumentCurrent) => void;
   setChats: (chats: DocumentInterface[]) => void;
@@ -103,6 +108,7 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
   folders: {},
   editorState: [],
   currentSelection: '',
+  editorSelection: null,
   editorInstance: null,
   editorSettings: {
     activeMenu: 'chat',
@@ -117,18 +123,34 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
     set((prev: DocumentSlice) => ({
       ...prev,
       currentSelection: currentSelection,
+      editorSelection: null,
     }));
   },
+  setEditorSelection: (editorSelection) => {
+    set({ editorSelection, currentSelection: editorSelection?.text || '' });
+  },
+  getEditorSelection: () => {
+    const state = get();
+    const saved = state.editorSelection;
+    const doc = state.chats?.[state.currentChatIndex];
+    if (!saved || doc?.id !== saved.documentId || (doc.currentVersion || 'Draft') !== saved.section ||
+      state.editorInstance !== saved.editor || !saved.editor.getRootElement()) return null;
+    return saved.editor.getEditorState().read(() => $resolveDocumentSelection(saved) ? saved : null);
+  },
+  getCurrentSelection: () => get().getEditorSelection()?.text || '',
   setEditorInstance: (editor: LexicalEditor | null) => {
     set((prev: DocumentSlice) => ({
       ...prev,
       editorInstance: editor,
+      ...(prev.editorInstance !== editor ? { editorSelection: null, currentSelection: '' } : {}),
     }));
   },
   clearEditorInstance: () => {
     set((prev: DocumentSlice) => ({
       ...prev,
       editorInstance: null,
+      editorSelection: null,
+      currentSelection: '',
     }));
   },
   setEditorSettings: (editorSettings: EditorSettings) => {
@@ -141,12 +163,16 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
     set((prev: DocumentSlice) => ({
       ...prev,
       chats: chats,
+      ...(prev.chats?.[prev.currentChatIndex]?.id !== chats[prev.currentChatIndex]?.id ||
+        prev.chats?.[prev.currentChatIndex]?.currentVersion !== chats[prev.currentChatIndex]?.currentVersion
+        ? { editorSelection: null, currentSelection: '' } : {}),
     }));
   },
   setCurrentChatIndex: (currentChatIndex: number) => {
     set((prev: DocumentSlice) => ({
       ...prev,
       currentChatIndex: currentChatIndex,
+      ...(prev.currentChatIndex !== currentChatIndex ? { editorSelection: null, currentSelection: '' } : {}),
     }));
   },
   setForceEditorRefresh: (forceEditorRefresh: boolean) => {
@@ -236,6 +262,9 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
       return {
         ...prev,
         chats: updatedChats,
+        ...(prev.chats[prev.currentChatIndex]?.id === documentId &&
+          prev.chats[prev.currentChatIndex]?.currentVersion !== version
+          ? { editorSelection: null, currentSelection: '' } : {}),
       };
     });
   },

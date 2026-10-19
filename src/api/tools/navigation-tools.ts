@@ -37,29 +37,10 @@ import {
 import { RevisionRecord } from '@type/revision';
 
 /**
- * Clear the selection overlay (blue text highlight) from the editor
- * This is called when text edits are applied to remove the visual selection highlight
+ * Clear the owned selection and its highlight after applying document edits.
  */
 function clearSelectionOverlay(): void {
-  try {
-    // Find the selection overlay container by its data attribute
-    const container = document.querySelector('[data-selection-overlay-container="true"]');
-    if (container) {
-      // Remove all child elements (the blue highlight spans)
-      while (container.firstChild) {
-        container.removeChild(container.firstChild);
-      }
-    }
-    
-    // Also clear the selection text in the store
-    const setCurrentSelection = useStore.getState().setCurrentSelection;
-    if (setCurrentSelection) {
-      setCurrentSelection('');
-    }
-  } catch (error) {
-    // Silently fail if selection overlay doesn't exist or can't be cleared
-    console.debug('[clearSelectionOverlay] Could not clear selection overlay:', error);
-  }
+  useStore.getState().setEditorSelection(null);
 }
 
 /**

@@ -93,7 +93,7 @@ const EditView = ({
 
     const editorSettings = useStore.getState().editorSettings;
     const setEditorSettings = useStore.getState().setEditorSettings;
-    const currentSelection = useStore.getState().currentSelection;
+    const currentSelection = useStore.getState().getCurrentSelection();
 
     if (sticky) {
       // Use unified system for sticky messages (chat input)

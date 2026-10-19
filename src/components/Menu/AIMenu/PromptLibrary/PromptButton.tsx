@@ -99,7 +99,7 @@ const PromptButton = ({prompt, index, activeMenu, setActiveMenu}: {
     const addConversation = useStore.getState().addConversation;
     const setActiveConversationId = useStore.getState().setActiveConversationId;
     const addMessage = useStore.getState().addMessage;
-    const currentSelection = useStore.getState().currentSelection;
+    const currentSelection = useStore.getState().getCurrentSelection();
     
     console.log('[PromptButton] Current selection state:', {
       hasSelection: !!currentSelection,
