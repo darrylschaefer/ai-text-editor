@@ -5,7 +5,7 @@ import { DocumentVersion } from '@type/document';
 import { updateBlockIndexForSection } from '@utils/block-index-updater';
 import { normalizeBlockIds } from '@utils/block-ids';
 
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+export type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
 interface UseAutosaveOptions {
   documentId: string;
@@ -110,17 +110,9 @@ export function useAutosave({
       await new Promise((resolve) => setTimeout(resolve, 0));
       
       // Only update status if this is still the latest save
-      if (sequence === pendingSaveSequenceRef.current) {
+      if (sequence === saveSequenceRef.current) {
         setSaveStatus('saved');
         lastSaveTimeRef.current = Date.now();
-        
-        // Reset to idle after a short delay
-        setTimeout(() => {
-          // Check if we're still the latest save and status is still 'saved'
-          if (sequence === saveSequenceRef.current && pendingSaveSequenceRef.current === null) {
-            setSaveStatus('idle');
-          }
-        }, 2000);
       }
     } catch (error) {
       console.error('Autosave failed:', error);
@@ -140,6 +132,7 @@ export function useAutosave({
    * Schedule a debounced save
    */
   const scheduleSave = useCallback((stateJson: string) => {
+    setSaveStatus('pending');
     // Update the latest state ref
     latestStateRef.current = stateJson;
     

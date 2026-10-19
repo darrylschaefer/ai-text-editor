@@ -2,7 +2,7 @@
 import { StrictMode, useState } from 'react';
 import { act } from 'react-dom/test-utils';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { $createRangeSelection, $getRoot, $getSelection, $setSelection } from 'lexical';
 import useStore, { type StoreState } from '@store/store';
 import { type DocumentInterface } from '@type/document';
@@ -10,6 +10,7 @@ import { type DocumentCommit } from '@type/commit';
 import Document from '../Document';
 import VersionSwitcher from '../EditorComponents/VersionSwitcher';
 import { WorkspaceToolbarContext } from '@components/Workspace/WorkspaceContext';
+import CreateCheckpoint from '@components/Menu/AIMenu/History/CreateCheckpoint';
 
 const memory = vi.hoisted(() => ({ commits: new Map<string, DocumentCommit>(), create: vi.fn() }));
 
@@ -67,6 +68,7 @@ function Host() {
       <div ref={setTarget} data-toolbar-target />
     </header>
     <Document />
+    <aside aria-label="History fixture"><CreateCheckpoint key={`${doc.id}:${doc.currentVersion}`} documentId={doc.id} /></aside>
   </WorkspaceToolbarContext.Provider>;
 }
 
@@ -148,10 +150,6 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-// The existing autosave status indicator schedules a two-second idle reset.
-// Let its callbacks settle before Vitest tears down this file's DOM window.
-afterAll(() => new Promise(resolve => setTimeout(resolve, 2100)));
-
 describe('relocated editor toolbar', () => {
   it.each([['Format Bold', '.editor-text-bold'], ['Format Italics', '.editor-text-italic'],
     ['Format Underline', '.editor-text-underline'], ['Format Strikethrough', '.editor-text-strikethrough']])
@@ -203,7 +201,7 @@ describe('relocated editor toolbar', () => {
       expect(content().textContent).toBe('The blue bird sings.');
     });
 
-  it.each(['Formatting Options', 'Version history'])('dismisses %s with Escape and returns focus to its trigger', async label => {
+  it.each(['Formatting Options'])('dismisses %s with Escape and returns focus to its trigger', async label => {
     await mount(); await select(); await click(label);
     await press('Escape');
     expect(document.querySelector('.dropdown')).toBeNull();
@@ -211,20 +209,20 @@ describe('relocated editor toolbar', () => {
     expect(document.activeElement).toBe(control(label));
   });
 
-  it('opens history as a named modal outside the header and restores its trigger', async () => {
-    await mount(); await click('Version history'); await click('View History');
+  it('opens checkpoint creation from the sidebar with a named modal and restores its trigger', async () => {
+    await mount(); await click('Create Checkpoint');
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
     expect(dialog).not.toBeNull();
     expect(modalRoot.contains(dialog)).toBe(true);
     expect(container.querySelector('header')?.closest('[inert]')).not.toBeNull();
     await press('Escape');
     expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(document.activeElement).toBe(control('Version history'));
+    expect(document.activeElement).toBe(control('Create Checkpoint'));
   });
 
   it('creates a checkpoint from the active editor and section after flushing autosave', async () => {
     await mount(); await select(); await click('Format Bold');
-    await click('Version history'); await click('Create Checkpoint'); await fillMessage('Synthetic checkpoint');
+    await click('Create Checkpoint'); await fillMessage('Synthetic checkpoint');
     await click('Create');
     expect(memory.create).toHaveBeenCalledTimes(1);
     const [id, actor, message, snapshot] = memory.create.mock.calls[0];
@@ -233,19 +231,65 @@ describe('relocated editor toolbar', () => {
     expect(JSON.parse(snapshot.sections.Finished).root.children[0].children[0].text).toBe('Alpha finished text.');
   });
 
+  it('shows only a green status dot when saved and turns amber as soon as content changes', async () => {
+    await mount();
+    expect(container.querySelector('[aria-label="All changes saved"] .bg-green-500')).not.toBeNull();
+    expect(container.querySelector('header button[aria-label="Create Checkpoint"]')).toBeNull();
+    await select(); await click('Format Bold');
+    expect(container.querySelector('[data-save-status="pending"] .bg-amber-500')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Unsaved changes"]')).not.toBeNull();
+    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    expect(container.querySelector('[data-save-status="saved"] .bg-green-500')).not.toBeNull();
+    await click('Format Italics');
+    expect(container.querySelector('[data-save-status="pending"] .bg-amber-500')).not.toBeNull();
+  });
+
+  it('keeps the save dot green for selections, caret movement and focus changes without scheduling a save', async () => {
+    await mount(); const saved = JSON.stringify(useStore.getState().chats);
+    await select('blue');
+    expect(container.querySelector('[aria-label="All changes saved"] .bg-green-500')).not.toBeNull();
+    await select('bird');
+    await act(async () => { editor().update(() => { $getRoot().selectEnd(); }, { discrete: true }); await tick(); });
+    await click('Create Checkpoint'); await press('Escape');
+    expect(container.querySelector('[aria-label="All changes saved"] .bg-green-500')).not.toBeNull();
+    expect(useStore.getState().autosaveStatus).toBe('idle');
+    expect(JSON.stringify(useStore.getState().chats)).toBe(saved);
+    await select(); await click('Format Bold');
+    await select('bird');
+    expect(useStore.getState().autosaveStatus).toBe('pending');
+    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    await select('blue');
+    expect(useStore.getState().autosaveStatus).toBe('saved');
+  });
+
+  it('keeps failed autosave visible as a red retry dot and returns green after retry succeeds', async () => {
+    await mount(); const setChats = useStore.getState().setChats;
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await act(async () => { useStore.setState({ setChats: () => { throw new Error('Synthetic save failure'); } }); await tick(); });
+    await select(); await click('Format Bold');
+    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    expect(container.querySelector('[data-save-status="error"] .bg-red-500')).not.toBeNull();
+    await select('bird');
+    expect(container.querySelector('[data-save-status="error"] .bg-red-500')).not.toBeNull();
+    await act(async () => { useStore.setState({ setChats }); await tick(); });
+    await click('Save failed. Retry save');
+    expect(container.querySelector('[data-save-status="saved"] .bg-green-500')).not.toBeNull();
+    consoleError.mockRestore();
+  });
+
   it('closes the checkpoint dialog from Escape on a button without creating a checkpoint', async () => {
-    await mount(); await click('Version history'); await click('Create Checkpoint');
+    await mount(); await click('Create Checkpoint');
     await act(async () => { control('Cancel').focus(); await tick(); });
     await press('Escape');
     expect(document.querySelector('input[placeholder^="Checkpoint message"]')).toBeNull();
     expect(memory.create).not.toHaveBeenCalled();
-    expect(document.activeElement).toBe(control('Version history'));
+    expect(document.activeElement).toBe(control('Create Checkpoint'));
   });
 
   it('formats and checkpoints Beta Finished without changing Alpha or Beta Draft', async () => {
     await mount(); await click('Open Beta'); await click('Finished Version');
     await select('finished'); await click('Format Bold');
-    await click('Version history'); await click('Create Checkpoint'); await fillMessage('Beta finished checkpoint');
+    await click('Create Checkpoint'); await fillMessage('Beta finished checkpoint');
     await click('Create');
     const [id, , , snapshot] = memory.create.mock.calls[0];
     expect(id).toBe('Beta');
@@ -256,24 +300,11 @@ describe('relocated editor toolbar', () => {
     expect(content().querySelector('.editor-text-bold')).toBeNull();
   });
 
-  it('lists a newly created checkpoint and previews it without changing the editor', async () => {
-    await mount(); await click('Version history'); await click('Create Checkpoint'); await fillMessage('History fixture');
-    await click('Create'); await click('Version history'); await click('View History');
-    expect(modalRoot.textContent).toContain('History fixture');
-    await click('Preview');
-    expect(modalRoot.textContent).toContain('Diff Preview');
-    expect(document.querySelector('[role="dialog"]')!.contains(document.activeElement)).toBe(true);
-    await click('← Back to list');
-    expect(document.querySelector('[role="dialog"]')!.contains(document.activeElement)).toBe(true);
-    await press('Escape');
-    expect(content().textContent).toBe('The blue bird sings.');
-  });
-
   it('clears open formatting/history/checkpoint UI when the document changes', async () => {
     await mount(); await select(); await click('Formatting Options');
     await act(async () => { useStore.getState().setCurrentChatIndex(1); await tick(); });
     expect(document.querySelector('.dropdown')).toBeNull();
-    await click('Version history'); await click('Create Checkpoint');
+    await click('Create Checkpoint');
     await act(async () => { useStore.getState().setCurrentChatIndex(0); await tick(); });
     expect(document.querySelector('input[placeholder^="Checkpoint message"]')).toBeNull();
     expect(content().textContent).toBe('The blue bird sings.');
@@ -349,7 +380,7 @@ describe('relocated editor toolbar', () => {
     let release!: () => void;
     const pending = new Promise<void>(resolve => { release = resolve; });
     await act(async () => { useStore.setState({ autosaveFlush: () => pending }); });
-    await click('Version history'); await click('Create Checkpoint'); await fillMessage('Only once');
+    await click('Create Checkpoint'); await fillMessage('Only once');
     const input = document.querySelector('input[aria-label="Checkpoint message"]')!;
     await press('Enter', input); await press('Enter', input);
     expect(memory.create).not.toHaveBeenCalled();
@@ -383,7 +414,7 @@ describe('relocated editor toolbar', () => {
     let release!: () => void;
     const pending = new Promise<void>(resolve => { release = resolve; });
     await act(async () => { useStore.setState({ autosaveFlush: () => pending }); });
-    await click('Version history'); await click('Create Checkpoint'); await fillMessage('Do not save');
+    await click('Create Checkpoint'); await fillMessage('Do not save');
     await press('Enter', document.querySelector('input[aria-label="Checkpoint message"]')!);
     if (action === 'cancel') await press('Escape');
     else await act(async () => { useStore.getState().setCurrentChatIndex(1); await tick(); });

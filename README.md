@@ -35,7 +35,7 @@ Keep your documents local in your browser, and connect your own API key for AI a
 | Writing and notes | Keep separate Draft and Finished text within a document, with reusable notes in the right sidebar. Organize documents into folders. |
 | Custom document metadata | Keep tags, descriptions, and custom fields with a document, and reference those fields in AI prompts. |
 | Semantic and hybrid search | Search by keyword, by meaning through embeddings, or combine both approaches to retrieve relevant passages. Embedding search requires configuration. |
-| Checkpoints and version diffs | Save named checkpoints, inspect earlier document versions, and compare changes as your writing develops. |
+| Checkpoints and version diffs | Save named checkpoints in the History sidebar, preview saved text, and compare it with your current writing. |
 
 ## Try it
 
