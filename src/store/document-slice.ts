@@ -2,7 +2,7 @@ import { StoreSlice } from './store';
 import { DocumentInterface, FolderCollection, DocumentCurrent, EditorSettings, Snippet, DocumentVersion } from '@type/document';
 import { v4 as uuidv4 } from 'uuid';
 import { SaveStatus } from '@hooks/useAutosave';
-import { createCommit, listCommits, getCommitSnapshot, deleteCommit, pruneCommits, getCommit } from './commit-store';
+import { createCommit, listCommits, deleteCommit, pruneCommits, getCommit } from './commit-store';
 import { DocumentCommit } from '@type/commit';
 import { LexicalEditor } from 'lexical';
 import { $resolveDocumentSelection, type DocumentSelection } from '@utils/editor-selection';
@@ -61,6 +61,7 @@ export interface DocumentSlice {
   setAutosaveFlush: (flush: (() => Promise<void>) | null) => void;
   setAutosaveRetry: (retry: (() => Promise<void>) | null) => void;
   // Commit/checkpoint functions
+  checkpointRevision: number;
   createUserCommit: (documentId: string, message: string, activeSectionState: string) => Promise<DocumentCommit>;
   createAiCommit: (documentId: string, message: string, activeSectionState: string) => Promise<DocumentCommit>;
   listDocumentCommits: (documentId: string) => Promise<DocumentCommit[]>;
@@ -477,6 +478,8 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
       autosaveRetry: retry,
     }));
   },
+  // Transient invalidation for the open History pane; never persisted.
+  checkpointRevision: 0,
   // Commit/checkpoint functions
   createUserCommit: async (documentId: string, message: string, activeSectionState: string) => {
     const state = get();
@@ -506,7 +509,9 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
       },
     };
     
-    return await createCommit(documentId, 'user', message, snapshot);
+    const commit = await createCommit(documentId, 'user', message, snapshot);
+    set(state => ({ checkpointRevision: state.checkpointRevision + 1 }));
+    return commit;
   },
   createAiCommit: async (documentId: string, message: string, activeSectionState: string) => {
     const state = get();
@@ -534,7 +539,9 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
       },
     };
     
-    return await createCommit(documentId, 'ai', message, snapshot);
+    const commit = await createCommit(documentId, 'ai', message, snapshot);
+    set(state => ({ checkpointRevision: state.checkpointRevision + 1 }));
+    return commit;
   },
   listDocumentCommits: async (documentId: string) => {
     const commits = await listCommits(documentId);
@@ -548,6 +555,15 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
     return fullCommits.filter((c): c is DocumentCommit => c !== null);
   },
   restoreCommit: async (documentId: string, commitId: string) => {
+    const origin = get();
+    const originDoc = origin.chats?.[origin.currentChatIndex];
+    const stillCurrent = () => {
+      const latest = get();
+      const doc = latest.chats?.[latest.currentChatIndex];
+      return doc?.id === documentId && doc.currentVersion === originDoc?.currentVersion &&
+        latest.editorInstance === origin.editorInstance;
+    };
+    if (originDoc?.id !== documentId) throw new Error('Open this document before restoring its checkpoint.');
     // Flush autosave first
     const flush = get().autosaveFlush;
     if (flush) {
@@ -555,10 +571,12 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
     }
     
     // Get commit snapshot
-    const snapshot = await getCommitSnapshot(commitId);
-    if (!snapshot) {
+    const commit = await getCommit(commitId);
+    if (!commit || commit.doc_id !== documentId) {
       throw new Error(`Commit ${commitId} not found`);
     }
+    if (!stillCurrent()) throw new Error('The open document or section changed. Restore was cancelled.');
+    const snapshot = commit.snapshot;
     
     // Update document state
     set((prev: DocumentSlice) => {
@@ -610,6 +628,7 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
   },
   deleteCommit: async (commitId: string) => {
     await deleteCommit(commitId);
+    set(state => ({ checkpointRevision: state.checkpointRevision + 1 }));
   },
   pruneDocumentCommits: async (documentId: string, keepLastN: number = 50) => {
     return await pruneCommits(documentId, keepLastN);

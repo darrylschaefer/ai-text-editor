@@ -1,14 +1,13 @@
 import { useCallback, useMemo, useRef, useState, useEffect, useId } from "react";
 import defaultStyles from '@components/style';
-import { TextAlignCenter, TextAlignLeft, TextAlignRight, TextAlignJustify, TextBold, TextItalic, TextStrikethrough, TextUnderline, ChevronDown, RecentlyViewed } from '@carbon/icons-react';
+import { TextAlignCenter, TextAlignLeft, TextAlignRight, TextAlignJustify, TextBold, TextItalic, TextStrikethrough, TextUnderline, ChevronDown } from '@carbon/icons-react';
 import { ListNode } from "@lexical/list";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import useStore from '@store/store';
-import { DocumentVersion } from '@type/document';
+
 import { SaveStatus } from '@hooks/useAutosave';
 import { useWorkspaceToolbar } from '@components/Workspace/WorkspaceContext';
-import CommitHistoryModal from './CommitHistoryModal';
-import PopupModal from '@components/PopupModal';
+
 
 import {
   CAN_REDO_COMMAND,
@@ -297,46 +296,17 @@ function SaveStatusIndicator({
   status: SaveStatus; 
   onRetry?: () => void;
 }) {
-  const getStatusDisplay = () => {
-    switch (status) {
-      case 'saving':
-        return (
-          <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-            Saving...
-          </span>
-        );
-      case 'saved':
-        return (
-          <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-            <span className="inline-block w-2 h-2 bg-green-500 rounded-full" />
-            Saved
-          </span>
-        );
-      case 'error':
-        return (
-          <button
-            onClick={onRetry}
-            className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 hover:text-red-700 dark:hover:text-red-300 transition-colors"
-            title="Click to retry save"
-          >
-            <span className="inline-block w-2 h-2 bg-red-500 rounded-full" />
-            Error
-          </button>
-        );
-      case 'idle':
-      default:
-        return null;
-    }
-  };
-
+  const pending = status === 'pending' || status === 'saving';
+  const label = status === 'error' ? 'Save failed. Retry save' : pending ? 'Unsaved changes' : 'All changes saved';
+  const dot = <span aria-hidden="true" className={`block w-2 h-2 rounded-full ${status === 'error' ? 'bg-red-500' : pending ? 'bg-amber-500' : 'bg-green-500'}`} />;
   return (
-    <div className="px-2">
-      {getStatusDisplay()}
+    <div className="workspace-save-status" data-save-status={status}>
+      {status === 'error' ? <button type="button" onClick={onRetry} title={label} aria-label={label}>{dot}</button>
+        : <span role="status" title={label} aria-label={label}>{dot}<span className="sr-only">{label}</span></span>}
     </div>
   );
 }
-  
+
   const blockTypeToBlockName: Record<string, string> = {
     code: "Code Block",
     h1: "Large Heading",
@@ -355,6 +325,9 @@ function SaveStatusIndicator({
 function EditorToolbar() {
     const [editor] = useLexicalComposerContext();
     const toolbarTarget = useWorkspaceToolbar();
+    const autosaveStatus = useStore(state => state.autosaveStatus);
+    const autosaveRetry = useStore(state => state.autosaveRetry);
+
     const toolbarRef = useRef(null);
     const [canUndo, setCanUndo] = useState(false);
     const [canRedo, setCanRedo] = useState(false);
@@ -371,24 +344,8 @@ function EditorToolbar() {
     const [isUnderline, setIsUnderline] = useState(false);
     const [isStrikethrough, setIsStrikethrough] = useState(false);
     const [isCode, setIsCode] = useState(false);
-    const [showCommitHistory, setShowCommitHistory] = useState(false);
-    const [showHistoryMenu, setShowHistoryMenu] = useState(false);
-    const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
-    const [checkpointMessage, setCheckpointMessage] = useState('');
-    const [isCreatingCheckpoint, setIsCreatingCheckpoint] = useState(false);
-    const historyMenuRef = useRef<HTMLDivElement>(null);
-    const historyMenuId = useId();
     const blockMenuId = useId();
-    const historyTriggerRef = useRef<HTMLButtonElement>(null);
     const selectionRef = useRef<RangeSelection | null>(null);
-    const creatingRef = useRef(false);
-    const checkpointGeneration = useRef(0);
-    const aliveRef = useRef(true);
-    useEffect(() => {
-      aliveRef.current = true;
-      return () => { aliveRef.current = false; };
-    }, []);
-
     const restoreSelection = useCallback(() => {
       if ($getSelection() === null && selectionRef.current) {
         const saved = selectionRef.current;
@@ -399,105 +356,18 @@ function EditorToolbar() {
       editor.update(() => { restoreSelection(); editor.dispatchCommand(command, payload); });
     }, [editor, restoreSelection]);
     
-    const chats = useStore((state) => state.chats);
-    const currentChatIndex = useStore((state) => state.currentChatIndex);
-    const autosaveStatus = useStore((state) => state.autosaveStatus);
-    const autosaveFlush = useStore((state) => state.autosaveFlush);
-    const autosaveRetry = useStore((state) => state.autosaveRetry);
-    const createUserCommit = useStore((state) => state.createUserCommit);
-    const setToastMessage = useStore((state) => state.setToastMessage);
-    const setToastShow = useStore((state) => state.setToastShow);
-    const setToastStatus = useStore((state) => state.setToastStatus);
-    
-    const currentDoc = chats && chats[currentChatIndex] ? chats[currentChatIndex] : null;
-    const currentVersion: DocumentVersion = currentDoc?.currentVersion || 'Draft';
-    const closeCheckpoint = () => {
-      checkpointGeneration.current += 1;
-      setShowCheckpointDialog(false);
-      setCheckpointMessage('');
-    };
-
-    const handleCreateCheckpoint = async () => {
-      if (creatingRef.current) return;
-      if (!checkpointMessage.trim()) {
-        alert('Please enter a message for this checkpoint.');
-        return;
-      }
-      
-      if (!currentDoc) return;
-      
-      creatingRef.current = true;
-      const generation = ++checkpointGeneration.current;
-      setIsCreatingCheckpoint(true);
-      
-      try {
-        // Capture current editor state
-        const editorState = editor.getEditorState();
-        const stateJson = JSON.stringify(editorState.toJSON());
-        
-        // Flush autosave first to ensure we have the latest state
-        if (autosaveFlush) {
-          await autosaveFlush();
-        }
-        if (!aliveRef.current || generation !== checkpointGeneration.current) return;
-        
-        // Create commit
-        await createUserCommit(currentDoc.id, checkpointMessage.trim(), stateJson);
-        if (!aliveRef.current || generation !== checkpointGeneration.current) return;
-        
-        // Show success toast
-        setToastMessage('Checkpoint created successfully');
-        setToastShow(true);
-        setToastStatus('success');
-        
-        // Reset
-        closeCheckpoint();
-        setShowHistoryMenu(false);
-      } catch (error) {
-        console.error('Failed to create checkpoint:', error);
-        if (!aliveRef.current || generation !== checkpointGeneration.current) return;
-        setToastMessage('Failed to create checkpoint');
-        setToastShow(true);
-        setToastStatus('error');
-      } finally {
-        creatingRef.current = false;
-        if (aliveRef.current) setIsCreatingCheckpoint(false);
-      }
-    };
-
     useEffect(() => {
-      if (!showBlockOptionsDropDown && !showHistoryMenu) return;
+      if (!showBlockOptionsDropDown) return;
       const close = (event: globalThis.KeyboardEvent) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
         event.preventDefault();
         event.stopPropagation();
-        if (showBlockOptionsDropDown) {
-          setShowBlockOptionsDropDown(false);
-          (toolbarRef.current as HTMLDivElement | null)?.querySelector<HTMLButtonElement>('[aria-label="Formatting Options"]')?.focus();
-        } else {
-          setShowHistoryMenu(false);
-          historyTriggerRef.current?.focus();
-        }
+        setShowBlockOptionsDropDown(false);
+        (toolbarRef.current as HTMLDivElement | null)?.querySelector<HTMLButtonElement>('[aria-label="Formatting Options"]')?.focus();
       };
       document.addEventListener('keydown', close);
       return () => document.removeEventListener('keydown', close);
-    }, [showBlockOptionsDropDown, showHistoryMenu]);
-
-    // Close history menu when clicking outside
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (historyMenuRef.current && !historyMenuRef.current.contains(event.target as Node)) {
-          setShowHistoryMenu(false);
-        }
-      };
-
-      if (showHistoryMenu) {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-          document.removeEventListener('mousedown', handleClickOutside);
-        };
-      }
-    }, [showHistoryMenu]);
+    }, [showBlockOptionsDropDown]);
   
     const updateToolbar = useCallback(() => {
       const selection = $getSelection();
@@ -642,7 +512,6 @@ function EditorToolbar() {
             <button
               className={defaultStyles.buttonStyle + " border-[1px] border-gray-200 dark:border-gray-800/30"}
               onClick={() => {
-                setShowHistoryMenu(false);
                 setShowBlockOptionsDropDown(!showBlockOptionsDropDown);
               }}
               aria-label="Formatting Options"
@@ -828,106 +697,8 @@ function EditorToolbar() {
       <div className="workspace-document-actions">
         <Divider />
         {/* Save Status Indicator */}
-        <SaveStatusIndicator status={autosaveStatus} onRetry={autosaveRetry ? () => autosaveRetry() : undefined} />
-        {/* History Menu Button */}
-        {currentDoc && currentVersion !== 'Snippets' && (
-          <div className="relative" ref={historyMenuRef}>
-            <button
-              type="button"
-              ref={historyTriggerRef}
-              onClick={() => { setShowBlockOptionsDropDown(false); setShowHistoryMenu(!showHistoryMenu); }}
-              className="workspace-history-button"
-              title="Version history"
-              aria-label="Version history"
-              aria-expanded={showHistoryMenu}
-              aria-controls={showHistoryMenu ? historyMenuId : undefined}
-            >
-              <RecentlyViewed size={16} aria-hidden="true" />
-              <ChevronDown size={16} aria-hidden="true" />
-            </button>
-            {showHistoryMenu && (
-              <div id={historyMenuId} role="group" aria-label="Version history actions" className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-800/30 z-50">
-                <button
-                  onClick={() => {
-                    historyTriggerRef.current?.focus();
-                    setShowCheckpointDialog(true);
-                    setShowHistoryMenu(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 first:rounded-t-md"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                    <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.061L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
-                  </svg>
-                  Create Checkpoint
-                </button>
-                <button
-                  onClick={() => {
-                    historyTriggerRef.current?.focus();
-                    setShowCommitHistory(true);
-                    setShowHistoryMenu(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 last:rounded-b-md"
-                >
-                  <RecentlyViewed size={16} aria-hidden="true" />
-                  View History
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        <SaveStatusIndicator status={autosaveStatus} onRetry={autosaveRetry || undefined} />
       </div>
-      {/* Commit History Modal */}
-      {currentDoc && showCommitHistory && (
-        <CommitHistoryModal
-          documentId={currentDoc.id}
-          isOpen={showCommitHistory}
-          onClose={() => setShowCommitHistory(false)}
-          currentSection={currentVersion}
-        />
-      )}
-      {/* Checkpoint Dialog */}
-      {showCheckpointDialog && (
-        <PopupModal title="Create Checkpoint" cancelButton={false} initialFocus='[aria-label="Checkpoint message"]'
-          setIsModalOpen={closeCheckpoint}>
-          <div className="w-full max-w-md p-6">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Save a snapshot of your document at this point in time. You can restore it later.
-            </p>
-            <input
-              type="text"
-              value={checkpointMessage}
-              onChange={(e) => setCheckpointMessage(e.target.value)}
-              aria-label="Checkpoint message"
-              placeholder="Checkpoint message (e.g., 'Before major rewrite')"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleCreateCheckpoint();
-                }
-              }}
-              autoFocus
-            />
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={closeCheckpoint}
-                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                disabled={isCreatingCheckpoint}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateCheckpoint}
-                disabled={isCreatingCheckpoint || !checkpointMessage.trim()}
-                className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isCreatingCheckpoint ? 'Creating...' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </PopupModal>
-      )}
       {/* <div>
         <ActionBar />
       </div> */}

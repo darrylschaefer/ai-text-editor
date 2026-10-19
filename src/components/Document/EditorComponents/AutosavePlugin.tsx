@@ -83,5 +83,5 @@ export default function AutosavePlugin({ documentId, section }: AutosavePluginPr
     triggerSave(editorState);
   };
   
-  return <OnChangePlugin onChange={handleChange} />;
+  return <OnChangePlugin onChange={handleChange} ignoreSelectionChange />;
 }
