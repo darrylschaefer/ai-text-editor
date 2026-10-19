@@ -149,7 +149,7 @@ const useUnifiedSubmit = () => {
 
         const inputMessage = conversationMessages[0];
         // Replace special commands at runtime before sending to API
-        const currentSelection = useStore.getState().currentSelection;
+        const currentSelection = useStore.getState().getCurrentSelection();
         const specialCommandsResult = replaceSpecialCommands(inputMessage.content, currentSelection);
         const prompt = specialCommandsResult.result;
 
@@ -168,7 +168,7 @@ const useUnifiedSubmit = () => {
         }
       } else if (apiEndpointType === 'responses') {
         // Responses endpoint - use previous_response_id threading
-        const currentSelection = useStore.getState().currentSelection;
+        const currentSelection = useStore.getState().getCurrentSelection();
         
         // Get the last response ID for threading
         const lastResponseId = currentConversation?.lastResponseId;

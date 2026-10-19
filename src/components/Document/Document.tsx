@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useEffect } from "react";
 import useStore from '@store/store';
 import { documentEditorState } from './editorState';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
@@ -41,7 +41,6 @@ const Document = () => {
     } : doc));
   }, [currentDoc, setChats]);
 
-  const editorRef = useRef(null);
   const editorConfig = {
     namespace: 'MyEditor',
     theme: lexicalTheme,
@@ -74,7 +73,6 @@ const Document = () => {
               <div className="flex-grow w-full h-full min-h-0">
                 <div className='relative h-full min-h-0 flex flex-grow flex-col'>
                   <div 
-                    ref={editorRef} 
                     className="editor-inner group"
                   >
                     <EditorToolbar />
@@ -96,7 +94,7 @@ const Document = () => {
                     )}
                     <HistoryPlugin />
                     <ListPlugin />
-                    <EditorSelection editorRef={editorRef} />
+                    <EditorSelection />
                   </div>
                 </div>
               </div>

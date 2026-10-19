@@ -56,7 +56,7 @@ export const readDocument = async (args: any): Promise<string> => {
  */
 export const readSelection = async (args: any): Promise<string> => {
   try {
-    const currentSelection = useStore.getState().currentSelection;
+    const currentSelection = useStore.getState().getCurrentSelection();
     
     if (!currentSelection || currentSelection.trim() === '') {
       return 'No text is currently selected in the editor.';

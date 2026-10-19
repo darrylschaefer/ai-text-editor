@@ -572,22 +572,7 @@ export async function runAgent(
           try {
             const patchResult = await applyPatches(editor, toolArgs.ops, false);
             if (patchResult.success) {
-              // Clear the selection overlay after successful patch application
-              try {
-                const container = document.querySelector('[data-selection-overlay-container="true"]');
-                if (container) {
-                  while (container.firstChild) {
-                    container.removeChild(container.firstChild);
-                  }
-                }
-                const setCurrentSelection = useStore.getState().setCurrentSelection;
-                if (setCurrentSelection) {
-                  setCurrentSelection('');
-                }
-              } catch (error) {
-                // Silently fail if selection overlay doesn't exist
-                console.debug('[agent-runner] Could not clear selection overlay:', error);
-              }
+              useStore.getState().setEditorSelection(null);
               // Create AI commit
               const chats = useStore.getState().chats;
               const doc = chats?.find(d => d.id === options.doc_id);

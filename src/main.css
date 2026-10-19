@@ -5,6 +5,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Inactive selection uses one quiet, opaque shade behind the text. */
+.editor-input { --retained-selection-bg: #e8eaed; }
+.dark .editor-input { --retained-selection-bg: #292b31; }
+
+/* Only the retained highlight paints while focus is elsewhere. */
+.editor-input[data-retained-selection]::selection,
+.editor-input[data-retained-selection] *::selection {
+  background-color: transparent;
+  color: inherit;
+  text-shadow: none;
+}
+
+@media (forced-colors: active) {
+  .editor-input { --retained-selection-bg: Highlight; }
+}
+
 @layer base {
   * {
     box-sizing: border-box;

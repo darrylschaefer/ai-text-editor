@@ -1,243 +1,117 @@
-import { useCallback, useMemo, useRef, useState, useEffect, useLayoutEffect } from "react";
+import { useEffect } from 'react';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { createDOMRange } from '@lexical/selection';
+import { $getRoot, $getSelection, $isRangeSelection, COMMAND_PRIORITY_LOW,
+  SELECTION_CHANGE_COMMAND, type EditorState } from 'lexical';
 import useStore from '@store/store';
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import type {GridSelection, NodeSelection } from 'lexical';
+import { $captureDocumentSelection, $resolveDocumentSelection, sameDocumentSelection,
+  type DocumentSelection } from '@utils/editor-selection';
+import { createSelectionHighlight } from '@utils/selection-highlight';
 
-import {
-  SELECTION_CHANGE_COMMAND,
-  $getSelection,
-  $isRangeSelection,
-  RangeSelection
-} from "lexical";
-import { createDOMRange, createRectsFromDOMRange
-} from "@lexical/selection";
+/** One owned selection for both assistant context and its retained visual highlight. */
+export default function EditorSelection() {
+  const [editor] = useLexicalComposerContext();
+  const documentId = useStore(state => state.chats?.[state.currentChatIndex]?.id);
+  const section = useStore(state => state.chats?.[state.currentChatIndex]?.currentVersion || 'Draft');
 
-const LowPriority = 1;
+  useEffect(() => {
+    let alive = true;
+    let queued = false;
+    let root: HTMLElement | null = null;
+    let highlight: ReturnType<typeof createSelectionHighlight> | null = null;
+    let previousText: string | null = null;
 
+    const owns = (saved: DocumentSelection | null) => saved?.editor === editor;
+    const clear = () => {
+      if (owns(useStore.getState().editorSelection)) useStore.getState().setEditorSelection(null);
+      highlight?.clear();
+    };
+    const isCurrentDocument = () => {
+      const state = useStore.getState();
+      const doc = state.chats?.[state.currentChatIndex];
+      return doc?.id === documentId && (doc?.currentVersion || 'Draft') === section;
+    };
 
-const EditorSelection = (editorRef: any) => {
-    const [editor] = useLexicalComposerContext();
-    const boxRef = useRef<HTMLDivElement>(null);
-    const selectionState = useMemo(
-      () => {
-        const container = document.createElement('div');
-        container.setAttribute('data-selection-overlay-container', 'true');
-        return {
-          container,
-          elements: [],
-        };
-      },
-      [],
-    );
-    if (selectionState.container) {
-      // selectionState.container.classList.add("opacity-50");
-      // selectionState.container.classList.add("pointer-events-none");
-        }
-    const selectionRef = useRef<RangeSelection | null>(null);
-    const chats = useStore((state) => state.chats);
-    const currentChatIndex = useStore((state) => state.currentChatIndex);
-    const currentSelection = useStore((state) => state.currentSelection);
-    const setCurrentSelection = useStore((state) => state.setCurrentSelection);
-
-    // Scan for selection change events and save the selection in storage
-
-    let selectionRepeat: RangeSelection | GridSelection | NodeSelection | null = null;
-        editor.registerCommand(SELECTION_CHANGE_COMMAND, () => {
-       const tempSelection = $getSelection();
-     if(selectionRepeat != tempSelection){
-         selectionRepeat = tempSelection;
-          if(selectionRepeat?.getTextContent() != null){
-          setCurrentSelection(selectionRepeat?.getTextContent());
-          }
-      }
-      return true;
-    }, LowPriority);
-
-    function roundToNearest24(num: number) {
-      return Math.round(num/24)*24;
-  }
-
-// get .editor-input element and log to console when it scrolls, useRef and useEffect, on finished scrolling, run updateLocation
-
-    const editorInput = document.getElementsByClassName("editor-input");
-    
-    useEffect(() => {
-      if (editorInput[0] !== undefined) {
-        editorInput[0].addEventListener("scroll", () => {
-          resetLocation();
-        });
-      }
-
-      if (editorInput[0] !== undefined) {
-        editorInput[0].addEventListener("scrollend", () => {
-          updateLocation();
-        });
-      }
-
-    }, [editorInput]);
-
-
-
-
-
-    const updateLocation = useCallback(() => {
+    const paint = () => {
+      highlight?.clear();
+      if (!root || root.contains(root.ownerDocument.activeElement) || !isCurrentDocument()) return;
+      const saved = useStore.getState().getEditorSelection();
+      if (!owns(saved) || !saved) return;
       editor.getEditorState().read(() => {
-        var element = document.getElementsByClassName("editor-input");
-        const selection = $getSelection();
-  
-        if ($isRangeSelection(selection)) {
-          selectionRef.current = selection.clone();
-          const anchor = selection.anchor;
-          const focus = selection.focus;
-          const range = createDOMRange(
-            editor,
-            anchor.getNode(),
-            anchor.offset,
-            focus.getNode(),
-            focus.offset,
-          );
-          const boxElem = boxRef.current;
-          if (range !== null && boxElem !== null) {
-            const {left, bottom, width} = range.getBoundingClientRect();  
-            const selectionRects = createRectsFromDOMRange(editor, range);
+        const range = $resolveDocumentSelection(saved);
+        if (!range) return;
+        const domRange = createDOMRange(editor, range.anchor.getNode(), range.anchor.offset,
+          range.focus.getNode(), range.focus.offset);
+        if (domRange && root?.contains(domRange.commonAncestorContainer)) highlight?.show(domRange);
+      });
+    };
 
-            let correctedLeft =
-              selectionRects.length === 1 ? left + width / 2 - 125 : left - 125;
-            if (correctedLeft < 10) {
-              correctedLeft = 10;
-            }
-            boxElem.style.left = `${correctedLeft}px`;
-            boxElem.style.top = `${bottom + 20}px`;
-            const selectionRectsLength = selectionRects.length;
-            const {container} = selectionState;
-            const elements: Array<HTMLSpanElement> = selectionState.elements;
-            const elementsLength = elements.length;
-        
-            for (let i = 0; i < selectionRectsLength; i++) {
-            let color = '50,150,255';
-             const selectionRect = selectionRects[i];
-              let elem: HTMLSpanElement = elements[i];
-              if (elem === undefined) {
-                elem = document.createElement('span');
-                elements[i] = elem;
-                container.appendChild(elem);
-              }
-              const style = `mix-blend-mode:color;position:absolute;top:${selectionRect.top}px;left:${selectionRect.left}px;height:${selectionRect.height}px;width:${selectionRect.width}px;background-color:rgba(${color}, 1);pointer-events:none;z-index:5;`;
-              elem.style.cssText = style;
-            
-            }
-             for (let i = elementsLength - 1; i >= selectionRectsLength; i--) {
-               const elem = elements[i];
-               container.removeChild(elem);
-               elements.pop();
-             }
-          }
+    const sync = (state: EditorState = editor.getEditorState()) => {
+      if (!alive || !isCurrentDocument()) { clear(); return; }
+      state.read(() => {
+        const text = $getRoot().getTextContent();
+        const contentChanged = previousText !== null && previousText !== text;
+        previousText = text;
+        const range = $getSelection();
+        const focused = !!root?.contains(root.ownerDocument.activeElement);
+        const saved = useStore.getState().editorSelection;
+        let next: DocumentSelection | null = owns(saved) ? saved : null;
+
+        if (focused) {
+          next = documentId && $isRangeSelection(range) && !range.isCollapsed() && range.getTextContent()
+            ? $captureDocumentSelection(editor, documentId, section, range) : null;
+        } else if (next) {
+          if (contentChanged) next = null;
+          else if ($isRangeSelection(range) && !range.isCollapsed()) {
+            // Formatting can split text nodes. Only carry that range forward
+            // if the content AND both absolute text positions are unchanged.
+            const updated = $captureDocumentSelection(editor, next.documentId, section, range);
+            if (updated.text === next.text && updated.anchorTextOffset === next.anchorTextOffset &&
+              updated.focusTextOffset === next.focusTextOffset) next = updated;
+            else if (!$resolveDocumentSelection(next)) next = null;
+          } else if (!$resolveDocumentSelection(next)) next = null;
         }
+
+        if (!sameDocumentSelection(saved, next)) useStore.getState().setEditorSelection(next);
       });
-    }, [editor, selectionState]);
+      paint();
+    };
+    const scheduleSync = () => {
+      if (queued || !alive) return;
+      queued = true;
+      queueMicrotask(() => { queued = false; if (alive) sync(); });
+    };
+    const onFocus = () => { highlight?.clear(); scheduleSync(); };
 
+    const removeUpdate = editor.registerUpdateListener(({ editorState }) => sync(editorState));
+    const removeSelection = editor.registerCommand(SELECTION_CHANGE_COMMAND, () => {
+      scheduleSync();
+      return false;
+    }, COMMAND_PRIORITY_LOW);
+    const removeRoot = editor.registerRootListener((nextRoot, previousRoot) => {
+      previousRoot?.removeEventListener('focus', onFocus);
+      previousRoot?.removeEventListener('blur', scheduleSync);
+      highlight?.dispose();
+      root = nextRoot;
+      highlight = root ? createSelectionHighlight(root) : null;
+      root?.addEventListener('focus', onFocus);
+      root?.addEventListener('blur', scheduleSync);
+      scheduleSync();
+    });
+    const removeStore = useStore.subscribe((state, previous) => {
+      if (!isCurrentDocument()) { clear(); return; }
+      if (state.editorSelection !== previous.editorSelection || state.editorInstance !== previous.editorInstance) paint();
+    });
 
-    const resetLocation = useCallback(() => {
-      // remove elements with class selection-box-inner
+    return () => {
+      alive = false;
+      removeStore(); removeUpdate(); removeSelection(); removeRoot();
+      root?.removeEventListener('focus', onFocus);
+      root?.removeEventListener('blur', scheduleSync);
+      clear();
+      highlight?.dispose();
+    };
+  }, [editor, documentId, section]);
 
-
-      editor.getEditorState().read(() => {
-        const selection = $getSelection();
-  
-        if ($isRangeSelection(selection)) {
-          selectionRef.current = selection.clone();
-          const anchor = selection.anchor;
-          const focus = selection.focus;
-          const range = createDOMRange(
-            editor,
-            anchor.getNode(),
-            anchor.offset,
-            focus.getNode(),
-            focus.offset,
-          );
-          const boxElem = boxRef.current;
-          if (range !== null && boxElem !== null) {
-            const {left, bottom, width} = range.getBoundingClientRect();
-            const selectionRects = createRectsFromDOMRange(editor, range);
-            let correctedLeft =
-              selectionRects.length === 1 ? left + width / 2 - 125 : left - 125;
-            if (correctedLeft < 10) {
-              correctedLeft = 10;
-            }
-            boxElem.style.left = `-2000px`;
-            boxElem.style.top = `-2000px`;
-            const selectionRectsLength = selectionRects.length;
-            const {container} = selectionState;
-            const elements: Array<HTMLSpanElement> = selectionState.elements;
-            const elementsLength = elements.length;
- 
-            for (let i = 0; i < selectionRectsLength; i++) {
-              const selectionRect = selectionRects[i];
-              let elem: HTMLSpanElement = elements[i];
-              if (elem === undefined) {
-                elem = document.createElement('span');
-                elements[i] = elem;
-                container.appendChild(elem);
-              }
-              const color = '0, 0, 0';
-              const style = `position:absolute;display:none;top:-2000px;opacity:0;left:-2000px;height:0px;width:0px;background-color:rgba(${color}, 0.3);pointer-events:none;z-index:5;`;
-              elem.style.cssText = style;
-            }
-             for (let i = elementsLength - 1; i >= selectionRectsLength; i--) {
-               const elem = elements[i];
-               container.removeChild(elem);
-               elements.pop();
-             }
-          }
-        }
-      });
-    }, [editor, selectionState]);
-
-  
-  
-    useLayoutEffect(() => {
-      updateLocation();
-      const container = selectionState.container;
-      const body = document.body;
-      if (body !== null) {
-        body.appendChild(container);
-        return () => {
-          body.removeChild(container);
-        };
-      }
-    }, [selectionState.container, updateLocation]);
-  
-    useEffect(() => {
-      window.addEventListener('resize', updateLocation);
-      document.getElementsByClassName("editor-input")[0].addEventListener("blur", () => {
-        updateLocation();
-      });
-
-      document.getElementsByClassName("editor-input")[0].addEventListener("focus", () => {
-        resetLocation();
-      });
-  
-      return () => {
-        window.removeEventListener('resize', updateLocation);
-      };
-    }, [updateLocation]);
-
-
-        useEffect(() => {
-          setCurrentSelection("");
-          selectionState.elements.forEach((element: HTMLBodyElement) => {
-            element.remove();            
-          });
-          selectionState.elements = [];
-        }, [currentChatIndex]);
-
-
-    return (
-      <div ref={boxRef} className="selection-box">
-        <div className="selection-box-inner" />
-      </div>
-    )
-
-  }
-
-  export default EditorSelection
+  return null;
+}

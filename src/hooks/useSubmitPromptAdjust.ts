@@ -65,7 +65,7 @@ const useSubmitPromptAdjust = () => {
 
   const handleSubmit = async ({prompt, modifiedConfig}:{prompt: any, modifiedConfig?: ConfigInterface}) => {
     const chats = useStore.getState().chats;
-    const currentSelection = useStore.getState().currentSelection;
+    const currentSelection = useStore.getState().getCurrentSelection();
     const defaultChatConfig = useStore.getState().defaultChatConfig;
     const prompts = useStore.getState().prompts;
     const setActionQueue = useStore.getState().setActionQueue;
