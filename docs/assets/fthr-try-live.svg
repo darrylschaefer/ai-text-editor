@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="48" viewBox="0 0 220 48" role="img" aria-labelledby="title">
+  <title id="title">Try fthr live</title>
+  <defs>
+    <linearGradient id="accent" x1="0" y1="24" x2="220" y2="24" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#63D8F5"/>
+      <stop offset=".5" stop-color="#7D99FF"/>
+      <stop offset="1" stop-color="#B08CFF"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="218" height="46" rx="10" fill="#101115" stroke="url(#accent)" stroke-width="1.5"/>
+  <text x="97" y="30" fill="#E8E8EE" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Try fthr live</text>
+  <path d="M160 24h14m-5-5 5 5-5 5" fill="none" stroke="#E8E8EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
