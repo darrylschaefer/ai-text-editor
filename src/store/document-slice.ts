@@ -42,6 +42,8 @@ export interface DocumentSlice {
   setCurrentSelection: (currentSelection: string) => void;
   setEditorInstance: (editor: LexicalEditor | null) => void;
   clearEditorInstance: () => void;
+  notesOpenRequest: string | null;
+  setNotesOpenRequest: (documentId: string | null) => void;
   setDocumentVersion: (documentId: string, version: DocumentVersion) => Promise<void>;
   createSnippet: (documentId: string, content?: string, name?: string) => string;
   updateSnippet: (documentId: string, snippetId: string, updates: Partial<Snippet>) => void;
@@ -110,6 +112,8 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
   currentSelection: '',
   editorSelection: null,
   editorInstance: null,
+  notesOpenRequest: null,
+  setNotesOpenRequest: (notesOpenRequest) => set({ notesOpenRequest }),
   editorSettings: {
     activeMenu: 'chat',
   },
@@ -206,6 +210,14 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
     }));
   },
   setDocumentVersion: async (documentId: string, version: DocumentVersion) => {
+    // Keep legacy navigation/tool callers working without unmounting the
+    // manuscript or changing its active section and remembered selection.
+    if (version === 'Snippets') {
+      if (get().chats?.[get().currentChatIndex]?.id === documentId) {
+        set({ notesOpenRequest: documentId });
+      }
+      return;
+    }
     const request = Symbol('document-version');
     versionRequests.set(documentId, request);
     // Flush any pending autosave before switching sections
@@ -234,8 +246,8 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
           
           const updatedChat = { ...chat };
           
-          // Save to the version we're leaving (only if not switching to/from Snippets)
-          if (currentVersion !== 'Snippets' && version !== 'Snippets') {
+          // Legacy Snippets has no manuscript editor state to save.
+          if (currentVersion !== 'Snippets') {
             if (currentVersion === 'Draft') {
               updatedChat.draftEditorState = currentEditorState;
             } else if (currentVersion === 'Finished') {

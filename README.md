@@ -21,7 +21,7 @@
 
 fthr is a customizable word processor that brings your documents, AI agents, and reusable macros into one workspace. It runs in your browser, giving you a place to write, organize, and revise your work.
 
-Send selected passages directly to AI, build prompts that draw on your snippets and document metadata, and configure agents with your own instructions and model settings. Save macros for the writing and editing tasks you repeat, from developing ideas to revising a draft.
+Send selected passages directly to AI, build prompts that draw on your notes and document metadata, and configure agents with your own instructions and model settings. Save macros for the writing and editing tasks you repeat, from developing ideas to revising a draft.
 
 Keep your documents local in your browser, and connect your own API key for AI assistance. AI requests send the relevant text and context to your configured provider.
 
@@ -31,8 +31,8 @@ Keep your documents local in your browser, and connect your own API key for AI a
 | --- | --- |
 | Instant macros and selection sending | Run saved prompts against a selected passage, with individual model settings for each macro. |
 | AI agents with document tools | Configure agents with your own instructions and model settings, with tools for reading, searching, and editing documents. |
-| Context-aware prompts | Include selected text, named snippets, and document metadata in your prompts, using references that pull in the relevant content. |
-| Draft, Finished, and Snippets | Keep separate draft and finished text within a document, alongside named snippets you can collect and reuse. Organize documents into folders. |
+| Context-aware prompts | Include selected text, named notes, and document metadata in your prompts, using references that pull in the relevant content. |
+| Writing and notes | Keep separate Draft and Finished text within a document, with reusable notes in the right sidebar. Organize documents into folders. |
 | Custom document metadata | Keep tags, descriptions, and custom fields with a document, and reference those fields in AI prompts. |
 | Semantic and hybrid search | Search by keyword, by meaning through embeddings, or combine both approaches to retrieve relevant passages. Embedding search requires configuration. |
 | Checkpoints and version diffs | Save named checkpoints, inspect earlier document versions, and compare changes as your writing develops. |
