@@ -2,7 +2,7 @@
 import { StrictMode, useState } from 'react';
 import { act } from 'react-dom/test-utils';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { $createRangeSelection, $getRoot, $getSelection, $setSelection } from 'lexical';
 import useStore, { type StoreState } from '@store/store';
 import { type DocumentInterface } from '@type/document';
@@ -148,6 +148,10 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
+// The existing autosave status indicator schedules a two-second idle reset.
+// Let its callbacks settle before Vitest tears down this file's DOM window.
+afterAll(() => new Promise(resolve => setTimeout(resolve, 2100)));
+
 describe('relocated editor toolbar', () => {
   it.each([['Format Bold', '.editor-text-bold'], ['Format Italics', '.editor-text-italic'],
     ['Format Underline', '.editor-text-underline'], ['Format Strikethrough', '.editor-text-strikethrough']])
@@ -282,13 +286,17 @@ describe('relocated editor toolbar', () => {
     expect(editor()).not.toBe(previous);
   });
 
-  it('preserves each section and swaps the toolbar when visiting Snippets', async () => {
+  it('preserves each section and the toolbar when legacy callers request Notes', async () => {
     await mount(); await select(); await click('Format Bold');
     await click('Finished Version'); expect(content().textContent).toBe('Alpha finished text.');
     expect(control('Format Bold').getAttribute('aria-pressed')).toBe('false');
-    await click('Snippets Version');
-    expect(container.querySelector('[data-toolbar-target] [role="toolbar"]')).toBeNull();
-    expect(control('Create New Snippet')).toBeDefined();
+    const finishedEditor = editor();
+    await act(async () => { await useStore.getState().setDocumentVersion('Alpha', 'Snippets'); await tick(); });
+    expect(editor()).toBe(finishedEditor);
+    expect(useStore.getState().chats![0].currentVersion).toBe('Finished');
+    expect(useStore.getState().notesOpenRequest).toBe('Alpha');
+    expect(container.querySelector('[data-toolbar-target] [role="toolbar"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Snippets Version"]')).toBeNull();
     await click('Draft Version');
     expect(content().querySelector('.editor-text-bold')?.textContent).toBe('blue');
     expect(container.querySelectorAll('[role="toolbar"]')).toHaveLength(1);
@@ -322,13 +330,11 @@ describe('relocated editor toolbar', () => {
     for (let i = 0; i < 3; i++) {
       await click('Finished Version'); expect(content().textContent).toBe('Alpha finished text.');
       await click('Open Beta');
-      if (i > 0) {
-        expect(container.querySelector('[role="toolbar"]')).toBeNull();
-        await click('Draft Version');
-      }
+      if (i > 0) await click('Draft Version');
       expect(content().textContent).toBe('Beta draft text.');
       await click('Finished Version'); expect(content().textContent).toBe('Beta finished text.');
-      await click('Snippets Version'); expect(container.querySelector('[role="toolbar"]')).toBeNull();
+      await act(async () => { await useStore.getState().setDocumentVersion('Beta', 'Snippets'); await tick(); });
+      expect(container.querySelector('[role="toolbar"]')).not.toBeNull();
       await click('Open Alpha'); expect(content().textContent).toBe('Alpha finished text.');
       await click('Draft Version'); expect(content().textContent).toBe('The blue bird sings.');
       const beta = useStore.getState().chats![1];

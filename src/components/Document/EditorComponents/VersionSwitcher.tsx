@@ -7,7 +7,7 @@ interface VersionSwitcherProps {
 
 const VersionSwitcher = ({ currentVersion, onVersionChange }: VersionSwitcherProps) => (
   <div className="workspace-versions" role="group" aria-label="Document section">
-    {(['Draft', 'Finished', 'Snippets'] as DocumentVersion[]).map(version => (
+    {(['Draft', 'Finished'] as DocumentVersion[]).map(version => (
       <button key={version} type="button" aria-label={`${version} Version`} aria-pressed={currentVersion === version}
         onClick={() => onVersionChange(version)}>{version}</button>
     ))}

@@ -4,6 +4,7 @@ import ChatContent from '@components/Chat/ChatContent/ChatContent';
 import AgentChat from '@components/Menu/DocumentMenu/AgentChat';
 import PromptMenuContent from './PromptLibrary/PromptMenuContent';
 import MetaMenu from './MetaMenu';
+import NotesView from './Notes/NotesView';
 
 interface AIMenuProps {
   activeMenu: string;
@@ -15,7 +16,7 @@ const AIMenu = ({ activeMenu, setActiveMenu }: AIMenuProps) => {
   const activeConversation = useStore(state => state.getActiveConversation());
   return (
     <div className="workspace-pane-content">
-      {activeMenu === 'meta' ? <MetaMenu /> : activeMenu === 'actions' ? (
+      {activeMenu === 'notes' ? <NotesView /> : activeMenu === 'meta' ? <MetaMenu /> : activeMenu === 'actions' ? (
         <PromptMenuContent setActiveMenu={setActiveMenu} activeMenu={activeMenu} />
       ) : activeConversation || selectedAgentId ? <AgentChat /> : <ChatContent />}
     </div>

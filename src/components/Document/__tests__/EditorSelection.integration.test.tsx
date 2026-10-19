@@ -229,7 +229,7 @@ describe('owned editor selection and retained highlight', () => {
     expect(retained()).toBeUndefined();
   });
 
-  it.each(['Finished Version', 'Snippets Version', 'Open Beta'])('clears context and painting on %s', async target => {
+  it.each(['Finished Version', 'Open Beta'])('clears context and painting on %s', async target => {
     await mount(); await select(); await leaveEditor(); await click(target);
     expect(useStore.getState().getCurrentSelection()).toBe('');
     expect(useStore.getState().editorSelection).toBeNull();

@@ -19,7 +19,6 @@ import AutosavePlugin from "./EditorComponents/AutosavePlugin";
 import BlockIdNormalizationPlugin from "./EditorComponents/BlockIdNormalizationPlugin";
 import EditorStorePlugin from "./EditorComponents/EditorStorePlugin";
 import lexicalTheme from "./LexicalTheme";
-import SnippetsView from './SnippetsComponents/SnippetsView';
 
 const Document = () => {
   const currentChatIndex = useStore(state => state.currentChatIndex);
@@ -50,18 +49,9 @@ const Document = () => {
       CodeHighlightNode, TableNode, TableCellNode, TableRowNode, AutoLinkNode, LinkNode],
   };
 
-  const isSnippetsView = currentVersion === 'Snippets';
-
-  // Render Snippets view if version is 'Snippets'
-  if (isSnippetsView && currentDoc) {
-    return (
-      <div className="workspace-document">
-        <main className="workspace-document-main">
-          <SnippetsView documentId={currentDoc.id} />
-        </main>
-      </div>
-    );
-  }
+  // Workspace opens Notes and normalizes this legacy navigation value before
+  // mounting a manuscript editor. Never autosave a note view as manuscript text.
+  if (currentVersion === 'Snippets') return null;
 
   // Render regular editor for Draft/Finished
   return (

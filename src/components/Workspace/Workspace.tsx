@@ -27,6 +27,8 @@ const Workspace = () => {
   const setHideRight = useStore(state => state.setHideSideAIMenu);
   const currentDoc = useStore(state => state.chats?.[state.currentChatIndex]);
   const setDocumentVersion = useStore(state => state.setDocumentVersion);
+  const notesOpenRequest = useStore(state => state.notesOpenRequest);
+  const setNotesOpenRequest = useStore(state => state.setNotesOpenRequest);
   const [activeMenu, setActiveMenu] = useState('chat');
   const [toolbarTarget, setToolbarTarget] = useState<HTMLDivElement | null>(null);
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1023px)').matches);
@@ -132,6 +134,23 @@ const Workspace = () => {
     if (compact) setMobilePane('right');
     else setHideRight(false);
   }, [compact, setHideRight]);
+
+  useEffect(() => {
+    if (notesOpenRequest && notesOpenRequest !== currentDoc?.id) {
+      setNotesOpenRequest(null);
+      return;
+    }
+    const legacyNotesView = currentDoc?.currentVersion === 'Snippets';
+    if (!currentDoc || (!legacyNotesView && !notesOpenRequest)) return;
+    setActiveMenu('notes');
+    if (compact) setMobilePane('right');
+    else setHideRight(false);
+    setNotesOpenRequest(null);
+    // Both saved writing copies remain intact. Older documents that were
+    // left in Snippets reopen their Draft beside the Notes sidebar.
+    if (legacyNotesView) void setDocumentVersion(currentDoc.id, 'Draft');
+  }, [currentDoc?.id, currentDoc?.currentVersion, notesOpenRequest, compact,
+    setHideRight, setDocumentVersion, setNotesOpenRequest]);
 
   const toggleFocus = () => {
     if (compact) return;
