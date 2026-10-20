@@ -6,7 +6,16 @@ import { SectionState } from './revision';
 export type Role = 'user' | 'assistant' | 'system' | 'developer' | 'tool';
 export const roles: Role[] = ['user', 'assistant', 'system', 'developer', 'tool'];
 
-export type DocumentVersion = 'Draft' | 'Finished' | 'Snippets';
+// Stable version IDs. Draft/Finished remain valid legacy IDs; Snippets opens Notes.
+export type DocumentVersion = string;
+
+export interface DocumentVariant {
+  id: string;
+  name: string;
+  editorState: string;
+  createdAt: string;
+  copiedFrom?: string;
+}
 
 export interface ToolCall {
   id: string;
@@ -66,10 +75,14 @@ export interface DocumentInterface {
   draftEditorState: string;
   finishedEditorState: string;
   currentVersion: DocumentVersion;
+  // Additional writing copies; legacy copies retain their existing storage fields.
+  versions?: DocumentVariant[];
+  versionNames?: { Draft?: string; Finished?: string };
   snippets: Snippet[];
   meta?: Record<string, string>; // Custom meta fields with camelCase keys (reserved: title, description, tags)
   // Revision history per section
   sectionHistory?: {
+    [versionId: string]: SectionState | undefined;
     Draft?: SectionState;
     Finished?: SectionState;
     Snippets?: SectionState;

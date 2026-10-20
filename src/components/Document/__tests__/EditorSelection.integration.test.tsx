@@ -94,6 +94,10 @@ function control(label: string) {
 }
 
 async function click(label: string) {
+  if (label === 'Draft Version' || label === 'Finished Version') {
+    const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
+    if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
+  }
   await act(async () => {
     const button = control(label);
     const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 });

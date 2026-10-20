@@ -44,8 +44,8 @@ export const searchDefinition: ToolDefinition = {
         },
         sections: {
           type: 'array',
-          items: { type: 'string', enum: ['Draft', 'Finished', 'Snippets'] },
-          description: 'Optional: Filter results to specific sections (Draft, Finished, or Snippets).',
+          items: { type: 'string' },
+          description: 'Optional: Filter by stable writing-version IDs from doc_get_meta. Draft and Finished remain valid IDs; Snippets refers to shared notes.',
         },
         // Text search options
         case_sensitive: {
@@ -105,8 +105,8 @@ export const searchTextDefinition: ToolDefinition = {
         },
         sections: {
           type: 'array',
-          items: { type: 'string', enum: ['Draft', 'Finished', 'Snippets'] },
-          description: 'Optional: Filter results to specific sections (Draft, Finished, or Snippets).',
+          items: { type: 'string' },
+          description: 'Optional: Filter by stable writing-version IDs from doc_get_meta. Draft and Finished remain valid IDs; Snippets refers to shared notes.',
         },
         case_sensitive: {
           type: 'boolean',
@@ -156,7 +156,7 @@ export const searchSemanticDefinition: ToolDefinition = {
         },
         sections: {
           type: 'array',
-          items: { type: 'string', enum: ['Draft', 'Finished', 'Clips'] },
+          items: { type: 'string' },
           description: 'Optional: Filter results to specific sections.',
         },
         top_k: {
@@ -187,8 +187,7 @@ export const getContextPacketDefinition: ToolDefinition = {
         },
         section: {
           type: 'string',
-          enum: ['Draft', 'Finished', 'Snippets'],
-          description: 'The section containing the anchor block.',
+          description: 'Stable version ID from doc_get_meta or project_get_tree. Names can change; use the ID.',
         },
         block_id: {
           type: 'string',
@@ -230,7 +229,6 @@ export const getBlockMapDefinition: ToolDefinition = {
         },
         section: {
           type: 'string',
-          enum: ['Draft', 'Finished', 'Snippets'],
           description: 'Optional: The section to get the block map for. If not provided, uses the current section.',
         },
         include_outline: {
@@ -270,7 +268,6 @@ export const readBlocksDefinition: ToolDefinition = {
         },
         section: {
           type: 'string',
-          enum: ['Draft', 'Finished', 'Snippets'],
           description: 'Optional: The section containing the blocks. If not provided, uses the current section.',
         },
         block_ids: {
@@ -384,7 +381,6 @@ export const editPreviewDefinition: ToolDefinition = {
         },
         section: {
           type: 'string',
-          enum: ['Draft', 'Finished', 'Snippets'],
           description: 'The section to patch.',
         },
         ops: {
@@ -436,7 +432,6 @@ export const revisionListDefinition: ToolDefinition = {
         },
         section: {
           type: 'string',
-          enum: ['Draft', 'Finished', 'Snippets'],
           description: 'Optional: The section to list revisions for. If not provided, uses the current section.',
         },
         limit: {
@@ -467,7 +462,6 @@ export const revisionGetDefinition: ToolDefinition = {
         },
         section: {
           type: 'string',
-          enum: ['Draft', 'Finished', 'Snippets'],
           description: 'Optional: The section containing the revision. If not provided, uses the current section.',
         },
         revision_id: {
@@ -503,7 +497,6 @@ export const revisionDiffDefinition: ToolDefinition = {
         },
         section: {
           type: 'string',
-          enum: ['Draft', 'Finished', 'Snippets'],
           description: 'Optional: The section containing the revisions. If not provided, uses the current section.',
         },
         from_revision_id: {
@@ -539,7 +532,6 @@ export const editApplyDefinition: ToolDefinition = {
         },
         section: {
           type: 'string',
-          enum: ['Draft', 'Finished', 'Snippets'],
           description: 'The section to patch.',
         },
         ops: {

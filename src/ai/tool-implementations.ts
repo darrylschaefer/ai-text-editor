@@ -9,6 +9,7 @@ import { applyPatch, applyPatches } from '@utils/block-patch';
 import { PatchOperation } from '@type/block';
 import { getBlockIndex } from '@store/block-index-store';
 import useStore from '@store/store';
+import { getDocumentVersions, getVersionName, getVersionState } from '@utils/document-versions';
 import { DocumentVersion } from '@type/document';
 import { extractTextFromEditorState } from '@api/tools/implementations';
 import { LexicalEditor } from 'lexical';
@@ -185,12 +186,8 @@ export async function getBlockMapTool(args: {
       return `Document ${args.doc_id} not found.`;
     }
     
-    let sectionState: string | undefined;
-    if (args.section === 'Draft') {
-      sectionState = doc.draftEditorState || doc.editorState;
-    } else if (args.section === 'Finished') {
-      sectionState = doc.finishedEditorState || '';
-    } else {
+    const sectionState = getVersionState(doc, args.section);
+    if (args.section === 'Snippets') {
       return 'Block map not available for Clips section. Use doc_read instead.';
     }
     
@@ -280,6 +277,8 @@ export async function getDocMetadataTool(args: {
       tags: doc.tags || [],
       folder: doc.folder || '(no folder)',
       currentVersion: doc.currentVersion || 'Draft',
+      currentVersionName: getVersionName(doc),
+      versions: getDocumentVersions(doc),
       clipsCount: doc.snippets?.length || 0,
     };
     
@@ -308,12 +307,8 @@ export async function editPreviewTool(args: {
     }
     
     // Get section state
-    let sectionState: string | undefined;
-    if (args.section === 'Draft') {
-      sectionState = doc.draftEditorState || doc.editorState;
-    } else if (args.section === 'Finished') {
-      sectionState = doc.finishedEditorState || '';
-    } else {
+    const sectionState = getVersionState(doc, args.section);
+    if (args.section === 'Snippets') {
       return 'Patch operations not supported for Clips section.';
     }
     

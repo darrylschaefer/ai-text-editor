@@ -4,6 +4,7 @@
  */
 
 import useStore from '@store/store';
+import { getDocumentVersions, getVersionName, getVersionState } from '@utils/document-versions';
 
 /**
  * Reads the full content of the current document
@@ -23,14 +24,7 @@ export const readDocument = async (args: any): Promise<string> => {
     const currentVersion = currentDoc.currentVersion || 'Draft';
     
     // Get the appropriate version's editor state
-    let editorStateString: string | undefined;
-    if (currentVersion === 'Draft') {
-      editorStateString = currentDoc.draftEditorState || currentDoc.editorState;
-    } else if (currentVersion === 'Finished') {
-      editorStateString = currentDoc.finishedEditorState || currentDoc.editorState;
-    } else {
-      editorStateString = currentDoc.editorState;
-    }
+    const editorStateString = getVersionState(currentDoc, currentVersion);
 
     if (!editorStateString || editorStateString === '') {
       return 'The document is empty.';
@@ -89,6 +83,8 @@ export const readDocumentMeta = async (args: any): Promise<string> => {
       title: currentDoc.title,
       folder: currentDoc.folder || 'No folder',
       currentVersion: currentDoc.currentVersion || 'Draft',
+      currentVersionName: getVersionName(currentDoc),
+      versions: JSON.stringify(getDocumentVersions(currentDoc)),
       titleSet: currentDoc.titleSet,
       edited: currentDoc.edited,
       date: documentCurrent.date || currentDoc.messageCurrent?.date || 'Unknown',

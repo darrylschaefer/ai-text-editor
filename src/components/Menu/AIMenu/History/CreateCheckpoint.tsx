@@ -50,7 +50,7 @@ export default function CreateCheckpoint({ documentId }: { documentId: string })
     <button type="button" className="workspace-history-action" disabled={!editor} aria-haspopup="dialog" onClick={() => setOpen(true)}>Create Checkpoint</button>
     {open && <PopupModal title="Create Checkpoint" cancelButton={false} initialFocus='[aria-label="Checkpoint message"]' setIsModalOpen={close}>
       <div className="workspace-history-confirm">
-        <p className="mb-4">Save a checkpoint of this document, including Draft, Finished, Notes, and metadata. Autosave continues as you write.</p>
+        <p className="mb-4">Save a checkpoint of all writing versions, Notes, and metadata. Autosave continues as you write.</p>
         <input type="text" aria-label="Checkpoint message" placeholder="Checkpoint message (e.g., 'Before major rewrite')" value={message}
           onChange={event => setMessage(event.target.value)} autoFocus
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"

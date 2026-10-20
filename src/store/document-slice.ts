@@ -6,6 +6,7 @@ import { createCommit, listCommits, deleteCommit, pruneCommits, getCommit } from
 import { DocumentCommit } from '@type/commit';
 import { LexicalEditor } from 'lexical';
 import { $resolveDocumentSelection, type DocumentSelection } from '@utils/editor-selection';
+import { checkpointSnapshot, copyVersionState, getVersionState, restoreCheckpointVersions, validateVersionName } from '@utils/document-versions';
 
 export interface Agent {
   id: string;
@@ -45,6 +46,8 @@ export interface DocumentSlice {
   notesOpenRequest: string | null;
   setNotesOpenRequest: (documentId: string | null) => void;
   setDocumentVersion: (documentId: string, version: DocumentVersion) => Promise<void>;
+  createDocumentVersion: (documentId: string, name: string, copyFrom?: string, signal?: AbortSignal) => Promise<string>;
+  renameDocumentVersion: (documentId: string, versionId: string, name: string) => void;
   createSnippet: (documentId: string, content?: string, name?: string) => string;
   updateSnippet: (documentId: string, snippetId: string, updates: Partial<Snippet>) => void;
   deleteSnippet: (documentId: string, snippetId: string) => void;
@@ -219,6 +222,8 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
       }
       return;
     }
+    const target = get().chats?.find(doc => doc.id === documentId);
+    if (!target || getVersionState(target, version) === undefined) throw new Error('This version does not exist.');
     const request = Symbol('document-version');
     versionRequests.set(documentId, request);
     // Flush any pending autosave before switching sections
@@ -227,7 +232,8 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
       try {
         await flush();
       } catch (error) {
-        console.error('Failed to flush autosave before version switch:', error);
+        if (versionRequests.get(documentId) === request) versionRequests.delete(documentId);
+        throw new Error('Could not save the current version. Retry before switching.');
       }
     }
 
@@ -235,39 +241,19 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
     // request chooses the section, including a click back to the current one.
     if (versionRequests.get(documentId) !== request) return;
     versionRequests.delete(documentId);
+    if (get().chats?.[get().currentChatIndex]?.id === documentId && get().autosaveStatus === 'error') {
+      throw new Error('Save failed. Retry saving before switching versions.');
+    }
     
     set((prev: DocumentSlice) => {
       if (!prev.chats) return prev;
       
       const updatedChats = prev.chats.map((chat) => {
         if (chat.id === documentId) {
-          // Save current editor state to the current version before switching
-          const currentVersion = chat.currentVersion || 'Draft';
-          const currentEditorState = chat.editorState || '';
-          
-          const updatedChat = { ...chat };
-          
-          // Legacy Snippets has no manuscript editor state to save.
-          if (currentVersion !== 'Snippets') {
-            if (currentVersion === 'Draft') {
-              updatedChat.draftEditorState = currentEditorState;
-            } else if (currentVersion === 'Finished') {
-              updatedChat.finishedEditorState = currentEditorState;
-            }
-          }
-          
-          // Switch to the new version
-          updatedChat.currentVersion = version;
-          
-          // Load the editor state for the version we're switching to (only if not Clips)
-          if (version === 'Draft') {
-            updatedChat.editorState = updatedChat.draftEditorState || '';
-          } else if (version === 'Finished') {
-            updatedChat.editorState = updatedChat.finishedEditorState || '';
-          }
-          // For Snippets, we don't need to set editorState
-          
-          return updatedChat;
+          // Autosave owns the outgoing copy; never write a stale editorState
+          // mirror back into it after an asynchronous switch.
+          return { ...chat, draftEditorState: getVersionState(chat, 'Draft') || '',
+            currentVersion: version, editorState: getVersionState(chat, version) || '' };
         }
         return chat;
       });
@@ -280,6 +266,50 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
           ? { editorSelection: null, currentSelection: '' } : {}),
       };
     });
+  },
+  createDocumentVersion: async (documentId, input, copyFrom, signal) => {
+    const origin = get();
+    const doc = origin.chats?.[origin.currentChatIndex];
+    if (doc?.id !== documentId) throw new Error('Open this document before creating a version.');
+    validateVersionName(doc, input);
+    let content = '';
+    if (copyFrom !== undefined) {
+      const stored = getVersionState(doc, copyFrom);
+      if (stored === undefined) throw new Error('The source version does not exist.');
+      content = copyFrom === (doc.currentVersion || 'Draft') && origin.editorInstance
+        ? JSON.stringify(origin.editorInstance.getEditorState().toJSON()) : stored;
+    }
+    const request = Symbol('create-version');
+    versionRequests.set(documentId, request);
+    await origin.autosaveFlush?.();
+    const latest = get();
+    const current = latest.chats?.[latest.currentChatIndex];
+    const ownsRequest = versionRequests.get(documentId) === request;
+    if (ownsRequest) versionRequests.delete(documentId);
+    if (!ownsRequest || signal?.aborted || current?.id !== documentId ||
+      current.currentVersion !== doc.currentVersion || latest.editorInstance !== origin.editorInstance) {
+      throw new Error('The open document or version changed. No version was created.');
+    }
+    if (latest.autosaveStatus === 'error') throw new Error('Save failed. Retry saving before creating a version.');
+    const name = validateVersionName(current, input);
+    const id = `version-${uuidv4()}`;
+    const variant = { id, name, editorState: copyVersionState(content), createdAt: new Date().toISOString(), copiedFrom: copyFrom };
+    set(state => ({ chats: state.chats?.map(chat => chat.id === documentId ? {
+      ...chat, draftEditorState: getVersionState(chat, 'Draft') || '',
+      versions: [...(chat.versions || []), variant], currentVersion: id, editorState: variant.editorState, edited: true,
+    } : chat), editorSelection: null, currentSelection: '' }));
+    return id;
+  },
+  renameDocumentVersion: (documentId, versionId, input) => {
+    const doc = get().chats?.find(chat => chat.id === documentId);
+    if (!doc || getVersionState(doc, versionId) === undefined) throw new Error('This version does not exist.');
+    const name = validateVersionName(doc, input, versionId);
+    set(state => ({ chats: state.chats?.map(chat => chat.id !== documentId ? chat : {
+      ...chat, edited: true,
+      ...(versionId === 'Draft' || versionId === 'Finished'
+        ? { versionNames: { ...chat.versionNames, [versionId]: name } }
+        : { versions: chat.versions?.map(version => version.id === versionId ? { ...version, name } : version) }),
+    }) }));
   },
   createSnippet: (documentId: string, content: string = '', name?: string) => {
     const snippetId = uuidv4();
@@ -492,23 +522,7 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
       throw new Error(`Document ${documentId} not found`);
     }
     
-    // Create snapshot with current document state
-    // activeSectionState is the fresh Lexical state from the editor
-    const currentVersion = doc.currentVersion || 'Draft';
-    
-    const snapshot = {
-      title: doc.title,
-      description: doc.description,
-      tags: doc.tags,
-      folder: doc.folder,
-      meta: doc.meta,
-      sections: {
-        Draft: currentVersion === 'Draft' ? activeSectionState : (doc.draftEditorState || ''),
-        Finished: currentVersion === 'Finished' ? activeSectionState : (doc.finishedEditorState || ''),
-        Snippets: doc.snippets || [],
-      },
-    };
-    
+    const snapshot = checkpointSnapshot(doc, activeSectionState);
     const commit = await createCommit(documentId, 'user', message, snapshot);
     set(state => ({ checkpointRevision: state.checkpointRevision + 1 }));
     return commit;
@@ -524,21 +538,7 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
       throw new Error(`Document ${documentId} not found`);
     }
     
-    const currentVersion = doc.currentVersion || 'Draft';
-    
-    const snapshot = {
-      title: doc.title,
-      description: doc.description,
-      tags: doc.tags,
-      folder: doc.folder,
-      meta: doc.meta,
-      sections: {
-        Draft: currentVersion === 'Draft' ? activeSectionState : (doc.draftEditorState || ''),
-        Finished: currentVersion === 'Finished' ? activeSectionState : (doc.finishedEditorState || ''),
-        Snippets: doc.snippets || [],
-      },
-    };
-    
+    const snapshot = checkpointSnapshot(doc, activeSectionState);
     const commit = await createCommit(documentId, 'ai', message, snapshot);
     set(state => ({ checkpointRevision: state.checkpointRevision + 1 }));
     return commit;
@@ -597,15 +597,12 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
             draftEditorState: snapshot.sections.Draft,
             finishedEditorState: snapshot.sections.Finished,
             snippets: snapshot.sections.Snippets,
+            ...restoreCheckpointVersions(chat, snapshot),
             edited: true,
           };
           
           // Set editorState to the current version's restored state
-          if (currentVersion === 'Draft') {
-            restoredDoc.editorState = snapshot.sections.Draft;
-          } else if (currentVersion === 'Finished') {
-            restoredDoc.editorState = snapshot.sections.Finished;
-          }
+          restoredDoc.editorState = getVersionState(restoredDoc, currentVersion) || '';
           // Clips don't use editorState
           
           return restoredDoc;

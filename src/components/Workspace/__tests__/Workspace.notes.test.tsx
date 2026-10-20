@@ -71,6 +71,10 @@ function button(label: string) {
   return target;
 }
 async function click(label: string) {
+  if (label === 'Draft Version' || label === 'Finished Version') {
+    const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
+    if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
+  }
   await act(async () => { const target = button(label); target.focus(); target.click(); await tick(); });
 }
 async function fill(field: HTMLInputElement, value: string) {

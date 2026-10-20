@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { validateDocumentVersions } from './document-versions';
 
 import {
   DocumentInterface,
@@ -18,6 +19,7 @@ export const validateAndFixChats = (chats: any): chats is DocumentInterface[] =>
   if (!Array.isArray(chats)) return false;
 
   for (const chat of chats) {
+    if (!validateDocumentVersions(chat)) return false;
     if (!(typeof chat.id === 'string')) chat.id = uuidv4();
     if (!(typeof chat.title === 'string') || chat.title === '') return false;
 

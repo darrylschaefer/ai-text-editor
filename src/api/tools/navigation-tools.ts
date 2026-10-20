@@ -12,6 +12,7 @@ import { PatchOperation, PatchResult } from '@type/block';
 import { SearchResult, ContextPacket } from '@type/block-index';
 import { DocumentVersion } from '@type/document';
 import useStore from '@store/store';
+import { getDocumentVersions, getVersionName, getVersionState } from '@utils/document-versions';
 import { LexicalEditor } from 'lexical';
 import { normalizeBlockIds, getBlockId, setBlockId, isAddressableBlockType } from '@utils/block-ids';
 import { $getRoot } from 'lexical';
@@ -563,12 +564,8 @@ export async function getBlockMapTool(
       };
     }
     
-    let sectionState: string | undefined;
-    if (section === 'Draft') {
-      sectionState = doc.draftEditorState || doc.editorState;
-    } else if (section === 'Finished') {
-      sectionState = doc.finishedEditorState || '';
-    } else {
+    const sectionState = getVersionState(doc, section);
+    if (section === 'Snippets') {
       return {
         success: false,
         doc_id,
@@ -751,12 +748,8 @@ export async function readBlocksTool(
     }
     
     // Get section state
-    let sectionState: string | undefined;
-    if (section === 'Draft') {
-      sectionState = doc.draftEditorState || doc.editorState;
-    } else if (section === 'Finished') {
-      sectionState = doc.finishedEditorState || '';
-    } else {
+    const sectionState = getVersionState(doc, section);
+    if (section === 'Snippets') {
       return {
         success: false,
         doc_id,
@@ -1033,6 +1026,8 @@ export async function getDocMetadataTool(
         tags: doc.tags || [],
         folder: doc.folder,
         currentVersion: doc.currentVersion || 'Draft',
+        currentVersionName: getVersionName(doc),
+        versions: getDocumentVersions(doc),
         snippetsCount: doc.snippets?.length || 0,
       },
     };
@@ -1095,14 +1090,7 @@ export async function editPreviewTool(
     
     // ALWAYS use stored JSON as source of truth for block IDs
     // Get editor state JSON for the target section
-    let editorStateString: string | undefined;
-    if (section === 'Draft') {
-      editorStateString = targetDoc.draftEditorState || targetDoc.editorState;
-    } else if (section === 'Finished') {
-      editorStateString = targetDoc.finishedEditorState || targetDoc.editorState;
-    } else {
-      editorStateString = targetDoc.editorState;
-    }
+    const editorStateString = getVersionState(targetDoc, section);
     
     if (!editorStateString) {
       return {
@@ -1678,14 +1666,7 @@ export async function editApplyTool(
     
     // Get stored JSON as source of truth for block IDs
     dbgEditApply.log('Getting stored editor state JSON as source of truth for block IDs...');
-    let storedEditorStateString: string | undefined;
-    if (args.section === 'Draft') {
-      storedEditorStateString = finalDoc.draftEditorState || finalDoc.editorState;
-    } else if (args.section === 'Finished') {
-      storedEditorStateString = finalDoc.finishedEditorState || finalDoc.editorState;
-    } else {
-      storedEditorStateString = finalDoc.editorState;
-    }
+    const storedEditorStateString = getVersionState(finalDoc, args.section);
     
     if (!storedEditorStateString) {
       return JSON.stringify({
@@ -1937,6 +1918,11 @@ export async function editApplyTool(
     dbgEditApply.log('All required block IDs found, applying edits...');
     
     // Apply patch
+    const applicationState = useStore.getState();
+    const applicationDoc = applicationState.chats?.[applicationState.currentChatIndex];
+    if (applicationDoc?.id !== doc_id || applicationDoc.currentVersion !== args.section || applicationState.editorInstance !== editor) {
+      return JSON.stringify({ ok: false, error: { code: 'version_changed', message: 'The open document or version changed. No edits were applied.' } });
+    }
     dbgEditApply.log('Calling applyPatches...');
     const patchResult = await applyPatches(editor, args.ops, false, stateJson);
     dbgEditApply.log('applyPatches result:', {

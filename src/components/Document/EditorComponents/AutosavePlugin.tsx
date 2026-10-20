@@ -49,12 +49,12 @@ export default function AutosavePlugin({ documentId, section }: AutosavePluginPr
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        flushSave();
+        void flushSave().catch(() => {});
       }
     };
     
     const handlePageHide = () => {
-      flushSave();
+      void flushSave().catch(() => {});
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -75,7 +75,7 @@ export default function AutosavePlugin({ documentId, section }: AutosavePluginPr
   useEffect(() => {
     // Flush when switching sections or documents
     return () => {
-      flushSave();
+      void flushSave().catch(() => {});
     };
   }, [currentChatIndex, currentVersion, flushSave]);
   

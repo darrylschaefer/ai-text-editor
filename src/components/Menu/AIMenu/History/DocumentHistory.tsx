@@ -5,6 +5,7 @@ import type { DocumentCommit } from '@type/commit';
 import type { DocumentInterface } from '@type/document';
 import { computeEditorStateDiff, getSectionTextPreview } from '@utils/diff';
 import CreateCheckpoint from './CreateCheckpoint';
+import { getCheckpointVersionState, getVersionName, getVersionState } from '@utils/document-versions';
 
 const dateLabel = (value: string) => new Date(value).toLocaleString();
 
@@ -14,7 +15,8 @@ function Checkpoints({ document: doc }: { document: DocumentInterface }) {
   const deleteCommit = useStore(state => state.deleteCommit);
   const revision = useStore(state => state.checkpointRevision);
   const editor = useStore(state => state.editorInstance);
-  const section = doc.currentVersion === 'Finished' ? 'Finished' : 'Draft';
+  const section = doc.currentVersion || 'Draft';
+  const sectionName = getVersionName(doc, section);
   const [commits, setCommits] = useState<DocumentCommit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -86,9 +88,10 @@ function Checkpoints({ document: doc }: { document: DocumentInterface }) {
     }
   };
 
-  const currentState = liveState || (section === 'Draft' ? doc.draftEditorState : doc.finishedEditorState) || '';
-  const savedState = selected?.snapshot.sections[section] || '';
-  const changes = selected && showChanges ? computeEditorStateDiff(savedState || emptyState, currentState || emptyState) : '';
+  const currentState = liveState || getVersionState(doc, section) || '';
+  const savedState = selected ? getCheckpointVersionState(selected.snapshot, section) : undefined;
+  const captured = savedState !== undefined;
+  const changes = selected && captured && showChanges ? computeEditorStateDiff(savedState || emptyState, currentState || emptyState) : '';
 
   return (
     <section className="workspace-history" aria-label="Document history">
@@ -108,17 +111,17 @@ function Checkpoints({ document: doc }: { document: DocumentInterface }) {
             <button ref={backButton} type="button" className="workspace-history-back" onClick={() => setSelected(null)}>← Back to checkpoints</button>
             <h3>{selected.message}</h3>
             <p className="workspace-history-date">{dateLabel(selected.created_at)}</p>
-            <p className="workspace-history-readonly">Read-only preview · {section}</p>
+            <p className="workspace-history-readonly">Read-only preview · {sectionName}</p>
             <div className="workspace-history-views" role="group" aria-label="Checkpoint preview view">
-              <button type="button" aria-pressed={!showChanges} onClick={() => setShowChanges(false)}>Saved text</button>
-              <button type="button" aria-pressed={showChanges} onClick={() => setShowChanges(true)}>Changes</button>
+              <button type="button" disabled={!captured} aria-pressed={!showChanges} onClick={() => setShowChanges(false)}>Saved text</button>
+              <button type="button" disabled={!captured} aria-pressed={showChanges} onClick={() => setShowChanges(true)}>Changes</button>
             </div>
-            {showChanges && <p className="workspace-history-hint">− Saved checkpoint · + Current {section}</p>}
-            <pre className="workspace-history-text" tabIndex={0} aria-label={showChanges ? `${section} changes` : `Saved ${section} text`}>
-              {showChanges ? changes : (savedState ? getSectionTextPreview(savedState) : '') || 'This section was empty.'}
+            {showChanges && <p className="workspace-history-hint">− Saved checkpoint · + Current {sectionName}</p>}
+            <pre className="workspace-history-text" tabIndex={0} aria-label={showChanges ? `${sectionName} changes` : `Saved ${sectionName} text`}>
+              {!captured ? 'This version was not included in this checkpoint.' : showChanges ? changes : (savedState ? getSectionTextPreview(savedState) : '') || 'This version was empty.'}
             </pre>
-            <p className="workspace-history-hint">Your current writing stays in the editor. Restoring replaces the full document, including Draft, Finished, Notes, and metadata.</p>
-            <button type="button" className="workspace-history-action" onClick={() => setConfirmation({ action: 'restore', commit: selected })}>Restore checkpoint</button>
+            <p className="workspace-history-hint">Restoring recovers the saved writing versions, Notes, and metadata. Versions created after this checkpoint stay intact.</p>
+            <button type="button" disabled={!captured} className="workspace-history-action" onClick={() => setConfirmation({ action: 'restore', commit: selected })}>Restore checkpoint</button>
           </div>
         ) : loading ? <p className="workspace-history-empty" role="status">Loading checkpoints…</p> : error ? null : commits.length === 0 ? (
           <div className="workspace-history-empty"><p>No checkpoints yet</p><p>Create a checkpoint before a rewrite or at a point you want to revisit.</p></div>
@@ -128,7 +131,7 @@ function Checkpoints({ document: doc }: { document: DocumentInterface }) {
               <li key={commit.commit_id} className="workspace-checkpoint">
                 <div className="workspace-checkpoint-meta"><span>{commit.actor === 'user' ? 'You' : 'AI'}</span><time dateTime={commit.created_at}>{dateLabel(commit.created_at)}</time></div>
                 <h3>{commit.message}</h3>
-                <p className="workspace-checkpoint-excerpt">{commit.snapshot.sections[section] ? getSectionTextPreview(commit.snapshot.sections[section]) : `Empty ${section}`}</p>
+                <p className="workspace-checkpoint-excerpt">{getCheckpointVersionState(commit.snapshot, section) === undefined ? 'This version is not in this checkpoint.' : getCheckpointVersionState(commit.snapshot, section) ? getSectionTextPreview(getCheckpointVersionState(commit.snapshot, section)!) : `Empty ${sectionName}`}</p>
                 <div className="workspace-checkpoint-actions">
                   <button id={`preview-${commit.commit_id}`} type="button" className="workspace-history-action" onClick={() => {
                     previewId.current = commit.commit_id; setShowChanges(false); setSelected(commit);
@@ -146,13 +149,13 @@ function Checkpoints({ document: doc }: { document: DocumentInterface }) {
         <div className="workspace-history-confirm">
           <p className="font-medium mb-3">{confirmation.commit.message}</p>
           <p>{confirmation.action === 'restore'
-            ? `Replace “${doc.title}” with this full checkpoint? This restores Draft, Finished, all Notes, and document metadata (including title, description, tags, folder, and custom fields). Current changes will be replaced and editor undo history will be cleared.`
+            ? `Restore the saved state of “${doc.title}”? This restores Draft, Finished, all Notes, and document metadata (including title, description, tags, folder, and custom fields), plus additional versions saved in this checkpoint. Versions created later stay intact. Changes to restored versions will be replaced and editor undo history will be cleared.`
             : 'Delete this saved checkpoint? Your current document will stay unchanged. This cannot be undone.'}</p>
           {error && <p role="alert" className="mt-3">{error}</p>}
           <div className="flex justify-end gap-3 mt-5">
             <button type="button" disabled={busy} onClick={() => setConfirmation(null)}>Cancel</button>
             <button type="button" className="workspace-history-action" disabled={busy} onClick={runAction}>
-              {busy ? 'Working…' : confirmation.action === 'restore' ? 'Restore full document' : 'Delete checkpoint'}
+              {busy ? 'Working…' : confirmation.action === 'restore' ? 'Restore saved state' : 'Delete checkpoint'}
             </button>
           </div>
         </div>

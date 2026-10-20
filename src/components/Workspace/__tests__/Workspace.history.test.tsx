@@ -73,6 +73,10 @@ function button(label: string) {
   return target;
 }
 async function click(label: string) {
+  if (label === 'Draft Version' || label === 'Finished Version') {
+    const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
+    if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
+  }
   await act(async () => { const target = button(label); target.focus(); target.click(); await tick(); });
 }
 async function mount() {
@@ -193,7 +197,7 @@ describe('History in the right sidebar', () => {
     expect(modal.textContent).toContain('Draft, Finished, all Notes, and document metadata');
     await escape(); expect(main().textContent).toBe('Alpha draft today.');
     expect(document.activeElement).toBe(button('Restore'));
-    await click('Restore'); await click('Restore full document');
+    await click('Restore'); await click('Restore saved state');
     const restored = useStore.getState().chats![0];
     expect(main().textContent).toBe('Alpha earlier draft.');
     expect(restored).toMatchObject({ title: 'Alpha old title', description: 'Saved description', tags: ['saved'], folder: 'saved-folder', meta: { mood: 'saved' } });
@@ -206,7 +210,7 @@ describe('History in the right sidebar', () => {
     await mount(); await click('History');
     let release!: () => void; const pending = new Promise<void>(resolve => { release = resolve; });
     await act(async () => { useStore.setState({ autosaveFlush: () => pending }); });
-    await click('Restore'); await click('Restore full document');
+    await click('Restore'); await click('Restore saved state');
     if (target === 'document') await switchDocument();
     else await act(async () => { useStore.setState(state => ({ chats: state.chats!.map((doc, index) => index ? doc : { ...doc, currentVersion: 'Finished' }) })); await tick(); });
     await act(async () => { release(); await tick(); });
@@ -226,7 +230,7 @@ describe('History in the right sidebar', () => {
 
   it('keeps a failed restore in the confirmation without changing writing', async () => {
     await mount(); await click('History'); memory.read.mockRejectedValue(new Error('Storage read failed'));
-    await click('Restore'); await click('Restore full document');
+    await click('Restore'); await click('Restore saved state');
     expect(modal.querySelector('[role="alert"]')?.textContent).toContain('Storage read failed');
     expect(main().textContent).toBe('Alpha draft today.'); await click('Cancel');
   });

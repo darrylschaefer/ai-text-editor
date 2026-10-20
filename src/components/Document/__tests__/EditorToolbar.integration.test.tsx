@@ -92,6 +92,10 @@ function control(label: string) {
 }
 
 async function click(label: string) {
+  if (label === 'Draft Version' || label === 'Finished Version') {
+    const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
+    if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
+  }
   await act(async () => {
     const button = control(label);
     const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 });
@@ -267,7 +271,7 @@ describe('relocated editor toolbar', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     await act(async () => { useStore.setState({ setChats: () => { throw new Error('Synthetic save failure'); } }); await tick(); });
     await select(); await click('Format Bold');
-    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    await act(async () => { await expect(useStore.getState().autosaveFlush!()).rejects.toThrow('Could not save'); await tick(); });
     expect(container.querySelector('[data-save-status="error"] .bg-red-500')).not.toBeNull();
     await select('bird');
     expect(container.querySelector('[data-save-status="error"] .bg-red-500')).not.toBeNull();
