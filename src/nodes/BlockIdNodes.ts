@@ -6,6 +6,7 @@
 
 import { 
   ParagraphNode,
+  type EditorConfig,
 } from 'lexical';
 import { 
   HeadingNode,
@@ -42,7 +43,7 @@ export class BlockIdParagraphNode extends ParagraphNode {
     return element;
   }
 
-  updateDOM(prevNode: BlockIdParagraphNode, dom: HTMLElement, config?: any): boolean {
+  updateDOM(prevNode: this, dom: HTMLElement, config: EditorConfig): boolean {
     const updated = super.updateDOM(prevNode, dom, config);
     const blockId = this.getBlockId();
     dom.setAttribute('data-block-id', blockId);
@@ -110,8 +111,8 @@ export class BlockIdHeadingNode extends HeadingNode {
     return element;
   }
 
-  updateDOM(prevNode: BlockIdHeadingNode, dom: HTMLElement): boolean {
-    const updated = super.updateDOM(prevNode, dom);
+  updateDOM(prevNode: this, dom: HTMLElement, config: EditorConfig): boolean {
+    const updated = super.updateDOM(prevNode, dom, config);
     const blockId = this.getBlockId();
     dom.setAttribute('data-block-id', blockId);
     return updated;
@@ -177,8 +178,8 @@ export class BlockIdQuoteNode extends QuoteNode {
     return element;
   }
 
-  updateDOM(prevNode: BlockIdQuoteNode, dom: HTMLElement): boolean {
-    const updated = super.updateDOM(prevNode, dom);
+  updateDOM(prevNode: this, dom: HTMLElement, config: EditorConfig): boolean {
+    const updated = super.updateDOM(prevNode, dom, config);
     const blockId = this.getBlockId();
     dom.setAttribute('data-block-id', blockId);
     return updated;
@@ -244,7 +245,7 @@ export class BlockIdListItemNode extends ListItemNode {
     return element;
   }
 
-  updateDOM(prevNode: BlockIdListItemNode, dom: HTMLElement, config?: any): boolean {
+  updateDOM(prevNode: this, dom: HTMLElement, config: EditorConfig): boolean {
     const updated = super.updateDOM(prevNode, dom, config);
     const blockId = this.getBlockId();
     dom.setAttribute('data-block-id', blockId);
@@ -315,7 +316,7 @@ export class BlockIdCodeNode extends CodeNode {
     return element;
   }
 
-  updateDOM(prevNode: BlockIdCodeNode, dom: HTMLElement, config?: any): boolean {
+  updateDOM(prevNode: this, dom: HTMLElement, config: EditorConfig): boolean {
     const updated = super.updateDOM(prevNode, dom, config);
     const blockId = this.getBlockId();
     dom.setAttribute('data-block-id', blockId);

@@ -22,13 +22,14 @@ import {
   $isRangeSelection,
   $createParagraphNode,
   $getNodeByKey,
+  $onUpdate,
   RangeSelection,
   LexicalCommand
 } from "lexical";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import {
   $isParentElementRTL,
-  $wrapNodes,
+  $setBlocksType,
   $isAtNodeEnd
 } from "@lexical/selection";
 import { $getNearestNodeOfType, mergeRegister } from "@lexical/utils";
@@ -45,9 +46,9 @@ import {
 import {
   $isCodeNode,
   $createCodeNode,
-  getDefaultCodeLanguage,
-  getCodeLanguages
+  getDefaultCodeLanguage
 } from "@lexical/code";
+import { getCodeLanguages } from '@lexical/code-prism';
 
 const LowPriority = 1;
 
@@ -145,7 +146,7 @@ function getSelectedNode(selection: RangeSelection) {
           const selection = $getSelection();
   
           if ($isRangeSelection(selection)) {
-            $wrapNodes(selection, () => $createParagraphNode());
+            $setBlocksType(selection, () => $createParagraphNode());
           }
         });
       }
@@ -159,7 +160,7 @@ function getSelectedNode(selection: RangeSelection) {
           const selection = $getSelection();
   
           if ($isRangeSelection(selection)) {
-            $wrapNodes(selection, () => $createHeadingNode("h1"));
+            $setBlocksType(selection, () => $createHeadingNode("h1"));
           }
         });
       }
@@ -173,7 +174,7 @@ function getSelectedNode(selection: RangeSelection) {
           const selection = $getSelection();
   
           if ($isRangeSelection(selection)) {
-            $wrapNodes(selection, () => $createHeadingNode("h2"));
+            $setBlocksType(selection, () => $createHeadingNode("h2"));
           }
         });
       }
@@ -205,7 +206,7 @@ function getSelectedNode(selection: RangeSelection) {
           const selection = $getSelection();
   
           if ($isRangeSelection(selection)) {
-            $wrapNodes(selection, () => $createQuoteNode());
+            $setBlocksType(selection, () => $createQuoteNode());
           }
         });
       }
@@ -219,7 +220,7 @@ function getSelectedNode(selection: RangeSelection) {
           const selection = $getSelection();
   
           if ($isRangeSelection(selection)) {
-            $wrapNodes(selection, () => $createCodeNode());
+            $setBlocksType(selection, () => $createCodeNode());
           }
         });
       }
@@ -421,14 +422,14 @@ function EditorToolbar() {
   
       return mergeRegister(
         editor.registerUpdateListener(({ editorState }) => {
-          editorState.read(() => {
-            updateToolbar();
-          });
+          editorState.read(updateToolbar, { editor });
         }),
         editor.registerCommand(
           SELECTION_CHANGE_COMMAND,
-          (_payload, newEditor) => {
-            updateToolbar();
+          () => {
+            // Selection commands now run before reconciliation; DOM-dependent
+            // toolbar reads must observe the completed commit.
+            $onUpdate(() => editor.read('latest', updateToolbar));
             return false;
           },
           LowPriority

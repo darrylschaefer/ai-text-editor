@@ -11,6 +11,7 @@ import Document from '../Document';
 import VersionSwitcher from '../EditorComponents/VersionSwitcher';
 import { WorkspaceToolbarContext } from '@components/Workspace/WorkspaceContext';
 import CreateCheckpoint from '@components/Menu/AIMenu/History/CreateCheckpoint';
+import legacyDocument from './fixtures/lexical-0.11.1.json';
 
 const memory = vi.hoisted(() => ({ commits: new Map<string, DocumentCommit>(), create: vi.fn() }));
 
@@ -155,6 +156,44 @@ afterEach(async () => {
 });
 
 describe('relocated editor toolbar', () => {
+  it('loads and autosaves an actual 0.11.1 document with its structure and formatting intact', async () => {
+    const legacyState = JSON.stringify(legacyDocument.editorState);
+    const docs = useStore.getState().chats!;
+    useStore.setState({ chats: [{ ...docs[0], editorState: legacyState, draftEditorState: legacyState }, docs[1]] });
+    await mount();
+    const comparable = (node: Record<string, any>): Record<string, any> => {
+      const keys = ['type', 'text', 'format', 'style', 'detail', 'mode', 'tag', 'start', 'listType',
+        'value', 'url', 'target', 'rel', 'colSpan', 'rowSpan', 'headerState', 'language'];
+      return { ...Object.fromEntries(keys.filter(key => node[key] !== undefined).map(key => [key, node[key]])),
+        ...(node.children ? { children: node.children.map(comparable) } : {}) };
+    };
+    const expected = comparable(legacyDocument.editorState.root);
+    expect(comparable(editor().getEditorState().toJSON().root)).toEqual(expected);
+    expect(editor().getEditorState().read(() => $getRoot().getTextContent())).toBe(legacyDocument.textContent);
+    expect(content().querySelector('h2')?.textContent).toBe('Legacy chapter');
+    expect(content().querySelector('.editor-text-bold')?.textContent).toBe('bold');
+    expect(content().querySelector('.editor-text-italic')?.textContent).toBe('italic');
+    expect(content().querySelector('.editor-text-underline')?.textContent).toBe('underlined');
+    expect(content().querySelector('ol')?.start).toBe(3);
+    expect(content().querySelector('a')?.getAttribute('href')).toBe('https://example.com/source');
+    expect(content().querySelectorAll('table tr')).toHaveLength(2);
+    expect(content().textContent).toContain('café 👩🏽‍💻 e\u0301.');
+
+    // Trigger a real edit/save; loading alone is not a persistence check.
+    await select('bold'); await click('Format Bold');
+    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    const saved = useStore.getState().chats![0].draftEditorState;
+    const parsed = editor().parseEditorState(saved);
+    expect(parsed.read(() => $getRoot().getTextContent())).toBe(legacyDocument.textContent);
+    const savedRoot = JSON.parse(saved).root;
+    // Removing bold lets Lexical merge adjacent plain-text runs.
+    expect(savedRoot.children[1].children.find((node: any) => node.text?.includes('bold')).format).toBe(0);
+    await click('Open Beta'); await click('Open Alpha');
+    expect(editor().getEditorState().read(() => $getRoot().getTextContent())).toBe(legacyDocument.textContent);
+    expect(content().querySelector('.editor-text-italic')?.textContent).toBe('italic');
+    expect(content().querySelectorAll('table tr')).toHaveLength(2);
+  });
+
   it.each([['Format Bold', '.editor-text-bold'], ['Format Italics', '.editor-text-italic'],
     ['Format Underline', '.editor-text-underline'], ['Format Strikethrough', '.editor-text-strikethrough']])
     ('applies %s only to the selected word through the header portal', async (label, selector) => {
