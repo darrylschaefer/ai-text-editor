@@ -73,7 +73,7 @@ function button(label: string) {
   return target;
 }
 async function click(label: string) {
-  if (label === 'Draft Version' || label === 'Finished Version') {
+  if (label === 'v1 Version' || label === 'v2 Version') {
     const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
     if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
   }
@@ -146,7 +146,7 @@ describe('History in the right sidebar', () => {
         selection.setTextNodeRange(node, 0, node, 5); $setSelection(selection); }, { discrete: true }); await tick();
     });
     await click('History'); await click('Preview');
-    expect(history().textContent).toContain('Read-only preview · Draft');
+    expect(history().textContent).toContain('Read-only preview · v1');
     expect(history().querySelector('pre')?.textContent).toBe('Alpha earlier draft.');
     expect(history().querySelector('[contenteditable]')).toBeNull();
     expect(document.activeElement).toBe(button('← Back to checkpoints'));
@@ -164,7 +164,7 @@ describe('History in the right sidebar', () => {
   });
 
   it('resets previews when switching sections/documents and survives pane close/reopen', async () => {
-    await mount(); await click('History'); await click('Preview'); await click('Finished Version');
+    await mount(); await click('History'); await click('Preview'); await click('v2 Version');
     expect(history().querySelector('pre')).toBeNull(); await click('Preview');
     expect(history().querySelector('pre')?.textContent).toBe('Alpha earlier finished.');
     expect(main().textContent).toBe('Alpha finished today.');
@@ -194,7 +194,7 @@ describe('History in the right sidebar', () => {
   it('states the full restore scope, cancels safely, and restores every stated field only to the target document', async () => {
     await mount(); await click('History'); const beta = JSON.stringify(useStore.getState().chats![1]);
     await click('Restore');
-    expect(modal.textContent).toContain('Draft, Finished, all Notes, and document metadata');
+    expect(modal.textContent).toContain('all writing versions saved in this checkpoint, Notes, and document metadata');
     await escape(); expect(main().textContent).toBe('Alpha draft today.');
     expect(document.activeElement).toBe(button('Restore'));
     await click('Restore'); await click('Restore saved state');

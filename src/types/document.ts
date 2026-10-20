@@ -73,7 +73,7 @@ export interface DocumentInterface {
   titleSet: boolean;
   editorState: string;
   draftEditorState: string;
-  finishedEditorState: string;
+  finishedEditorState?: string; // Present for the second legacy writing version.
   currentVersion: DocumentVersion;
   // Additional writing copies; legacy copies retain their existing storage fields.
   versions?: DocumentVariant[];

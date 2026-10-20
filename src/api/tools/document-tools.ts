@@ -1031,7 +1031,8 @@ export async function docDuplicateTool(
     
     // Copy all sections
     newDoc.draftEditorState = copyVersionState(getVersionState(sourceDoc, 'Draft') || '');
-    newDoc.finishedEditorState = copyVersionState(getVersionState(sourceDoc, 'Finished') || '');
+    const finished = getVersionState(sourceDoc, 'Finished');
+    if (finished !== undefined) newDoc.finishedEditorState = copyVersionState(finished);
     if (sourceDoc.snippets) {
       newDoc.snippets = JSON.parse(JSON.stringify(sourceDoc.snippets));
     }

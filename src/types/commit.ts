@@ -24,7 +24,7 @@ export interface DocumentCommit {
     // Section states (Lexical JSON strings)
     sections: {
       Draft: string;
-      Finished: string;
+      Finished?: string;
       Snippets: Array<{
         id: string;
         name?: string;

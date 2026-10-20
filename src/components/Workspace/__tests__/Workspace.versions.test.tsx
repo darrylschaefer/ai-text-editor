@@ -15,6 +15,7 @@ import { docDuplicateTool } from '@api/tools/document-tools';
 import { buildToolContext } from '@api/tools/context-builder';
 import { readSelectionTool } from '@api/tools/selection-tools';
 import { replaceSpecialCommands } from '@utils/actionRunner';
+import { generateDefaultDocument } from '@constants/chat';
 
 const memory = vi.hoisted(() => ({ commits: new Map<string, DocumentCommit>(), list: vi.fn(), read: vi.fn(), remove: vi.fn() }));
 vi.mock('@store/commit-store', () => ({
@@ -81,7 +82,7 @@ function button(label: string) {
   return target;
 }
 async function click(label: string) {
-  if (label === 'Draft Version' || label === 'Finished Version') {
+  if (label === 'v1 Version' || label === 'v2 Version') {
     const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
     if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
   }
@@ -131,7 +132,8 @@ async function newVersion(name: string, blank = false) {
   await fillName(name); await click('Create version'); return active().currentVersion;
 }
 async function chooseVersion(name: string) {
-  await click('Choose document version'); await click(`${name} Version`);
+  const label = name === 'Draft' ? 'v1' : name === 'Finished' ? 'v2' : name;
+  await click('Choose document version'); await click(`${label} Version`);
 }
 async function write(text: string) {
   await act(async () => { const editor = useStore.getState().editorInstance!;
@@ -139,6 +141,39 @@ async function write(text: string) {
 }
 
 describe('named editable document versions', () => {
+  it('starts new documents with v1 and suggests v2 and v3 for copied and blank versions', async () => {
+    useStore.setState({ chats: [generateDefaultDocument({ title: 'Fresh document' })], currentChatIndex: 0 });
+    await mount(); expect(getDocumentVersions(active())).toEqual([{ id: 'Draft', name: 'v1' }]);
+    await click('Choose document version'); await click('Make a copy');
+    expect(document.querySelector<HTMLInputElement>('[aria-label="Version name"]')!.value).toBe('v2');
+    await click('Create version'); await write('Second version writing.');
+    await click('Choose document version'); await click('New blank version');
+    expect(document.querySelector<HTMLInputElement>('[aria-label="Version name"]')!.value).toBe('v3');
+    await click('Create version'); expect(main().textContent).toBe('');
+    expect(getDocumentVersions(active()).map(version => version.name)).toEqual(['v1', 'v2', 'v3']);
+    await chooseVersion('v2'); expect(main().textContent).toBe('Second version writing.');
+    expect(getVersionContext(active())).toContain('"version_name":"v2"');
+    expect(validateDocumentVersions(active())).toBe(true);
+  });
+
+  it('keeps the single-version shape through checkpoint recovery and whole-document duplication', async () => {
+    useStore.setState({ chats: [generateDefaultDocument({ title: 'Fresh document' })], currentChatIndex: 0 });
+    await mount(); await write('First version writing.');
+    let saved!: DocumentCommit;
+    await act(async () => { saved = await useStore.getState().createUserCommit(active().id, 'Only v1', JSON.stringify(useStore.getState().editorInstance!.getEditorState().toJSON())); await tick(); });
+    expect(saved.snapshot.sections.Finished).toBeUndefined();
+    await newVersion('v2'); await write('Keep this later version.');
+    await act(async () => { await useStore.getState().restoreCommit(active().id, saved.commit_id); await tick(); });
+    expect(getDocumentVersions(active()).map(version => version.name)).toEqual(['v1', 'v2']);
+    expect(getVersionState(active(), 'Finished')).toBeUndefined();
+    expect(main().textContent).toBe('Keep this later version.');
+    let duplicateId = '';
+    await act(async () => { duplicateId = JSON.parse(await docDuplicateTool({ doc_id: active().id })).new_doc_id; await tick(); });
+    const duplicate = useStore.getState().chats!.find(doc => doc.id === duplicateId)!;
+    expect(getDocumentVersions(duplicate).map(version => version.name)).toEqual(['v1', 'v2']);
+    expect(getVersionState(duplicate, 'Finished')).toBeUndefined();
+  });
+
   it.each(['switch', 'copy', 'blank'])('preserves Draft from an older editorState-only record when creating or selecting %s', async action => {
     const legacy = fixture('Alpha');
     Reflect.deleteProperty(legacy, 'draftEditorState'); // Older persisted records predate this required field.
@@ -154,8 +189,8 @@ describe('named editable document versions', () => {
   it('opens the compact chooser without migrating or rewriting legacy writing', async () => {
     await mount(); const saved = JSON.stringify(useStore.getState().chats); const editor = useStore.getState().editorInstance;
     await click('Choose document version');
-    expect(button('Draft Version').getAttribute('aria-pressed')).toBe('true');
-    expect(button('Finished Version')).not.toBeNull();
+    expect(button('v1 Version').getAttribute('aria-pressed')).toBe('true');
+    expect(button('v2 Version')).not.toBeNull();
     expect(JSON.stringify(useStore.getState().chats)).toBe(saved); expect(useStore.getState().editorInstance).toBe(editor);
     await escape(); expect(document.activeElement).toBe(button('Choose document version'));
   });
@@ -213,7 +248,7 @@ describe('named editable document versions', () => {
 
   it('rejects duplicate names and cancels version creation without changing saved data', async () => {
     await mount(); const before = JSON.stringify(active());
-    await click('Choose document version'); await click('New blank version'); await fillName(' draft '); await click('Create version');
+    await click('Choose document version'); await click('New blank version'); await fillName(' v1 '); await click('Create version');
     expect(modal.querySelector('[role="alert"]')?.textContent).toContain('already has');
     expect(JSON.stringify(active())).toBe(before); await click('Cancel');
     expect(document.activeElement).toBe(button('Choose document version'));
@@ -250,7 +285,7 @@ describe('named editable document versions', () => {
     await click('Choose document version'); await click('Make a copy'); await fillName('Blocked copy'); await click('Create version');
     expect(modal.querySelector('[role="alert"]')?.textContent).toContain('Could not save');
     expect(active().versions).toBeUndefined(); expect(main().textContent).toBe('Unsaved writing must stay visible.');
-    await click('Cancel'); await click('Finished Version');
+    await click('Cancel'); await click('v2 Version');
     expect(container.querySelector('.workspace-version-menu [role="alert"]')?.textContent).toContain('Could not save');
     expect(active().currentVersion).toBe('Draft'); expect(main().textContent).toBe('Unsaved writing must stay visible.');
     await act(async () => { useStore.setState({ setChats: originalSetter }); await useStore.getState().autosaveRetry!(); await tick(); });

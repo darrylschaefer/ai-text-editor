@@ -173,7 +173,7 @@ describe('saved workspace compatibility', () => {
     const { currentVersion, draftEditorState, finishedEditorState, snippets, ...legacy } = fixture();
     await load({ chats: [legacy as DocumentInterface], currentChatIndex: 0 }); await mount();
     expectDocument();
-    expect(element('[aria-label="Draft Version"]').getAttribute('aria-pressed')).toBe('true');
+    expect(element('[aria-label="v1 Version"]').getAttribute('aria-pressed')).toBe('true');
     const restored = useStore.getState().chats![0];
     expect(restored.draftEditorState).toBe(legacy.editorState);
     expect(restored.finishedEditorState).toBe('');
@@ -197,7 +197,7 @@ describe('saved workspace compatibility', () => {
     expectDocument();
     expect(element('.workspace-document-title').textContent).toBe('Untitled document');
     expect(document.title).toBe('fthr — A place for your words');
-    expect(element('[aria-label="Draft Version"]').getAttribute('aria-pressed')).toBe('true');
+    expect(element('[aria-label="v1 Version"]').getAttribute('aria-pressed')).toBe('true');
   });
 
   it('preserves a long title in the header tooltip and browser title', async () => {

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Add, Checkmark, Copy, Edit } from '@carbon/icons-react';
 import useStore from '@store/store';
 import PopupModal from '@components/PopupModal';
-import { getDocumentVersions, getVersionName } from '@utils/document-versions';
+import { getDocumentVersions, getNextVersionName, getVersionName } from '@utils/document-versions';
 import { DocumentVersion } from '@type/document';
 
 interface VersionSwitcherProps {
@@ -51,7 +51,7 @@ export default function VersionSwitcher({ currentVersion, onVersionChange }: Ver
   const versions = getDocumentVersions(doc);
   const closeDialog = () => { pending.current?.abort(); setDialog(null); setError(''); };
   const startAction = (action: VersionAction) => {
-    setOpen(false); setError(''); setName(action === 'rename' ? currentName : action === 'copy' ? `${currentName} copy` : '');
+    setOpen(false); setError(''); setName(action === 'rename' ? currentName : getNextVersionName(doc));
     trigger.current?.focus(); setDialog(action);
   };
   const choose = async (id: string) => {

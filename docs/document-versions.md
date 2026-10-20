@@ -5,8 +5,9 @@ Issue [#15](https://github.com/darrylschaefer/fthr/issues/15). The approved desi
 ## Behavior and scope
 
 - Open the pill to switch versions, make a copy of the current writing, start a blank version, or rename the current version. Names are trimmed, limited to 60 characters, and unique within the document.
-- Existing Draft and Finished writing stays available. Each added version has independent text, formatting, block identities, revision history, and editor undo history. Copy includes current unsaved writing; switching flushes the outgoing version. Reported save failures keep that writing visible and block switching or copying.
-- Notes, document title, folders, metadata, agents, and macros remain shared. Switching versions clears a selection owned by the outgoing editor. Current-version reads, selected text, macros, search, and document tools resolve the selected version by its stable ID. Agent requests include the active version ID and available version names when a document has renamed or added versions.
+- New documents start with one version, **v1**. Copy and blank-version dialogs suggest **v2**, **v3**, and so on, skipping a suggestion already used by another version. Writers can enter their own names.
+- Existing Draft and Finished writing stays available as **v1** and **v2**, with any explicit custom names preserved. Each added version has independent text, formatting, block identities, revision history, and editor undo history. Copy includes current unsaved writing; switching flushes the outgoing version. Reported save failures keep that writing visible and block switching or copying.
+- Notes, document title, folders, metadata, agents, and macros remain shared. Switching versions clears a selection owned by the outgoing editor. Current-version reads, selected text, macros, search, and document tools resolve the selected version by its stable ID. Agent requests include the active version ID and available version names.
 - Cancellation and document/version changes invalidate pending creation. Duplicate submissions create one version, and the latest switch request wins while a save is pending. Renaming changes the label without changing the version's identity or remounting its editor.
 - The menu fits the existing desktop header and compact phone layout. It closes on outside click, resize, or Escape; Escape and dialog closure return focus to the pill.
 
@@ -14,7 +15,7 @@ Version deletion, automatic AI-created branches, comparisons between arbitrary n
 
 ## Compatibility, checkpoints, and rollback
 
-This is an additive format change, without an IndexedDB schema migration. Draft and Finished keep their existing fields and stable IDs, with optional display-name overrides. Additional versions are stored as records with stable IDs, names, serialized editor states, creation times, and optional copy origins. An older draft stored only in `editorState` is preserved before changing the active version. A deliberately blank version does not fall back to another version's text.
+This is an additive format change, without an IndexedDB schema migration. Existing Draft and Finished keep their fields and stable IDs, with `v1`/`v2` as their default display labels and optional custom names. A new document omits the unused legacy Finished field, so it starts with only v1. Duplication and checkpoints retain that shape. Additional versions are stored as records with stable IDs, names, serialized editor states, creation times, and optional copy origins. An older draft stored only in `editorState` is preserved before changing the active version. A deliberately blank version does not fall back to another version's text.
 
 Whole-document duplication retains all writing versions and names with fresh version/block identities. Existing document JSON exports include the additional fields. Import validates version IDs, names, the selected version, and the basic serialized-state shape. It does not fully validate arbitrary Lexical node schemas.
 
@@ -24,7 +25,7 @@ Reverting the application code hides the added versions because older code only 
 
 ## Validation and limits
 
-Local `npm run check` passed app/test TypeScript, all 262 tests in 13 files, and the production build. The focused integration suite uses real Workspace/Lexical and document actions with synthetic writing, an in-memory checkpoint store, and mocked unrelated services. It covers formatted unsaved copies, independent edits/reload, blank versions, rename, legacy records, failed saves, pending/canceled actions, selection/macros, actual AI block-edit application, checkpoint recovery, document duplication, and malformed version data. Existing toolbar, selection, Notes, and History regressions remain included.
+Local `npm run check` passed app/test TypeScript, all 264 tests in 13 files, and the production build. The focused integration suite uses real Workspace/Lexical and document actions with synthetic writing, an in-memory checkpoint store, and mocked unrelated services. It covers numbered defaults, a single starting version through duplication/checkpoint recovery, formatted unsaved copies, independent edits/reload, blank versions, rename, legacy records, failed saves, pending/canceled actions, selection/macros, actual AI block-edit application, checkpoint recovery, document duplication, and malformed version data. Existing toolbar, selection, Notes, and History regressions remain included.
 
 Browser checks use a separate localhost origin with the bundled sample manuscript and a synthetic alternative opening. They verify copying, editing, switching back to the intact original, rename, persisted content after reload, keyboard dismissal, both themes, and the 390 × 844 phone menu/dialog. No API key or paid AI request is used.
 

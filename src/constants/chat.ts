@@ -247,7 +247,6 @@ export const generateWelcomeDocument = ({title, folder, prompt}: {title?: string
     titleSet: false,
     editorState: defaultEditorState,
     draftEditorState: defaultEditorState,
-    finishedEditorState: "",
     currentVersion: 'Draft',
     snippets: [],
   };
@@ -278,7 +277,6 @@ export const generateDefaultDocument = ({title, folder, prompt}: {title?: string
   titleSet: false,
   editorState: "",
   draftEditorState: "",
-  finishedEditorState: "",
   currentVersion: 'Draft',
   snippets: [],
 });

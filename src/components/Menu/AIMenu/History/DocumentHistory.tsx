@@ -149,7 +149,7 @@ function Checkpoints({ document: doc }: { document: DocumentInterface }) {
         <div className="workspace-history-confirm">
           <p className="font-medium mb-3">{confirmation.commit.message}</p>
           <p>{confirmation.action === 'restore'
-            ? `Restore the saved state of “${doc.title}”? This restores Draft, Finished, all Notes, and document metadata (including title, description, tags, folder, and custom fields), plus additional versions saved in this checkpoint. Versions created later stay intact. Changes to restored versions will be replaced and editor undo history will be cleared.`
+            ? `Restore the saved state of “${doc.title}”? This restores all writing versions saved in this checkpoint, Notes, and document metadata (including title, description, tags, folder, and custom fields). Versions created later stay intact. Changes to restored versions will be replaced and editor undo history will be cleared.`
             : 'Delete this saved checkpoint? Your current document will stay unchanged. This cannot be undone.'}</p>
           {error && <p role="alert" className="mt-3">{error}</p>}
           <div className="flex justify-end gap-3 mt-5">
