@@ -145,6 +145,7 @@ beforeEach(() => {
     fixture('Beta', 'Beta draft text.', 'Beta finished text.')], currentChatIndex: 0,
     forceEditorRefresh: false, editorInstance: null, currentSelection: '',
     autosaveFlush: null, autosaveRetry: null, autosaveStatus: 'idle' });
+  useStore.setState({ documentView: 'continuous', setDocumentView: documentView => useStore.setState({ documentView }) });
   container = document.createElement('div'); document.body.appendChild(container);
   modalRoot = document.createElement('div'); modalRoot.id = 'modal-root'; document.body.appendChild(modalRoot);
 });
@@ -156,6 +157,40 @@ afterEach(async () => {
 });
 
 describe('relocated editor toolbar', () => {
+  it('changes page setup without replacing the editor, its nodes, or its undo history', async () => {
+    await mount(); await select(); await click('Format Bold');
+    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    const owner = editor(), before = owner.getEditorState().toJSON();
+    const keys = owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()));
+    await click('Pages');
+    expect(container.querySelector('[data-document-view="pages"]')).not.toBeNull();
+    await act(async () => {
+      const paper = container.querySelector<HTMLSelectElement>('[aria-label="Paper size"]')!;
+      paper.value = 'a4'; paper.dispatchEvent(new Event('change', { bubbles: true })); await tick();
+    });
+    expect(useStore.getState().chats![0].pageSetup?.paper).toBe('a4');
+    expect(useStore.getState().chats![1].pageSetup).toBeUndefined();
+    expect(editor()).toBe(owner);
+    expect(owner.getEditorState().toJSON()).toEqual(before);
+    expect(owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()))).toEqual(keys);
+    await click('Continuous'); await click('Undo');
+    expect(content().querySelector('.editor-text-bold')).toBeNull();
+    expect(content().textContent).toBe('The blue bird sings.');
+  });
+
+  it('keeps unsupported tables visible and editable in Continuous when Pages is preferred', async () => {
+    const docs = useStore.getState().chats!;
+    const saved = JSON.stringify(legacyDocument.editorState);
+    useStore.setState({ documentView: 'pages', chats: [{ ...docs[0], editorState: saved, draftEditorState: saved }, docs[1]] });
+    await mount();
+    expect(control('Pages').disabled).toBe(true);
+    expect(control('Pages').getAttribute('aria-pressed')).toBe('false');
+    expect(control('Continuous').getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('[data-document-view="continuous"]')).not.toBeNull();
+    expect(content().querySelectorAll('table tr')).toHaveLength(2);
+    expect(content().getAttribute('contenteditable')).toBe('true');
+  });
+
   it('loads and autosaves an actual 0.11.1 document with its structure and formatting intact', async () => {
     const legacyState = JSON.stringify(legacyDocument.editorState);
     const docs = useStore.getState().chats!;

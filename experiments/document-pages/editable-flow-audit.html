@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Editable pages: manual flow audit</title>
+<style>body{margin:0;font:13px system-ui;background:#eee}header{padding:8px;display:flex;gap:12px;align-items:center}iframe{width:100%;height:80vh;border:0;background:white}pre{white-space:pre-wrap;padding:12px}button{padding:6px}</style>
+<header><button id="audit">Measure text flow</button><span>Uses the local app and its saved test document. Edit inside the frame, then measure.</span></header>
+<iframe title="Editable application" src="/"></iframe>
+<pre id="result">No measurement yet.</pre>
+<script type="module">
+import { pageGeometry, parsePageSetup } from '/src/utils/page-layout.ts';
+document.querySelector('#audit').addEventListener('click', () => {
+  const doc = document.querySelector('iframe').contentDocument;
+  const root = doc.querySelector('[aria-label="Document content"]');
+  const plane = doc.querySelector('.document-page-plane');
+  const sheets = [...doc.querySelectorAll('.document-page-sheet')];
+  if (!root || !sheets.length) { document.querySelector('#result').textContent = 'Choose Pages view first.'; return; }
+  const paper = doc.querySelector('[aria-label="Paper size"]').value;
+  const css = doc.defaultView.getComputedStyle(plane);
+  const margins = Object.fromEntries(['top','right','bottom','left'].map(side => [side, parseFloat(css.getPropertyValue(`--page-${side}`)) / 96]));
+  const geometry = pageGeometry(parsePageSetup({ paper, margins }));
+  const origin = root.getBoundingClientRect(), scale = origin.width / geometry.width;
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const lines = new Set(), violations = [], counts = Array(sheets.length).fill(0);
+  let text;
+  while (text = walker.nextNode()) {
+    if (!text.textContent.trim()) continue;
+    // Range rectangles can include hanging spaces beyond a justified line.
+    // Measure each visible word so whitespace does not count as clipping.
+    const range = doc.createRange();
+    for (const match of text.textContent.matchAll(/\S+/g)) {
+      range.setStart(text, match.index); range.setEnd(text, match.index + match[0].length);
+      for (const rect of range.getClientRects()) {
+      if (!rect.width || !rect.height) continue;
+      const top = (rect.top - origin.top) / scale, bottom = (rect.bottom - origin.top) / scale;
+      const left = (rect.left - origin.left) / scale, right = (rect.right - origin.left) / scale;
+      const page = Math.floor(top / geometry.stride), relativeTop = top - page * geometry.stride;
+      const key = Math.round(top * 10);
+      if (!lines.has(key)) { lines.add(key); counts[page] = (counts[page] || 0) + 1; }
+      if (relativeTop < geometry.margins.top - .5 || bottom - page * geometry.stride > geometry.height - geometry.margins.bottom + .5 ||
+          left < geometry.margins.left - .5 || right > geometry.width - geometry.margins.right + .5) {
+        violations.push({ page: page + 1, top, bottom, left, right, text: text.textContent.slice(0, 45) });
+      }
+      }
+    }
+  }
+  document.querySelector('#result').textContent = JSON.stringify({ pages: sheets.length, paper, margins, scale, linesPerPage: counts, violations,
+    textLength: root.textContent.length, blocks: root.children.length, editableRoots: doc.querySelectorAll('[aria-label="Document content"]').length }, null, 2);
+});
+</script>
+</html>

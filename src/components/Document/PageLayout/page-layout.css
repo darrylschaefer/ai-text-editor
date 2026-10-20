@@ -1,0 +1,29 @@
+.document-layout { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.document-page-toolbar { display: flex; flex-shrink: 0; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 38px; padding: 5px 12px; border-bottom: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 11px/1.4 ui-sans-serif, system-ui, sans-serif; }
+.document-view-switch { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 5px; }
+.document-view-switch button { padding: 3px 8px; border-radius: 3px; color: var(--muted); }
+.document-view-switch button[aria-pressed=true] { background: var(--hover); color: var(--ink); }
+.document-view-switch button:disabled { opacity: .5; cursor: not-allowed; }
+.document-page-toolbar select { padding: 4px 20px 4px 7px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); font-size: 11px; }
+.document-page-toolbar button:focus-visible, .document-page-toolbar select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.document-page-count { margin-left: auto; white-space: nowrap; }
+.document-page-notice { font-size: 10px; }
+.document-page-viewport { flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
+.document-page-scale, .document-page-plane { height: 100%; width: 100%; position: relative; }
+.document-page-sheets, .document-page-gutters { position: absolute; inset: 0; pointer-events: none; }
+.document-layout[data-document-view=pages] .document-page-viewport { overflow: auto; padding: 20px; background: #e9ecef; }
+.dark .document-layout[data-document-view=pages] .document-page-viewport { background: #08090c; }
+.document-layout[data-document-view=pages] .document-page-scale { margin: 0 auto; }
+.document-layout[data-document-view=pages] .document-page-plane { position: absolute; top: 0; left: 0; transform-origin: top left; }
+.document-page-sheet { position: absolute; background: #fff; box-shadow: 0 1px 4px #0002, 0 0 0 1px #d8dde3; }
+.dark .document-page-sheet { background: #101115; box-shadow: 0 1px 4px #0005, 0 0 0 1px #24242d; }
+.document-page-sheet > span { position: absolute; left: 0; width: 100%; text-align: center; color: #85858d; font: 12px/1 ui-sans-serif, system-ui, sans-serif; }
+.workspace-document .document-layout[data-document-view=pages] .editor-input { position: relative; z-index: 1; display: flow-root; height: auto; min-height: var(--page-stack-height); width: 100%; max-width: none; margin: 0; padding: var(--page-top) var(--page-right) var(--page-bottom) var(--page-left); overflow: visible; background: transparent; box-shadow: none; }
+.workspace-document .document-layout[data-document-view=pages] .editor-input::before { content: ''; float: left; width: 100%; height: var(--page-exclusion-height); shape-outside: var(--page-exclusions); pointer-events: none; }
+.document-page-gutters { z-index: 2; }
+.document-page-gutters > div { position: absolute; left: 0; background: #e9ecef; }
+.dark .document-page-gutters > div { background: #08090c; }
+@media (max-width: 540px) {
+  .document-page-toolbar { padding: 5px 8px; gap: 5px; }
+  .document-page-toolbar select { max-width: 124px; }
+}

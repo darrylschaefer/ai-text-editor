@@ -20,6 +20,7 @@ import BlockIdNormalizationPlugin from "./EditorComponents/BlockIdNormalizationP
 import EditorStorePlugin from "./EditorComponents/EditorStorePlugin";
 import lexicalTheme from "./LexicalTheme";
 import ProseRhythmPlugin from './EditorComponents/ProseRhythmPlugin';
+import DocumentPageLayout from './PageLayout/DocumentPageLayout';
 
 const Document = () => {
   const currentChatIndex = useStore(state => state.currentChatIndex);
@@ -68,13 +69,15 @@ const Document = () => {
                   >
                     <EditorToolbar />
                     <div className="workspace-document-surface">
-                      <RichTextPlugin
-                        placeholder={<div />}
-                        contentEditable={
-                          <ContentEditable className="editor-input text-base focus:outline-none" ariaLabel="Document content" />
-                        }
-                        ErrorBoundary={LexicalErrorBoundary}
-                      />
+                      <DocumentPageLayout>
+                        <RichTextPlugin
+                          placeholder={<div />}
+                          contentEditable={
+                            <ContentEditable className="editor-input text-base focus:outline-none" ariaLabel="Document content" />
+                          }
+                          ErrorBoundary={LexicalErrorBoundary}
+                        />
+                      </DocumentPageLayout>
                     </div>
                     <EditorRefresh />
                     <BlockIdNormalizationPlugin />
