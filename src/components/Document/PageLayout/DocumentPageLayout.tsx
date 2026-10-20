@@ -12,7 +12,7 @@ import './page-layout.css';
 export default function DocumentPageLayout({ children }: { children: ReactNode }) {
   const [editor] = useLexicalComposerContext();
   const current = useStore(state => state.chats?.[state.currentChatIndex]);
-  const preference = useStore(state => state.documentView) || 'continuous';
+  const preference = useStore(state => state.documentView) || 'pages';
   const setView = useStore(state => state.setDocumentView);
   const saveSetup = useStore(state => state.setDocumentPageSetup);
   const setup = useMemo(() => parsePageSetup(current?.pageSetup), [current?.pageSetup]);

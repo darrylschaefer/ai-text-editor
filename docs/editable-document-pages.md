@@ -2,7 +2,7 @@
 
 October 20, 2026 · [Issue #26](https://github.com/darrylschaefer/fthr/issues/26)
 
-The Lexical 0.52 upgrade was merged separately in [PR #30](https://github.com/darrylschaefer/fthr/pull/30). This implementation is on `codex/document-pagination` and is experimental. It adds an editable Pages view to the ordinary document workspace. Continuous remains the default.
+The Lexical 0.52 upgrade was merged separately in [PR #30](https://github.com/darrylschaefer/fthr/pull/30). This implementation is on `codex/document-pagination` and is experimental. It adds an editable Pages view to the ordinary document workspace. Pages is the default, with Letter paper, one-inch margins, and fit-to-pane scaling. A saved viewing preference or document page setup takes precedence.
 
 ## What works
 

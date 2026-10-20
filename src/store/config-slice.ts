@@ -69,7 +69,7 @@ export interface ConfigSlice {
 }
 
 export const createConfigSlice: StoreSlice<ConfigSlice> = (set, get) => ({
-  documentView: 'continuous',
+  documentView: 'pages',
   setDocumentView: documentView => set({ documentView }),
   openConfig: false,
   theme: 'dark',
