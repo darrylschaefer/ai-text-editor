@@ -11,6 +11,7 @@ import { DocumentVersion } from '@type/document';
 import { WorkspaceAssistantContext, WorkspaceToolbarContext } from './WorkspaceContext';
 import { ModalLayerContext, useModalLayer } from '@components/ModalLayer/ModalLayer';
 import Brand from './Brand';
+import { ProseRhythmProvider } from '@components/Tools/ProseRhythmContext';
 import { clampPaneWidth, DEFAULT_PANE_WIDTHS, fitPaneWidths, maxPaneWidth, PaneSide, PANE_DIVIDER_WIDTH, PANE_LIMITS, usePaneLayout } from './usePaneLayout';
 import './workspace.css';
 
@@ -253,6 +254,7 @@ const Workspace = () => {
   } as CSSProperties;
 
   return (
+    <ProseRhythmProvider active={activeMenu === 'tools' && !hideRight}>
     <WorkspaceAssistantContext.Provider value={openAssistant}>
     <WorkspaceToolbarContext.Provider value={toolbarTarget}>
       <div className={`workspace${dragging ? ' workspace-resizing' : ''}`} style={layoutStyle}>
@@ -316,6 +318,7 @@ const Workspace = () => {
       </div>
     </WorkspaceToolbarContext.Provider>
     </WorkspaceAssistantContext.Provider>
+    </ProseRhythmProvider>
   );
 };
 

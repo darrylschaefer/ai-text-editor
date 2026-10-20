@@ -19,6 +19,7 @@ import AutosavePlugin from "./EditorComponents/AutosavePlugin";
 import BlockIdNormalizationPlugin from "./EditorComponents/BlockIdNormalizationPlugin";
 import EditorStorePlugin from "./EditorComponents/EditorStorePlugin";
 import lexicalTheme from "./LexicalTheme";
+import ProseRhythmPlugin from './EditorComponents/ProseRhythmPlugin';
 
 const Document = () => {
   const currentChatIndex = useStore(state => state.currentChatIndex);
@@ -85,6 +86,7 @@ const Document = () => {
                     <HistoryPlugin />
                     <ListPlugin />
                     <EditorSelection />
+                    <ProseRhythmPlugin documentId={currentDoc?.id} version={currentVersion} />
                   </div>
                 </div>
               </div>
