@@ -7,6 +7,7 @@ interface PageSettingsProps {
   setup: DocumentPageSetup;
   preference: DocumentView;
   pageMode: boolean;
+  mobile: boolean;
   pages: number;
   unsupported: boolean;
   failed: boolean;
@@ -14,7 +15,7 @@ interface PageSettingsProps {
   onSetupChange: (setup: DocumentPageSetup) => void;
 }
 
-export default function PageSettings({ setup, preference, pageMode, pages, unsupported, failed, onViewChange, onSetupChange }: PageSettingsProps) {
+export default function PageSettings({ setup, preference, pageMode, pages, mobile, unsupported, failed, onViewChange, onSetupChange }: PageSettingsProps) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ left: 12, top: 96, width: 280 });
   const trigger = useRef<HTMLButtonElement>(null), panel = useRef<HTMLDivElement>(null);
@@ -66,11 +67,12 @@ export default function PageSettings({ setup, preference, pageMode, pages, unsup
       <div className="document-page-controls" role="group" aria-label="Document layout">
         <span className="document-page-settings-label">View</span>
         <div className="document-view-switch">
-          <button type="button" aria-pressed={!pageMode} onClick={() => onViewChange('continuous')}>Continuous</button>
+          <button type="button" aria-pressed={!pageMode} onClick={() => onViewChange('continuous')}>{mobile ? 'Mobile view' : 'Continuous'}</button>
           <button type="button" aria-pressed={pageMode} disabled={unsupported}
-            title={unsupported ? 'Tables, code, and media currently use Continuous view' : 'Edit on pages · experimental'}
+            title={unsupported ? `Tables, code, and media currently use ${mobile ? 'Mobile' : 'Continuous'} view` : 'Edit on pages · experimental'}
             onClick={() => onViewChange('pages')}>Pages</button>
         </div>
+        {mobile && !pageMode && !unsupported && !failed && <p className="document-page-notice">Text reflows to fit your screen. Paper settings are unchanged.</p>}
         {pageMode && <>
           <label className="document-page-settings-row"><span>Paper size</span>
             <select aria-label="Paper size" value={setup.paper} onChange={event => onSetupChange({ ...setup, paper: event.target.value as PaperSize })}>
@@ -87,7 +89,7 @@ export default function PageSettings({ setup, preference, pageMode, pages, unsup
           <span className="document-page-count" aria-live="polite">{pages} {pages === 1 ? 'page' : 'pages'}</span>
         </>}
         {(unsupported || failed) && preference === 'pages' && <p className="document-page-notice">
-          {unsupported ? 'This content uses Continuous view.' : 'Page layout could not settle. Continuous view is available.'}</p>}
+          {unsupported ? `This content uses ${mobile ? 'Mobile' : 'Continuous'} view.` : `Page layout could not settle. ${mobile ? 'Mobile' : 'Continuous'} view is available.`}</p>}
       </div>
     </div>}
   </div>;

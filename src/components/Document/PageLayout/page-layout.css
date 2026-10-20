@@ -18,6 +18,10 @@
 .document-page-notice { color: var(--muted); font-size: 11px; }
 .document-page-viewport { flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
 .document-page-scale, .document-page-plane { height: 100%; width: 100%; position: relative; }
+.workspace-document .document-layout[data-document-view=screen] .editor-input { max-width: none; padding: 24px 20px 48px; font-size: 18px; line-height: 1.7; overflow-wrap: anywhere; box-shadow: none; }
+.document-layout[data-document-view=screen] .editor-heading-h2, .document-layout[data-document-view=screen] .editor-quote { font-size: 1em; }
+.document-layout[data-document-view=screen] .editor-quote { margin-left: 12px; padding-left: 12px; }
+.document-layout[data-document-view=screen] .editor-listitem { margin: 8px 0; }
 .document-page-sheets, .document-page-gutters { position: absolute; inset: 0; pointer-events: none; }
 .document-layout[data-document-view=pages] .document-page-viewport { overflow: auto; padding: 20px; background: #e9ecef; }
 .dark .document-layout[data-document-view=pages] .document-page-viewport { background: #08090c; }

@@ -3,11 +3,13 @@ import { Theme } from '@type/theme';
 import { ConfigInterface, LegacyConfigInterface, TotalTokenUsed, ModelOptions, AvailableEndpoints } from '@type/document';
 import { _defaultChatConfig, _defaultSystemMessage, _defaultLegacyConfig } from '@constants/chat';
 import { FineTuneModel } from '@type/config';
-import type { DocumentView } from '@type/page-setup';
+import type { DocumentView, MobileDocumentView } from '@type/page-setup';
 
 export interface ConfigSlice {
   documentView: DocumentView;
   setDocumentView: (view: DocumentView) => void;
+  mobileDocumentView: MobileDocumentView;
+  setMobileDocumentView: (view: MobileDocumentView) => void;
   openConfig: boolean;
   theme: Theme;
   autoTitle: boolean;
@@ -71,6 +73,8 @@ export interface ConfigSlice {
 export const createConfigSlice: StoreSlice<ConfigSlice> = (set, get) => ({
   documentView: 'pages',
   setDocumentView: documentView => set({ documentView }),
+  mobileDocumentView: 'screen',
+  setMobileDocumentView: mobileDocumentView => set({ mobileDocumentView }),
   openConfig: false,
   theme: 'dark',
   activeMenu: 'chat',

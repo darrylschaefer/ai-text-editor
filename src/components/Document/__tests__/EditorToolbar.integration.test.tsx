@@ -145,7 +145,8 @@ beforeEach(() => {
     fixture('Beta', 'Beta draft text.', 'Beta finished text.')], currentChatIndex: 0,
     forceEditorRefresh: false, editorInstance: null, currentSelection: '',
     autosaveFlush: null, autosaveRetry: null, autosaveStatus: 'idle' });
-  useStore.setState({ documentView: 'continuous', setDocumentView: documentView => useStore.setState({ documentView }) });
+  useStore.setState({ documentView: 'continuous', setDocumentView: documentView => useStore.setState({ documentView }),
+    mobileDocumentView: 'screen', setMobileDocumentView: mobileDocumentView => useStore.setState({ mobileDocumentView }) });
   container = document.createElement('div'); document.body.appendChild(container);
   modalRoot = document.createElement('div'); modalRoot.id = 'modal-root'; document.body.appendChild(modalRoot);
 });
@@ -157,6 +158,53 @@ afterEach(async () => {
 });
 
 describe('relocated editor toolbar', () => {
+  it('reflows the same editable manuscript on mobile and keeps desktop and mobile view choices separate', async () => {
+    let small = false;
+    const listeners = new Set<() => void>();
+    vi.stubGlobal('matchMedia', () => ({ get matches() { return small; },
+      addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener) }));
+    const resize = async (next: boolean) => {
+      await act(async () => { small = next; listeners.forEach(listener => listener()); await tick(); });
+    };
+    const docs = useStore.getState().chats!;
+    const setup = { paper: 'a4' as const, margins: { top: 1.25, right: 1.25, bottom: 1.25, left: 1.25 } };
+    useStore.setState({ documentView: 'pages', chats: [{ ...docs[0], pageSetup: setup }, docs[1]] });
+    await mount(); await select(); await click('Format Bold');
+    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    const owner = editor(), editable = content(), before = owner.getEditorState().toJSON();
+    const keys = owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()));
+    await resize(true);
+    expect(container.querySelector('[data-document-view="screen"]')).not.toBeNull();
+    expect(container.querySelector('.document-page-sheet')).toBeNull();
+    expect(content()).toBe(editable);
+    expect(editor()).toBe(owner);
+    expect(owner.read('latest', () => $getSelection()?.getTextContent())).toBe('blue');
+    await click('Page settings');
+    expect(control('Mobile view').getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('.document-page-count')).toBeNull();
+    await click('Pages');
+    expect(container.querySelector('[data-document-view="pages"]')).not.toBeNull();
+    expect(useStore.getState().mobileDocumentView).toBe('pages');
+    await click('Mobile view');
+    expect(useStore.getState().mobileDocumentView).toBe('screen');
+    expect(useStore.getState().documentView).toBe('pages');
+    await resize(false);
+    expect(container.querySelector('[data-document-view="pages"]')).not.toBeNull();
+    expect(content()).toBe(editable);
+    expect(owner.getEditorState().toJSON()).toEqual(before);
+    expect(owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()))).toEqual(keys);
+    expect(useStore.getState().chats![0].pageSetup).toEqual(setup);
+    await click('Undo');
+    expect(content().querySelector('.editor-text-bold')).toBeNull();
+    expect(content().textContent).toBe('The blue bird sings.');
+    // A phone's explicit paper-view choice must not change a desktop's saved Continuous view.
+    await act(async () => { useStore.getState().setDocumentView('continuous'); await tick(); });
+    await resize(true); await click('Page settings'); await click('Pages'); await resize(false);
+    expect(container.querySelector('[data-document-view="continuous"]')).not.toBeNull();
+    expect(useStore.getState().mobileDocumentView).toBe('pages');
+  });
+
   it('changes page setup from the top toolbar dropdown without replacing the editor, its nodes, or its undo history', async () => {
     await mount(); await select(); await click('Format Bold');
     await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });

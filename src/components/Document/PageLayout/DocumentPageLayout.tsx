@@ -8,20 +8,35 @@ import EditorToolbar from '../EditorComponents/EditorToolbar';
 import PageSettings from './PageSettings';
 import './page-layout.css';
 
+const mobileQuery = '(max-width: 767px)';
+
 /** Experimental editable prose pages. The Lexical tree stays flat and unchanged. */
 export default function DocumentPageLayout({ children }: { children: ReactNode }) {
   const [editor] = useLexicalComposerContext();
   const current = useStore(state => state.chats?.[state.currentChatIndex]);
-  const preference = useStore(state => state.documentView) || 'pages';
+  const desktopPreference = useStore(state => state.documentView) || 'pages';
+  const mobilePreference = useStore(state => state.mobileDocumentView) || 'screen';
   const setView = useStore(state => state.setDocumentView);
+  const setMobileView = useStore(state => state.setMobileDocumentView);
   const saveSetup = useStore(state => state.setDocumentPageSetup);
   const setup = useMemo(() => parsePageSetup(current?.pageSetup), [current?.pageSetup]);
   const geometry = useMemo(() => pageGeometry(setup), [setup]);
   const [root, setRoot] = useState<HTMLElement | null>(null);
   const [pages, setPages] = useState(1), [zoom, setZoom] = useState(1);
   const [unsupported, setUnsupported] = useState(false), [failed, setFailed] = useState(false);
+  const [mobile, setMobile] = useState(() => typeof window.matchMedia === 'function' && window.matchMedia(mobileQuery).matches);
   const viewport = useRef<HTMLDivElement>(null), plane = useRef<HTMLDivElement>(null);
+  const preference = mobile ? (mobilePreference === 'pages' ? 'pages' : 'continuous') : desktopPreference;
   const pageMode = preference === 'pages' && !unsupported && !failed;
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia(mobileQuery);
+    const update = () => setMobile(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => editor.registerRootListener(setRoot), [editor]);
   useEffect(() => {
@@ -119,10 +134,14 @@ export default function DocumentPageLayout({ children }: { children: ReactNode }
   } as CSSProperties : undefined;
 
   return <>
-    <EditorToolbar layoutControls={<PageSettings setup={setup} preference={preference} pageMode={pageMode} pages={pages}
+    <EditorToolbar layoutControls={<PageSettings setup={setup} preference={preference} pageMode={pageMode} pages={pages} mobile={mobile}
       unsupported={unsupported} failed={failed} onSetupChange={change}
-      onViewChange={view => { setFailed(false); setView(view); }} />} />
-    <div className="document-layout" data-document-view={pageMode ? 'pages' : 'continuous'}>
+      onViewChange={view => {
+        setFailed(false);
+        if (mobile) setMobileView(view === 'pages' ? 'pages' : 'screen');
+        else setView(view);
+      }} />} />
+    <div className="document-layout" data-document-view={pageMode ? 'pages' : mobile ? 'screen' : 'continuous'}>
     <div className="document-page-viewport" ref={viewport} data-document-scroll={pageMode ? '' : undefined}>
       <div className="document-page-scale" style={pageMode ? { width: geometry.width * zoom, height: stackHeight * zoom } : undefined}>
         <div className="document-page-plane" ref={plane} style={style}>
