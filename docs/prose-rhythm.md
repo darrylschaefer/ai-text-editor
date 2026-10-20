@@ -6,7 +6,7 @@ The map groups sentences by paragraph. Each bar shows its word count; hover or f
 
 Each paragraph also shows a **Rhythm ratio**: divide each sentence's word count by that paragraph's shortest sentence, then round to whole numbers. For example, `8, 8, 8, 16, 16, 8` words becomes **1:1:1:2:2:1**. Ratios describe relative lengths; they do not rate the prose.
 
-This initial version analyzes English prose with local sentence and word segmentation plus rules for common titles, initials, and dialogue tags. Contractions and hyphenated compounds count as one word; numbers count as word-like items. Soft breaks remain within sentences; hard paragraph boundaries stay separate. Headings, code, and tables are excluded. Unpunctuated endings appear as unfinished sentences. Boundaries remain approximate for ambiguous dialogue, abbreviations, and unusual punctuation.
+This initial version analyzes English prose with local sentence and word segmentation plus rules for common titles, initials, dialogue tags, and lowercase sentence openings. Contractions and hyphenated compounds count as one word; numbers count as word-like items. Soft breaks remain within sentences; hard paragraph boundaries stay separate. Headings, code, and tables are excluded. Unpunctuated endings appear as unfinished sentences. Boundaries remain approximate for ambiguous dialogue, abbreviations, and unusual punctuation.
 
 The tool reads the current Lexical state and paints browser ranges with CSS Custom Highlights. It does not write sentence colors or analysis into the document, export, history, or undo stack. Retained selection takes precedence over rhythm colors. A browser without custom highlights still gets the map. Sentence segmentation support is required.
 

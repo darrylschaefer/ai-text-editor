@@ -42,9 +42,11 @@ export function countProseWords(text: string): number {
 function joinsBoundary(left: string, right: string): boolean {
   const next = right.trimStart();
   if (/(?:^|\s)(?:Mr|Mrs|Ms|Dr|Prof|Rev|Fr|Sr|Jr|St|Capt|Lt|Col|Gen|Sgt|Sen|Rep|Gov|Pres|Hon|Mt)\.$/iu.test(left)
-    && /^\p{Lu}/u.test(next)) return true;
+    && /^\p{L}/u.test(next)) return true;
   if (/(?:^|\s)(?:e\.g|i\.e|vs)\.$/iu.test(left) && /^\p{L}/u.test(next)) return true;
   if (/(?:^|\s)(?:Fig|No)\.$/iu.test(left) && /^\d/u.test(next)) return true;
+  if (/(?:^|\s)(?:etc|cf|al|approx|ca|pp|p|vol|Inc|Ltd|dept|a\.m|p\.m)\.$/iu.test(left)
+    && /^\p{Ll}/u.test(next)) return true;
   if (/(?:^|[\s(])\p{Lu}\.$/u.test(left) && /^\p{Lu}[\p{L}.'’\-]*/u.test(next)) return true;
   // A quoted sentence followed by a reporting clause belongs together. Keep
   // independent action beats (e.g. 'She ran.') as separate sentences.
@@ -57,13 +59,25 @@ export function segmentProse(text: string): ProseSentence[] {
   // the original node mapping intact, including line breaks and Unicode.
   const analysis = text.replace(/\n/g, ' ');
   const spans: Array<{ from: number; to: number }> = [];
-  for (const item of sentences.segment(analysis)) {
-    const from = item.index + item.segment.length - item.segment.trimStart().length;
-    const to = item.index + item.segment.trimEnd().length;
-    if (from >= to) continue;
+  const append = (start: number, end: number) => {
+    const passage = analysis.slice(start, end);
+    const from = start + passage.length - passage.trimStart().length;
+    const to = start + passage.trimEnd().length;
+    if (from >= to) return;
     const previous = spans[spans.length - 1];
     if (previous && joinsBoundary(analysis.slice(previous.from, previous.to), analysis.slice(from, to))) previous.to = to;
     else spans.push({ from, to });
+  };
+  for (const item of sentences.segment(analysis)) {
+    let cursor = item.index;
+    // Unicode's default rules often suppress a period boundary before a
+    // lowercase word. Writers also use lowercase sentence openings. Add those
+    // candidates, then apply the same abbreviation/dialogue suppressions.
+    for (const boundary of item.segment.matchAll(/[.!?…]+[”"'’)\]]*\s+(?=[“"'‘(\[]*\p{Ll})/gu)) {
+      append(cursor, item.index + boundary.index! + boundary[0].trimEnd().length);
+      cursor = item.index + boundary.index! + boundary[0].length;
+    }
+    append(cursor, item.index + item.segment.length);
   }
   return spans.flatMap(({ from, to }) => {
     const sentence = text.slice(from, to), count = countProseWords(sentence);

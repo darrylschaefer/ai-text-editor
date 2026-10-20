@@ -14,6 +14,8 @@ describe('English prose rhythm boundaries', () => {
     ['The bridge\nfell. We ran.', ['The bridge\nfell.', 'We ran.']],
     ['  A 😀 cafe\u0301 opens.\t Next.  ', ['A 😀 cafe\u0301 opens.', 'Next.']],
     ['Go. Go. Go.', ['Go.', 'Go.', 'Go.']],
+    ['one sentence. another sentence. “a third.”', ['one sentence.', 'another sentence.', '“a third.”']],
+    ['dr. smith brought fruit, e.g. pears. then he left.', ['dr. smith brought fruit, e.g. pears.', 'then he left.']],
   ])('segments %s and preserves original offsets', (text, expected) => {
     const sentences = segmentProse(text as string);
     expect(sentences.map(sentence => sentence.text)).toEqual(expected);
