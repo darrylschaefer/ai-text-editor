@@ -2,8 +2,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import useStore from '@store/store';
-import { PAGE_GAP, pageExclusions, pageGeometry, pageStackHeight, pagesForBottom, parsePageSetup, uniformMargins } from '@utils/page-layout';
-import type { DocumentPageSetup, PaperSize } from '@type/page-setup';
+import { PAGE_GAP, pageExclusions, pageGeometry, pageStackHeight, pagesForBottom, parsePageSetup } from '@utils/page-layout';
+import type { DocumentPageSetup } from '@type/page-setup';
+import EditorToolbar from '../EditorComponents/EditorToolbar';
+import PageSettings from './PageSettings';
 import './page-layout.css';
 
 /** Experimental editable prose pages. The Lexical tree stays flat and unchanged. */
@@ -107,8 +109,6 @@ export default function DocumentPageLayout({ children }: { children: ReactNode }
 
   useEffect(() => { root?.dispatchEvent(new Event('fthr:page-layout')); }, [root, zoom, pageMode]);
   const change = (next: DocumentPageSetup) => { if (current) saveSetup(current.id, next); };
-  const allMargins = Object.values(setup.margins);
-  const preset = allMargins.every(value => value === allMargins[0]) ? String(allMargins[0]) : 'custom';
   const stackHeight = pageStackHeight(pages, geometry), exclusion = pageExclusions(pages, geometry);
   const style = pageMode ? {
     width: geometry.width, height: stackHeight, transform: `scale(${zoom})`,
@@ -118,27 +118,11 @@ export default function DocumentPageLayout({ children }: { children: ReactNode }
     '--page-stack-height': `${stackHeight}px`,
   } as CSSProperties : undefined;
 
-  return <div className="document-layout" data-document-view={pageMode ? 'pages' : 'continuous'}>
-    <div className="document-page-toolbar" role="group" aria-label="Document layout">
-      <div className="document-view-switch">
-        <button type="button" aria-pressed={!pageMode} onClick={() => { setFailed(false); setView('continuous'); }}>Continuous</button>
-        <button type="button" aria-pressed={pageMode} disabled={unsupported}
-          title={unsupported ? 'Tables, code, and media currently use Continuous view' : 'Edit on pages · experimental'}
-          onClick={() => { setFailed(false); setView('pages'); }}>Pages</button>
-      </div>
-      {pageMode && <>
-        <select aria-label="Paper size" value={setup.paper} onChange={event => change({ ...setup, paper: event.target.value as PaperSize })}>
-          <option value="letter">Letter</option><option value="a4">A4</option></select>
-        <select aria-label="Page margins" value={preset} onChange={event => change({ ...setup, margins: uniformMargins(Number(event.target.value)) })}>
-          <option value="0.5">0.5 in margins</option><option value="0.75">0.75 in margins</option>
-          <option value="1">1 in margins</option><option value="1.25">1.25 in margins</option>
-          {!['0.5', '0.75', '1', '1.25'].includes(preset) && <option value={preset} disabled>Custom margins</option>}
-        </select>
-        <span className="document-page-count" aria-live="polite">{pages} {pages === 1 ? 'page' : 'pages'}</span>
-      </>}
-      {(unsupported || failed) && preference === 'pages' && <span className="document-page-notice">
-        {unsupported ? 'This content uses Continuous view.' : 'Page layout could not settle. Continuous view is available.'}</span>}
-    </div>
+  return <>
+    <EditorToolbar layoutControls={<PageSettings setup={setup} preference={preference} pageMode={pageMode} pages={pages}
+      unsupported={unsupported} failed={failed} onSetupChange={change}
+      onViewChange={view => { setFailed(false); setView(view); }} />} />
+    <div className="document-layout" data-document-view={pageMode ? 'pages' : 'continuous'}>
     <div className="document-page-viewport" ref={viewport} data-document-scroll={pageMode ? '' : undefined}>
       <div className="document-page-scale" style={pageMode ? { width: geometry.width * zoom, height: stackHeight * zoom } : undefined}>
         <div className="document-page-plane" ref={plane} style={style}>
@@ -156,5 +140,6 @@ export default function DocumentPageLayout({ children }: { children: ReactNode }
         </div>
       </div>
     </div>
-  </div>;
+    </div>
+  </>;
 }

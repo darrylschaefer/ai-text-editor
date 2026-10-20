@@ -14,7 +14,6 @@ import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import EditorRefresh from './EditorComponents/EditorRefresh';
 import EditorSelection from './EditorComponents/EditorSelection';
-import EditorToolbar from "./EditorComponents/EditorToolbar";
 import AutosavePlugin from "./EditorComponents/AutosavePlugin";
 import BlockIdNormalizationPlugin from "./EditorComponents/BlockIdNormalizationPlugin";
 import EditorStorePlugin from "./EditorComponents/EditorStorePlugin";
@@ -67,7 +66,6 @@ const Document = () => {
                   <div 
                     className="editor-inner group"
                   >
-                    <EditorToolbar />
                     <div className="workspace-document-surface">
                       <DocumentPageLayout>
                         <RichTextPlugin

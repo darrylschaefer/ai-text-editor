@@ -14,8 +14,8 @@ document.querySelector('#audit').addEventListener('click', () => {
   const plane = doc.querySelector('.document-page-plane');
   const sheets = [...doc.querySelectorAll('.document-page-sheet')];
   if (!root || !sheets.length) { document.querySelector('#result').textContent = 'Choose Pages view first.'; return; }
-  const paper = doc.querySelector('[aria-label="Paper size"]').value;
   const css = doc.defaultView.getComputedStyle(plane);
+  const paper = Math.abs(parseFloat(css.width) - 816) < .5 ? 'letter' : 'a4';
   const margins = Object.fromEntries(['top','right','bottom','left'].map(side => [side, parseFloat(css.getPropertyValue(`--page-${side}`)) / 96]));
   const geometry = pageGeometry(parsePageSetup({ paper, margins }));
   const origin = root.getBoundingClientRect(), scale = origin.width / geometry.width;

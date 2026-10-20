@@ -7,6 +7,7 @@ The Lexical 0.52 upgrade was merged separately in [PR #30](https://github.com/da
 ## What works
 
 - Letter and A4 paper, four uniform margin presets, page numbers, and fit-to-pane scaling.
+- View, paper, margin, and page-count controls live in a Page settings dropdown in the existing top formatting toolbar, with no separate toolbar above the page canvas.
 - Page setup saved on each document, shared across its writing versions. The viewing preference is saved separately as a workspace preference.
 - Legacy documents open with Letter and one-inch margins without rewriting their saved editor state. Imported settings are validated.
 - One ContentEditable, one Lexical tree, and one undo history. Paper and margin changes do not call `editor.update`, insert automatic breaks, split paragraph nodes, or create manuscript revisions.

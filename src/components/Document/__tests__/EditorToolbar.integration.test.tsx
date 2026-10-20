@@ -157,13 +157,22 @@ afterEach(async () => {
 });
 
 describe('relocated editor toolbar', () => {
-  it('changes page setup without replacing the editor, its nodes, or its undo history', async () => {
+  it('changes page setup from the top toolbar dropdown without replacing the editor, its nodes, or its undo history', async () => {
     await mount(); await select(); await click('Format Bold');
     await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
     const owner = editor(), before = owner.getEditorState().toJSON();
     const keys = owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()));
+    expect(container.querySelector('[aria-label="Paper size"]')).toBeNull();
+    await click('Page settings');
     await click('Pages');
     expect(container.querySelector('[data-document-view="pages"]')).not.toBeNull();
+    const toolbar = container.querySelector('[data-toolbar-target] [role="toolbar"]')!;
+    expect(container.querySelectorAll('[role="toolbar"]')).toHaveLength(1);
+    expect(toolbar.contains(control('Pages'))).toBe(true);
+    expect(toolbar.querySelector('[aria-label="Paper size"]')).not.toBeNull();
+    expect(toolbar.querySelector('[aria-label="Page margins"]')).not.toBeNull();
+    expect(toolbar.querySelector('.document-page-count')).not.toBeNull();
+    expect(container.querySelector('.document-layout [aria-label="Document layout"]')).toBeNull();
     await act(async () => {
       const paper = container.querySelector<HTMLSelectElement>('[aria-label="Paper size"]')!;
       paper.value = 'a4'; paper.dispatchEvent(new Event('change', { bubbles: true })); await tick();
@@ -173,6 +182,11 @@ describe('relocated editor toolbar', () => {
     expect(editor()).toBe(owner);
     expect(owner.getEditorState().toJSON()).toEqual(before);
     expect(owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()))).toEqual(keys);
+    await press('Escape');
+    expect(control('Page settings').getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(control('Page settings'));
+    expect(container.querySelector('[role="dialog"][aria-label="Page settings"]')).toBeNull();
+    await click('Page settings');
     await click('Continuous'); await click('Undo');
     expect(content().querySelector('.editor-text-bold')).toBeNull();
     expect(content().textContent).toBe('The blue bird sings.');
@@ -183,6 +197,7 @@ describe('relocated editor toolbar', () => {
     const saved = JSON.stringify(legacyDocument.editorState);
     useStore.setState({ documentView: 'pages', chats: [{ ...docs[0], editorState: saved, draftEditorState: saved }, docs[1]] });
     await mount();
+    await click('Page settings');
     expect(control('Pages').disabled).toBe(true);
     expect(control('Pages').getAttribute('aria-pressed')).toBe('false');
     expect(control('Continuous').getAttribute('aria-pressed')).toBe('true');
