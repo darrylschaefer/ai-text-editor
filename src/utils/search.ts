@@ -5,6 +5,7 @@ import useStore from '@store/store';
 import { DocumentVersion, DocumentInterface } from '@type/document';
 import { updateBlockIndexForSection } from './block-index-updater';
 import { get } from 'idb-keyval';
+import { getDocumentVersions, getVersionState } from './document-versions';
 
 /**
  * Extract snippet around match in text
@@ -121,19 +122,13 @@ async function ensureAllDocumentsIndexed(scope: SearchScope = {}): Promise<void>
       sectionsToIndex.push(...scope.sections);
     } else {
       // Index all sections if no specific sections requested
-      sectionsToIndex.push('Draft', 'Finished');
+      sectionsToIndex.push(...getDocumentVersions(doc).map(version => version.id));
     }
     
     // Index each section if it has content and isn't already indexed
     for (const section of sectionsToIndex) {
       totalSectionsChecked++;
-      let editorStateString: string | undefined;
-      
-      if (section === 'Draft') {
-        editorStateString = doc.draftEditorState || doc.editorState;
-      } else if (section === 'Finished') {
-        editorStateString = doc.finishedEditorState || doc.editorState;
-      }
+      const editorStateString = getVersionState(doc, section);
       
       // Only index if section has content
       if (editorStateString && editorStateString.trim() !== '') {

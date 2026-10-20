@@ -14,6 +14,7 @@ import { getEnabledToolDefinitions, executeTool } from '@api/tools';
 import { buildToolContext } from '@api/tools/context-builder';
 import { debug } from '@utils/debug';
 import useUnifiedChat from './useUnifiedChat';
+import { getVersionContext } from '@utils/document-versions';
 
 const dbg = debug.tag('useUnifiedSubmit');
 
@@ -104,6 +105,8 @@ const useUnifiedSubmit = () => {
     const isCompletionsEndpoint = apiEndpointType === 'completions' || isLegacy;
     const baseConfig = isCompletionsEndpoint ? defaultLegacyConfig : defaultChatConfig;
     const cleanConfig = removeProviderAndApiEndpoint(config || baseConfig);
+    const requestStore = useStore.getState();
+    const versionContext = getVersionContext(requestStore.chats?.[requestStore.currentChatIndex]);
 
     // For completions/responses endpoints, we need to handle messages differently
     if (apiEndpointType === 'completions' || isLegacy) {
@@ -219,6 +222,7 @@ const useUnifiedSubmit = () => {
           dbg.log('First message, sending full history:', messagesToSend.length, 'messages');
         }
         
+        if (versionContext) messagesToSend.unshift({ role: 'system', content: versionContext });
         if (currentConversation?.type === 'agent') {
           const enabledTools = useStore.getState().enabledTools || [];
           if (enabledTools.length > 0) {
@@ -244,7 +248,7 @@ const useUnifiedSubmit = () => {
       } else {
         // Chat completions endpoint (default)
         const messagesToSend = limitMessageTokens(
-          conversationMessages.slice(0, -1), // Exclude the empty assistant message we just added
+          [...(versionContext ? [{ role: 'system' as const, content: versionContext }] : []), ...conversationMessages.slice(0, -1)],
           cleanConfig.max_completion_tokens || defaultChatConfig.max_completion_tokens,
           (cleanConfig.model || defaultChatConfig.model) as any
         );

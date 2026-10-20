@@ -92,6 +92,10 @@ function control(label: string) {
 }
 
 async function click(label: string) {
+  if (label === 'v1 Version' || label === 'v2 Version') {
+    const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
+    if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
+  }
   await act(async () => {
     const button = control(label);
     const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 });
@@ -228,7 +232,7 @@ describe('relocated editor toolbar', () => {
     const [id, actor, message, snapshot] = memory.create.mock.calls[0];
     expect([id, actor, message]).toEqual(['Alpha', 'user', 'Synthetic checkpoint']);
     expect(JSON.parse(snapshot.sections.Draft).root.children[0].children.some((node: { text: string; format: number }) => node.text === 'blue' && node.format === 1)).toBe(true);
-    expect(JSON.parse(snapshot.sections.Finished).root.children[0].children[0].text).toBe('Alpha finished text.');
+    expect(JSON.parse(snapshot.sections.Finished!).root.children[0].children[0].text).toBe('Alpha finished text.');
   });
 
   it('shows only a green status dot when saved and turns amber as soon as content changes', async () => {
@@ -267,7 +271,7 @@ describe('relocated editor toolbar', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     await act(async () => { useStore.setState({ setChats: () => { throw new Error('Synthetic save failure'); } }); await tick(); });
     await select(); await click('Format Bold');
-    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    await act(async () => { await expect(useStore.getState().autosaveFlush!()).rejects.toThrow('Could not save'); await tick(); });
     expect(container.querySelector('[data-save-status="error"] .bg-red-500')).not.toBeNull();
     await select('bird');
     expect(container.querySelector('[data-save-status="error"] .bg-red-500')).not.toBeNull();
@@ -287,13 +291,13 @@ describe('relocated editor toolbar', () => {
   });
 
   it('formats and checkpoints Beta Finished without changing Alpha or Beta Draft', async () => {
-    await mount(); await click('Open Beta'); await click('Finished Version');
+    await mount(); await click('Open Beta'); await click('v2 Version');
     await select('finished'); await click('Format Bold');
     await click('Create Checkpoint'); await fillMessage('Beta finished checkpoint');
     await click('Create');
     const [id, , , snapshot] = memory.create.mock.calls[0];
     expect(id).toBe('Beta');
-    expect(JSON.parse(snapshot.sections.Finished).root.children[0].children.some((node: { text: string; format: number }) => node.text === 'finished' && node.format === 1)).toBe(true);
+    expect(JSON.parse(snapshot.sections.Finished!).root.children[0].children.some((node: { text: string; format: number }) => node.text === 'finished' && node.format === 1)).toBe(true);
     expect(JSON.parse(snapshot.sections.Draft).root.children[0].children[0].text).toBe('Beta draft text.');
     await click('Open Alpha');
     expect(content().textContent).toBe('The blue bird sings.');
@@ -319,7 +323,7 @@ describe('relocated editor toolbar', () => {
 
   it('preserves each section and the toolbar when legacy callers request Notes', async () => {
     await mount(); await select(); await click('Format Bold');
-    await click('Finished Version'); expect(content().textContent).toBe('Alpha finished text.');
+    await click('v2 Version'); expect(content().textContent).toBe('Alpha finished text.');
     expect(control('Format Bold').getAttribute('aria-pressed')).toBe('false');
     const finishedEditor = editor();
     await act(async () => { await useStore.getState().setDocumentVersion('Alpha', 'Snippets'); await tick(); });
@@ -328,7 +332,7 @@ describe('relocated editor toolbar', () => {
     expect(useStore.getState().notesOpenRequest).toBe('Alpha');
     expect(container.querySelector('[data-toolbar-target] [role="toolbar"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Snippets Version"]')).toBeNull();
-    await click('Draft Version');
+    await click('v1 Version');
     expect(content().querySelector('.editor-text-bold')?.textContent).toBe('blue');
     expect(container.querySelectorAll('[role="toolbar"]')).toHaveLength(1);
     await click('Open Beta'); expect(content().textContent).toBe('Beta draft text.');
@@ -338,9 +342,9 @@ describe('relocated editor toolbar', () => {
 
   it('keeps an intentionally empty Finished section separate from the Draft', async () => {
     useStore.getState().chats![0].finishedEditorState = '';
-    await mount(); await click('Finished Version');
+    await mount(); await click('v2 Version');
     expect(content().textContent).toBe('');
-    await click('Draft Version'); expect(content().textContent).toBe('The blue bird sings.');
+    await click('v1 Version'); expect(content().textContent).toBe('The blue bird sings.');
   });
 
   it('loads a legacy editorState and initializes missing section fields without losing its text', async () => {
@@ -352,25 +356,25 @@ describe('relocated editor toolbar', () => {
     expect(content().textContent).toBe('The blue bird sings.');
     expect(useStore.getState().chats![0].currentVersion).toBe('Draft');
     expect(useStore.getState().chats![0].snippets).toEqual([]);
-    await click('Finished Version'); expect(content().textContent).toBe('');
-    await click('Draft Version'); expect(content().textContent).toBe('The blue bird sings.');
+    await click('v2 Version'); expect(content().textContent).toBe('');
+    await click('v1 Version'); expect(content().textContent).toBe('The blue bird sings.');
   });
 
   it('keeps content and toolbar ownership correct through rapid section/document changes', async () => {
     await mount();
     for (let i = 0; i < 3; i++) {
-      await click('Finished Version'); expect(content().textContent).toBe('Alpha finished text.');
+      await click('v2 Version'); expect(content().textContent).toBe('Alpha finished text.');
       await click('Open Beta');
-      if (i > 0) await click('Draft Version');
+      if (i > 0) await click('v1 Version');
       expect(content().textContent).toBe('Beta draft text.');
-      await click('Finished Version'); expect(content().textContent).toBe('Beta finished text.');
+      await click('v2 Version'); expect(content().textContent).toBe('Beta finished text.');
       await act(async () => { await useStore.getState().setDocumentVersion('Beta', 'Snippets'); await tick(); });
       expect(container.querySelector('[role="toolbar"]')).not.toBeNull();
       await click('Open Alpha'); expect(content().textContent).toBe('Alpha finished text.');
-      await click('Draft Version'); expect(content().textContent).toBe('The blue bird sings.');
+      await click('v1 Version'); expect(content().textContent).toBe('The blue bird sings.');
       const beta = useStore.getState().chats![1];
       expect(JSON.parse(beta.draftEditorState).root.children[0].children[0].text).toBe('Beta draft text.');
-      expect(JSON.parse(beta.finishedEditorState).root.children[0].children[0].text).toBe('Beta finished text.');
+      expect(JSON.parse(beta.finishedEditorState!).root.children[0].children[0].text).toBe('Beta finished text.');
       expect(container.querySelectorAll('[data-toolbar-target] [role="toolbar"]')).toHaveLength(1);
     }
   });
@@ -406,7 +410,7 @@ describe('relocated editor toolbar', () => {
     await act(async () => { release(); await Promise.all(requests); await tick(); });
     expect(useStore.getState().chats![0].currentVersion).toBe('Draft');
     expect(content().querySelector('.editor-text-bold')?.textContent).toBe('blue');
-    expect(JSON.parse(useStore.getState().chats![0].finishedEditorState).root.children[0].children[0].text).toBe('Alpha finished text.');
+    expect(JSON.parse(useStore.getState().chats![0].finishedEditorState!).root.children[0].children[0].text).toBe('Alpha finished text.');
   });
 
   it.each(['cancel', 'switch'])('does not create a stale checkpoint after %s during a pending flush', async action => {

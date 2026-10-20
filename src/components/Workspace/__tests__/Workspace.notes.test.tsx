@@ -71,6 +71,10 @@ function button(label: string) {
   return target;
 }
 async function click(label: string) {
+  if (label === 'v1 Version' || label === 'v2 Version') {
+    const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
+    if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
+  }
   await act(async () => { const target = button(label); target.focus(); target.click(); await tick(); });
 }
 async function fill(field: HTMLInputElement, value: string) {
@@ -126,7 +130,7 @@ describe('document Notes sidebar', () => {
     });
     expect(await snippetReadTool({ parent_doc_id: 'Alpha', snippet_id: created.id })).toMatchObject({ content: 'A useful new idea.' });
     expect(main().textContent).toBe('Alpha draft text.');
-    await click('Finished Version'); expect(main().textContent).toBe('Alpha finished text.');
+    await click('v2 Version'); expect(main().textContent).toBe('Alpha finished text.');
     expect(notes().textContent).toContain('A useful new idea.');
     await click('Chat'); await click('Notes'); await click('Close assistant pane'); await click('Show assistant pane');
     expect(notes().textContent).toContain('A useful new idea.');
@@ -217,7 +221,7 @@ describe('document Notes sidebar', () => {
 
   it('routes a legacy Notes request to the phone drawer without changing desktop preferences or Finished content', async () => {
     compact = true;
-    const doc = useStore.getState().chats![0]; doc.currentVersion = 'Finished'; doc.editorState = doc.finishedEditorState;
+    const doc = useStore.getState().chats![0]; doc.currentVersion = 'Finished'; doc.editorState = doc.finishedEditorState!;
     useStore.setState({ hideSideAIMenu: true }); await mount();
     const editor = useStore.getState().editorInstance;
     await act(async () => { await useStore.getState().setDocumentVersion('Alpha', 'Snippets'); await tick(); });

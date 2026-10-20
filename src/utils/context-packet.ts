@@ -3,6 +3,7 @@ import { getBlockIndex, getDocumentBlockIndices } from '@store/block-index-store
 import { extractBlockMap } from './block-map';
 import { semanticSearch } from './search';
 import useStore from '@store/store';
+import { getVersionState } from './document-versions';
 import { DocumentVersion } from '@type/document';
 import { extractTextFromEditorState } from '@api/tools/implementations';
 
@@ -35,11 +36,7 @@ export async function getContextPacket(
   }
   
   // Get block map for the section to find neighbors
-  const sectionState = anchor.section === 'Draft'
-    ? (doc.draftEditorState || doc.editorState || '')
-    : anchor.section === 'Finished'
-    ? (doc.finishedEditorState || '')
-    : '';
+  const sectionState = getVersionState(doc, anchor.section);
   
   let blockMap: Awaited<ReturnType<typeof extractBlockMap>> = [];
   if (sectionState) {

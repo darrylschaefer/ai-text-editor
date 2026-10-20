@@ -94,6 +94,10 @@ function control(label: string) {
 }
 
 async function click(label: string) {
+  if (label === 'v1 Version' || label === 'v2 Version') {
+    const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
+    if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
+  }
   await act(async () => {
     const button = control(label);
     const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 });
@@ -229,7 +233,7 @@ describe('owned editor selection and retained highlight', () => {
     expect(retained()).toBeUndefined();
   });
 
-  it.each(['Finished Version', 'Open Beta'])('clears context and painting on %s', async target => {
+  it.each(['v2 Version', 'Open Beta'])('clears context and painting on %s', async target => {
     await mount(); await select(); await leaveEditor(); await click(target);
     expect(useStore.getState().getCurrentSelection()).toBe('');
     expect(useStore.getState().editorSelection).toBeNull();

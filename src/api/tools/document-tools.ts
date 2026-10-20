@@ -10,6 +10,7 @@ import { generateDefaultDocument } from '@constants/chat';
 import { getDocumentBlockIndices } from '@store/block-index-store';
 import { extractTextFromEditorState } from './implementations';
 import { debug } from '@utils/debug';
+import { copyVersionState, getDocumentVersions, getVersionState } from '@utils/document-versions';
 
 const dbg = debug.tag('document-tools');
 
@@ -51,7 +52,9 @@ export interface DocumentEntry {
   tags: string[];
   doc_type: string | null;
   order: number; // Array index
+  versions?: Array<{ id: string; name: string }>;
   word_counts?: {
+    [versionId: string]: number | null | undefined;
     Draft?: number | null;
     Finished?: number | null;
     Clips?: number | null;
@@ -132,7 +135,6 @@ export async function projectGetTreeTool(
     }
     
     const includeWordCounts = args.include_word_counts !== false;
-    const includeSections: DocumentVersion[] = ['Draft', 'Finished', 'Snippets'];
     
     // Filter documents by folder if specified
     let filteredDocs = chats;
@@ -196,7 +198,7 @@ export async function projectGetTreeTool(
         let wordCounts: DocumentEntry['word_counts'] | undefined;
         if (includeWordCounts) {
           wordCounts = {};
-          for (const section of includeSections) {
+          for (const section of [...getDocumentVersions(doc).map(version => version.id), 'Snippets']) {
             if (section === 'Snippets') {
               // Snippets word count - sum all snippets
               let snippetsWords = 0;
@@ -227,6 +229,7 @@ export async function projectGetTreeTool(
           tags: doc.tags || [],
           doc_type: docType,
           order: i, // Position in filtered array
+          versions: getDocumentVersions(doc),
           word_counts: wordCounts,
         });
       }
@@ -250,7 +253,7 @@ export async function projectGetTreeTool(
       let wordCounts: DocumentEntry['word_counts'] | undefined;
       if (includeWordCounts) {
         wordCounts = {};
-        for (const section of includeSections) {
+        for (const section of [...getDocumentVersions(doc).map(version => version.id), 'Snippets']) {
           if (section === 'Snippets') {
             let snippetsWords = 0;
             if (doc.snippets) {
@@ -279,6 +282,7 @@ export async function projectGetTreeTool(
         tags: doc.tags || [],
         doc_type: docType,
         order: i,
+        versions: getDocumentVersions(doc),
         word_counts: wordCounts,
       });
     }
@@ -1026,15 +1030,20 @@ export async function docDuplicateTool(
     newDoc.tags = sourceDoc.tags ? [...sourceDoc.tags] : [];
     
     // Copy all sections
-    if (sourceDoc.draftEditorState) {
-      newDoc.draftEditorState = sourceDoc.draftEditorState;
-    }
-    if (sourceDoc.finishedEditorState) {
-      newDoc.finishedEditorState = sourceDoc.finishedEditorState;
-    }
+    newDoc.draftEditorState = copyVersionState(getVersionState(sourceDoc, 'Draft') || '');
+    const finished = getVersionState(sourceDoc, 'Finished');
+    if (finished !== undefined) newDoc.finishedEditorState = copyVersionState(finished);
     if (sourceDoc.snippets) {
       newDoc.snippets = JSON.parse(JSON.stringify(sourceDoc.snippets));
     }
+    const versionIds = new Map((sourceDoc.versions || []).map(version => [version.id, `version-${crypto.randomUUID()}`]));
+    newDoc.versions = sourceDoc.versions?.map(version => ({ ...version,
+      id: versionIds.get(version.id)!, editorState: copyVersionState(version.editorState),
+      copiedFrom: version.copiedFrom ? versionIds.get(version.copiedFrom) || version.copiedFrom : undefined,
+    }));
+    newDoc.versionNames = sourceDoc.versionNames ? { ...sourceDoc.versionNames } : undefined;
+    newDoc.currentVersion = versionIds.get(sourceDoc.currentVersion) || (sourceDoc.currentVersion === 'Finished' ? 'Finished' : 'Draft');
+    newDoc.editorState = getVersionState(newDoc) || '';
     
     // Insert after source document
     const sourceIndex = chats.findIndex(doc => doc.id === args.doc_id);

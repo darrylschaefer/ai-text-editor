@@ -5,6 +5,7 @@ import { getBlockMapForSection } from './block-map';
 import { applyPatch, applyPatches } from './block-patch';
 import { createAiCommit } from './commit-helpers';
 import useStore from '@store/store';
+import { getVersionState } from './document-versions';
 
 /**
  * High-level block API for AI tools
@@ -14,16 +15,14 @@ import useStore from '@store/store';
 /**
  * Get block map for current document section
  */
-export async function getBlockMap(documentId: string, section: 'Draft' | 'Finished'): Promise<BlockMap> {
+export async function getBlockMap(documentId: string, section: string): Promise<BlockMap> {
   const chats = useStore.getState().chats;
   const doc = chats?.find(chat => chat.id === documentId);
   if (!doc) {
     throw new Error(`Document ${documentId} not found`);
   }
   
-  const sectionState = section === 'Draft' 
-    ? (doc.draftEditorState || doc.editorState || '')
-    : (doc.finishedEditorState || '');
+  const sectionState = getVersionState(doc, section);
   
   if (!sectionState) {
     return [];

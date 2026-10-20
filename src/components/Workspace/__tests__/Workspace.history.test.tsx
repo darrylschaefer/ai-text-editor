@@ -73,6 +73,10 @@ function button(label: string) {
   return target;
 }
 async function click(label: string) {
+  if (label === 'v1 Version' || label === 'v2 Version') {
+    const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
+    if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
+  }
   await act(async () => { const target = button(label); target.focus(); target.click(); await tick(); });
 }
 async function mount() {
@@ -142,7 +146,7 @@ describe('History in the right sidebar', () => {
         selection.setTextNodeRange(node, 0, node, 5); $setSelection(selection); }, { discrete: true }); await tick();
     });
     await click('History'); await click('Preview');
-    expect(history().textContent).toContain('Read-only preview · Draft');
+    expect(history().textContent).toContain('Read-only preview · v1');
     expect(history().querySelector('pre')?.textContent).toBe('Alpha earlier draft.');
     expect(history().querySelector('[contenteditable]')).toBeNull();
     expect(document.activeElement).toBe(button('← Back to checkpoints'));
@@ -160,7 +164,7 @@ describe('History in the right sidebar', () => {
   });
 
   it('resets previews when switching sections/documents and survives pane close/reopen', async () => {
-    await mount(); await click('History'); await click('Preview'); await click('Finished Version');
+    await mount(); await click('History'); await click('Preview'); await click('v2 Version');
     expect(history().querySelector('pre')).toBeNull(); await click('Preview');
     expect(history().querySelector('pre')?.textContent).toBe('Alpha earlier finished.');
     expect(main().textContent).toBe('Alpha finished today.');
@@ -190,10 +194,10 @@ describe('History in the right sidebar', () => {
   it('states the full restore scope, cancels safely, and restores every stated field only to the target document', async () => {
     await mount(); await click('History'); const beta = JSON.stringify(useStore.getState().chats![1]);
     await click('Restore');
-    expect(modal.textContent).toContain('Draft, Finished, all Notes, and document metadata');
+    expect(modal.textContent).toContain('all writing versions saved in this checkpoint, Notes, and document metadata');
     await escape(); expect(main().textContent).toBe('Alpha draft today.');
     expect(document.activeElement).toBe(button('Restore'));
-    await click('Restore'); await click('Restore full document');
+    await click('Restore'); await click('Restore saved state');
     const restored = useStore.getState().chats![0];
     expect(main().textContent).toBe('Alpha earlier draft.');
     expect(restored).toMatchObject({ title: 'Alpha old title', description: 'Saved description', tags: ['saved'], folder: 'saved-folder', meta: { mood: 'saved' } });
@@ -206,7 +210,7 @@ describe('History in the right sidebar', () => {
     await mount(); await click('History');
     let release!: () => void; const pending = new Promise<void>(resolve => { release = resolve; });
     await act(async () => { useStore.setState({ autosaveFlush: () => pending }); });
-    await click('Restore'); await click('Restore full document');
+    await click('Restore'); await click('Restore saved state');
     if (target === 'document') await switchDocument();
     else await act(async () => { useStore.setState(state => ({ chats: state.chats!.map((doc, index) => index ? doc : { ...doc, currentVersion: 'Finished' }) })); await tick(); });
     await act(async () => { release(); await tick(); });
@@ -226,7 +230,7 @@ describe('History in the right sidebar', () => {
 
   it('keeps a failed restore in the confirmation without changing writing', async () => {
     await mount(); await click('History'); memory.read.mockRejectedValue(new Error('Storage read failed'));
-    await click('Restore'); await click('Restore full document');
+    await click('Restore'); await click('Restore saved state');
     expect(modal.querySelector('[role="alert"]')?.textContent).toContain('Storage read failed');
     expect(main().textContent).toBe('Alpha draft today.'); await click('Cancel');
   });

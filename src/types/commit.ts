@@ -1,5 +1,4 @@
-import { DocumentInterface } from './document';
-import { DocumentVersion } from './document';
+import { DocumentInterface, DocumentVariant } from './document';
 
 /**
  * Commit/Checkpoint snapshot of a document at a point in time
@@ -19,11 +18,13 @@ export interface DocumentCommit {
     tags?: string[];
     folder?: string;
     meta?: Record<string, string>;
+    versions?: DocumentVariant[];
+    versionNames?: DocumentInterface['versionNames'];
     
     // Section states (Lexical JSON strings)
     sections: {
       Draft: string;
-      Finished: string;
+      Finished?: string;
       Snippets: Array<{
         id: string;
         name?: string;

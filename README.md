@@ -32,7 +32,7 @@ Keep your documents local in your browser, and connect your own API key for AI a
 | Instant macros and selection sending | Run saved prompts against a selected passage, with individual model settings for each macro. |
 | AI agents with document tools | Configure agents with your own instructions and model settings, with tools for reading, searching, and editing documents. |
 | Context-aware prompts | Include selected text, named notes, and document metadata in your prompts, using references that pull in the relevant content. |
-| Writing and notes | Keep separate Draft and Finished text within a document, with reusable notes in the right sidebar. Organize documents into folders. |
+| Writing versions and notes | Create, copy, rename, and switch between writing versions within a document, with shared notes in the right sidebar. Organize documents into folders. |
 | Custom document metadata | Keep tags, descriptions, and custom fields with a document, and reference those fields in AI prompts. |
 | Semantic and hybrid search | Search by keyword, by meaning through embeddings, or combine both approaches to retrieve relevant passages. Embedding search requires configuration. |
 | Checkpoints and version diffs | Save named checkpoints in the History sidebar, preview saved text, and compare it with your current writing. |

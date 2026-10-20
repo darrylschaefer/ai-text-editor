@@ -4,6 +4,7 @@ import type { DocumentVersion } from '@type/document';
 import useStore from '@store/store';
 import { getBlockId, isAddressableBlockType } from '@utils/block-ids';
 import { $resolveDocumentSelection } from '@utils/editor-selection';
+import { getVersionState } from '@utils/document-versions';
 
 export interface ReadSelectionResult {
   success: boolean;
@@ -97,7 +98,7 @@ export async function readSelectionTool(_args: unknown, ctx?: ToolContext): Prom
       return { success: false, error: 'The selection belongs to a different editor.' };
     }
 
-    const serialized = section === 'Finished' ? doc.finishedEditorState : doc.draftEditorState ?? doc.editorState;
+    const serialized = getVersionState(doc, section);
     if (!serialized) return { success: false, error: 'Wait for autosave and select the passage again to get saved block locations.' };
     const savedRoot = (JSON.parse(serialized) as { root: SavedNode }).root;
     const liveRoot = saved.editor.getEditorState().toJSON().root as SavedNode;

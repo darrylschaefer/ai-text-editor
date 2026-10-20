@@ -2,6 +2,8 @@
 
 This directory contains the tools system that allows the AI to call functions during conversations. Tools are functions that the AI can execute to interact with the document editor, read content, access metadata, search documents, make edits, and manage the project structure.
 
+Writing versions display as `v1`, `v2`, and so on, or a writer's custom name. Tool `section` arguments use stable IDs from `doc_get_meta` or `project_get_tree`, rather than display names. Legacy `Draft` and `Finished` IDs remain valid when present; new versions have generated IDs. New documents start with one writing version. `Snippets` continues to identify shared Notes in the tool API.
+
 ## Structure
 
 ```

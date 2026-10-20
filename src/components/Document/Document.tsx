@@ -53,7 +53,7 @@ const Document = () => {
   // mounting a manuscript editor. Never autosave a note view as manuscript text.
   if (currentVersion === 'Snippets') return null;
 
-  // Render regular editor for Draft/Finished
+  // Mount a separate editor and undo history for the selected writing version.
   return (
     <>
       <LexicalComposer key={`${currentDoc?.id || 'empty'}:${currentVersion}`} initialConfig={editorConfig}>

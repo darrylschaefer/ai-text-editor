@@ -4,6 +4,7 @@ import useStore from '@store/store';
 import { DocumentVersion } from '@type/document';
 import { updateBlockIndexForSection } from '@utils/block-index-updater';
 import { normalizeBlockIds } from '@utils/block-ids';
+import { withVersionState } from '@utils/document-versions';
 
 export type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
@@ -55,6 +56,7 @@ export function useAutosave({
   
   // Track if we're currently saving
   const isSavingRef = useRef<boolean>(false);
+  const saveErrorRef = useRef<unknown>(null);
   
   /**
    * Actually persist the editor state to Zustand (which triggers IndexedDB via persist middleware)
@@ -82,19 +84,7 @@ export function useAutosave({
       }
       
       const updatedChats = [...currentChats];
-      const currentDoc = { ...updatedChats[chatIndex] };
-      
-      // Update the current editor state
-      currentDoc.editorState = stateJson;
-      currentDoc.edited = true;
-      
-      // Update the section-specific state
-      if (section === 'Draft') {
-        currentDoc.draftEditorState = stateJson;
-      } else if (section === 'Finished') {
-        currentDoc.finishedEditorState = stateJson;
-      }
-      // Clips section doesn't use editorState
+      const currentDoc = withVersionState(updatedChats[chatIndex], section, stateJson);
       
       updatedChats[chatIndex] = currentDoc;
       
@@ -111,13 +101,15 @@ export function useAutosave({
       
       // Only update status if this is still the latest save
       if (sequence === saveSequenceRef.current) {
+        saveErrorRef.current = null;
         setSaveStatus('saved');
         lastSaveTimeRef.current = Date.now();
       }
     } catch (error) {
       console.error('Autosave failed:', error);
       // Only update status if this is still the latest save
-      if (sequence === pendingSaveSequenceRef.current) {
+      if (sequence === saveSequenceRef.current) {
+        saveErrorRef.current = error;
         setSaveStatus('error');
       }
     } finally {
@@ -195,16 +187,16 @@ export function useAutosave({
       maxIntervalTimerRef.current = null;
     }
     
-    // If there's a pending state and we're not already saving, save it now
-    if (latestStateRef.current && !isSavingRef.current) {
+    // Wait for an in-flight save, then flush the newest writing, which may
+    // have changed while that save was completing.
+    while (isSavingRef.current) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    if (latestStateRef.current) {
       const sequence = ++saveSequenceRef.current;
       await performSave(latestStateRef.current, sequence);
-    } else if (isSavingRef.current) {
-      // If we're currently saving, wait for it to complete
-      while (isSavingRef.current) {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
     }
+    if (saveErrorRef.current) throw new Error('Could not save the current writing. Retry saving before continuing.');
   }, [performSave]);
   
   /**
@@ -234,6 +226,7 @@ export function useAutosave({
     latestStateRef.current = null;
     saveSequenceRef.current = 0;
     pendingSaveSequenceRef.current = null;
+    saveErrorRef.current = null;
     setSaveStatus('idle');
     
     if (debounceTimerRef.current) {
