@@ -4,7 +4,7 @@ Open the right panel and choose **Tools**, then **Enable** on the Prose rhythm c
 
 The map groups sentences by paragraph. Each bar shows its word count; hover or focus to read a sentence, and click to scroll to it without replacing a text selection. The five colors represent 1–5, 6–12, 13–20, 21–30, and 31+ words. The longest sentence sets the shared chart scale. Long maps have pages of 80 sentences.
 
-Each paragraph also shows a **Rhythm ratio**: divide each sentence's word count by that paragraph's shortest sentence, then round to whole numbers. For example, `8, 8, 8, 16, 16, 8` words becomes **1:1:1:2:2:1**. Ratios describe relative lengths; they do not rate the prose.
+One **Rhythm ratio** summarizes all sentences in the current document version: divide each sentence's word count by the document's shortest sentence, then round to whole numbers. For example, `8, 8, 8, 16, 16, 8` words becomes **1:1:1:2:2:1**. It stays the same across chart pages and paragraph boundaries. The ratio describes relative lengths; it does not rate the prose.
 
 This initial version analyzes English prose with local sentence and word segmentation plus rules for common titles, initials, dialogue tags, and lowercase sentence openings. Contractions and hyphenated compounds count as one word; numbers count as word-like items. Soft breaks remain within sentences; hard paragraph boundaries stay separate. Headings, code, and tables are excluded. Unpunctuated endings appear as unfinished sentences. Boundaries remain approximate for ambiguous dialogue, abbreviations, and unusual punctuation.
 
@@ -22,7 +22,7 @@ Default Tools list:
 
 Enabled, light theme:
 
-![Sentence map, paragraph ratios, and manuscript colors](previews/prose-rhythm-light.png)
+![Sentence map, document rhythm ratio, and manuscript colors](previews/prose-rhythm-light.png)
 
 [Dark theme](previews/prose-rhythm-dark.png) · [Phone layout](previews/prose-rhythm-phone.png)
 

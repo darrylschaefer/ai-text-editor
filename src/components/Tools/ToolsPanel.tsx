@@ -17,11 +17,6 @@ export default function ToolsPanel() {
   const sentences = snapshot?.sentences || [];
   const total = sentences.reduce((sum, sentence) => sum + sentence.words, 0);
   const longest = sentences.reduce((maximum, sentence) => Math.max(maximum, sentence.words), 1);
-  const paragraphCounts = new Map<number, number[]>();
-  for (const sentence of sentences) {
-    const counts = paragraphCounts.get(sentence.paragraph) || [];
-    counts.push(sentence.words); paragraphCounts.set(sentence.paragraph, counts);
-  }
   const pageCount = Math.max(1, Math.ceil(sentences.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount - 1), offset = currentPage * PAGE_SIZE;
   const shown = sentences.slice(offset, offset + PAGE_SIZE);
@@ -46,6 +41,8 @@ export default function ToolsPanel() {
             <div><dt>Avg. words</dt><dd>{(total / sentences.length).toFixed(1)}</dd></div>
             <div><dt>Longest</dt><dd>{longest}<small> words</small></dd></div>
           </dl>
+          <div className="rhythm-ratio"><span>Rhythm ratio</span><code aria-label="Document rhythm ratio"
+            title="All sentences in the current document version, relative to the shortest sentence and rounded to whole numbers">{rhythmRatio(sentences.map(sentence => sentence.words))}</code></div>
           <label className="rhythm-color-toggle"><input type="checkbox" checked={rhythm.colors} disabled={!rhythm.highlightsAvailable}
             onChange={event => rhythm.setColors(event.target.checked)} />Color sentences in editor</label>
           {!rhythm.highlightsAvailable && <p className="rhythm-hint">Editor colors are unavailable in this browser. The sentence map is still available.</p>}
@@ -57,12 +54,7 @@ export default function ToolsPanel() {
               const number = offset + index + 1;
               const newParagraph = index === 0 || shown[index - 1].paragraph !== sentence.paragraph;
               return <div key={sentence.id}>
-                {newParagraph && <div className="rhythm-paragraph">
-                  <p>Paragraph {sentence.paragraph}</p>
-                  <div className="rhythm-ratio"><span>Rhythm ratio</span><code
-                    aria-label={`Paragraph ${sentence.paragraph} rhythm ratio`}
-                    title="Relative to the shortest sentence in this paragraph, rounded to whole numbers">{rhythmRatio(paragraphCounts.get(sentence.paragraph) || [])}</code></div>
-                </div>}
+                {newParagraph && <p className="rhythm-paragraph">Paragraph {sentence.paragraph}</p>}
                 <button type="button" className={`rhythm-row${active?.id === sentence.id ? ' is-active' : ''}`}
                   aria-label={`Sentence ${number}: ${sentence.words} ${sentence.words === 1 ? 'word' : 'words'}${sentence.unfinished ? ', unfinished' : ''}`}
                   title={sentence.text} onMouseEnter={() => rhythm.setActiveSentence(sentence.id)}
@@ -84,7 +76,7 @@ export default function ToolsPanel() {
             {active ? <><p>Sentence {sentences.indexOf(active) + 1} · {active.words} words{active.unfinished ? ' · Unfinished' : ''}</p><blockquote>{active.text}</blockquote></>
               : <p>Point to a bar to read its sentence. Click to find it in your writing.</p>}
           </div>
-          <p className="rhythm-hint">Ratios use the shortest sentence in each paragraph as 1, rounded to whole numbers.</p>
+          <p className="rhythm-hint">The ratio covers the whole document. Its shortest sentence is 1; other lengths are rounded to whole numbers.</p>
           <p className="rhythm-hint">English prose · Hyphenated words count as one. Sentence boundaries are approximate, especially in dialogue. Length is descriptive; there is no ideal score.</p>
         </>}
     </div>}

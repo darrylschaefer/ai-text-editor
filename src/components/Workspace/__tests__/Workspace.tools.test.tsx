@@ -93,10 +93,26 @@ describe('Tools and Prose Rhythm in the writing workspace', () => {
     expect(button('Enable prose rhythm').getAttribute('aria-pressed')).toBe('false');
     expect(ownHighlights()).toEqual([]);
     await click('Enable prose rhythm'); expect(rows()).toHaveLength(3);
-    expect(tools().querySelector('[aria-label="Paragraph 1 rhythm ratio"]')?.textContent).toBe('3:3:1');
+    expect(tools().querySelector('[aria-label="Document rhythm ratio"]')?.textContent).toBe('3:3:1');
     await click('Disable prose rhythm');
     expect(rows()).toHaveLength(0); expect(tools().querySelector('.rhythm-content')).toBeNull();
     expect(ownHighlights()).toEqual([]);
+  });
+  it('shows one ratio for the entire document across paragraphs and chart pages', async () => {
+    const sentence = (count: number) => ['Word', ...Array(count - 1).fill('word')].join(' ') + '.';
+    const serialized = JSON.parse(textState(Array(80).fill(sentence(8)).join(' ')));
+    serialized.root.children.push(...JSON.parse(textState(`${sentence(16)} ${sentence(24)}`)).root.children);
+    const state = JSON.stringify(serialized), doc = fixture('Alpha', '');
+    useStore.setState({ chats: [{ ...doc, editorState: state, draftEditorState: state }], currentChatIndex: 0 });
+    await mount(); await openRhythm();
+    const ratio = [...Array(80).fill(1), 2, 3].join(':');
+    expect(tools().querySelectorAll('.rhythm-ratio')).toHaveLength(1);
+    expect(tools().querySelector('[aria-label="Document rhythm ratio"]')?.textContent).toBe(ratio);
+    expect(rows()).toHaveLength(80);
+    await click('Next'); expect(rows()).toHaveLength(2);
+    expect(tools().querySelectorAll('.rhythm-ratio')).toHaveLength(1);
+    expect(tools().querySelector('[aria-label="Document rhythm ratio"]')?.textContent).toBe(ratio);
+    expect(tools().querySelector('.rhythm-paragraph')?.textContent).toBe('Paragraph 2');
   });
   it('opens beside the same manuscript and maps corrected sentences without saving or changing history', async () => {
     await mount(); const editor = useStore.getState().editorInstance!, manuscript = content();
