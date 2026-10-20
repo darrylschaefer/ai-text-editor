@@ -37,7 +37,7 @@ export default function EditorSelection() {
       if (!root || root.contains(root.ownerDocument.activeElement) || !isCurrentDocument()) return;
       const saved = useStore.getState().getEditorSelection();
       if (!owns(saved) || !saved) return;
-      editor.getEditorState().read(() => {
+      editor.read('latest', () => {
         const range = $resolveDocumentSelection(saved);
         if (!range) return;
         const domRange = createDOMRange(editor, range.anchor.getNode(), range.anchor.offset,
@@ -73,7 +73,7 @@ export default function EditorSelection() {
         }
 
         if (!sameDocumentSelection(saved, next)) useStore.getState().setEditorSelection(next);
-      });
+      }, { editor });
       paint();
     };
     const scheduleSync = () => {

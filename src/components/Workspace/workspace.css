@@ -167,6 +167,7 @@
 .workspace-resizing, .workspace-resizing * { cursor: col-resize !important; user-select: none !important; }
 .workspace-document, .workspace-document-main { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; flex: 1; }
 .workspace-document .editor-inner { min-height: 0; display: flex; flex-direction: column; flex: 1; height: 100%; }
+.workspace-document-surface { display: block; position: relative; flex: 1; min-height: 0; min-width: 0; }
 .workspace-document .editor-input { height: 100%; min-height: 0; width: 100%; max-width: 820px; margin: 0 auto; padding: 42px clamp(24px, 5vw, 64px) 64px; overflow-y: auto; background: #fff; color: #30343b; line-height: 1.8; box-shadow: 0 0 0 1px #e2e5e960; }
 .dark .workspace-document .editor-input { color: #dcdce4; background: #101115; box-shadow: 0 0 0 1px #24242d50; }
 .workspace-backdrop { display: none; }
