@@ -14,14 +14,6 @@ export function rhythmBand(words: number): RhythmBand {
   return RHYTHM_BANDS.find(band => words <= band.max)!.id;
 }
 
-/** Normalize a passage to its shortest sentence and round to whole numbers. */
-export function rhythmRatio(wordCounts: readonly number[]): string {
-  const counts = wordCounts.filter(count => Number.isFinite(count) && count > 0);
-  if (!counts.length) return '';
-  const shortest = counts.reduce((minimum, count) => Math.min(minimum, count), Infinity);
-  return counts.map(count => Math.max(1, Math.round(count / shortest))).join(':');
-}
-
 let sentences: Intl.Segmenter | undefined;
 let words: Intl.Segmenter | undefined;
 export function canSegmentProse() { return typeof Intl.Segmenter === 'function'; }

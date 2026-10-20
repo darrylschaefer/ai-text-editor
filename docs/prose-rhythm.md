@@ -4,8 +4,6 @@ Open the right panel and choose **Tools**, then **Enable** on the Prose rhythm c
 
 The map groups sentences by paragraph. Each bar shows its word count; hover or focus to read a sentence, and click to scroll to it without replacing a text selection. The five colors represent 1–5, 6–12, 13–20, 21–30, and 31+ words. The longest sentence sets the shared chart scale. Long maps have pages of 80 sentences.
 
-One **Rhythm ratio** summarizes all sentences in the current document version: divide each sentence's word count by the document's shortest sentence, then round to whole numbers. For example, `8, 8, 8, 16, 16, 8` words becomes **1:1:1:2:2:1**. It stays the same across chart pages and paragraph boundaries. The ratio describes relative lengths; it does not rate the prose.
-
 This initial version analyzes English prose with local sentence and word segmentation plus rules for common titles, initials, dialogue tags, and lowercase sentence openings. Contractions and hyphenated compounds count as one word; numbers count as word-like items. Soft breaks remain within sentences; hard paragraph boundaries stay separate. Headings, code, and tables are excluded. Unpunctuated endings appear as unfinished sentences. Boundaries remain approximate for ambiguous dialogue, abbreviations, and unusual punctuation.
 
 The tool reads the current Lexical state and paints browser ranges with CSS Custom Highlights. It does not write sentence colors or analysis into the document, export, history, or undo stack. Retained selection takes precedence over rhythm colors. A browser without custom highlights still gets the map. Sentence segmentation support is required.
@@ -22,14 +20,14 @@ Default Tools list:
 
 Enabled, light theme:
 
-![Sentence map, document rhythm ratio, and manuscript colors](previews/prose-rhythm-light.png)
+![Sentence map and manuscript colors](previews/prose-rhythm-light.png)
 
 [Dark theme](previews/prose-rhythm-dark.png) · [Phone layout](previews/prose-rhythm-phone.png)
 
 ## Verification
 
-Unit and integration tests cover the stated sentence conventions, exact Lexical mappings across styles and links, repeated text, Unicode, soft breaks, nested lists, cache refresh after formatting, default-off behavior, enable/disable, whole-number ratios, version/document changes, retained selection, IME event handling, and highlight cleanup/fallback. They use synthetic documents and in-memory storage.
+Unit and integration tests cover the stated sentence conventions, exact Lexical mappings across styles and links, repeated text, Unicode, soft breaks, nested lists, cache refresh after formatting, default-off behavior, enable/disable, chart pagination, version/document changes, retained selection, IME event handling, and highlight cleanup/fallback. They use synthetic documents and in-memory storage.
 
-Chrome browser checks cover the default compact menu, visible colors and ratios in light/dark themes, color toggling, bar focus/click, unchanged serialized content, native keyboard selection retained on panel focus, live typing, and a 390px phone drawer without horizontal page overflow.
+Chrome browser checks cover the default compact menu, visible colors in light/dark themes, color toggling, bar focus/click, unchanged serialized content, native keyboard selection retained on panel focus, live typing, and a 390px phone drawer without horizontal page overflow.
 
 Other browser engines, the packaged Electron renderer, physical IME entry, and book-length performance have not been verified. The chart is paged and sentence segmentation is cached per prose block, but the prototype still reads the active document and refreshes highlight ranges after content/format changes.

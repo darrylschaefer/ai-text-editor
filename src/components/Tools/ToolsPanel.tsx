@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { ChartBar } from '@carbon/icons-react';
 import useStore from '@store/store';
-import { canSegmentProse, RHYTHM_BANDS, rhythmRatio } from '@utils/prose-rhythm';
+import { canSegmentProse, RHYTHM_BANDS } from '@utils/prose-rhythm';
 import { useProseRhythm } from './ProseRhythmContext';
 import './tools.css';
 
@@ -25,7 +25,7 @@ export default function ToolsPanel() {
     <header className="tools-heading"><h2>Tools</h2><span>Local tools for your prose</span></header>
     <div className="tools-list"><article className="tools-tool">
     <div className="tools-tool-title"><ChartBar size={18} aria-hidden="true" />
-      <div className="tools-tool-copy"><h3>Prose rhythm</h3><p>Sentence lengths, ratios, and patterns.</p></div>
+      <div className="tools-tool-copy"><h3>Prose rhythm</h3><p>Sentence lengths and patterns.</p></div>
       <button type="button" className="tools-enable" aria-pressed={rhythm.enabled}
         aria-label={`${rhythm.enabled ? 'Disable' : 'Enable'} prose rhythm`}
         onClick={() => rhythm.setEnabled(value => !value)}>{rhythm.enabled ? 'Disable' : 'Enable'}</button>
@@ -41,8 +41,6 @@ export default function ToolsPanel() {
             <div><dt>Avg. words</dt><dd>{(total / sentences.length).toFixed(1)}</dd></div>
             <div><dt>Longest</dt><dd>{longest}<small> words</small></dd></div>
           </dl>
-          <div className="rhythm-ratio"><span>Rhythm ratio</span><code aria-label="Document rhythm ratio"
-            title="All sentences in the current document version, relative to the shortest sentence and rounded to whole numbers">{rhythmRatio(sentences.map(sentence => sentence.words))}</code></div>
           <label className="rhythm-color-toggle"><input type="checkbox" checked={rhythm.colors} disabled={!rhythm.highlightsAvailable}
             onChange={event => rhythm.setColors(event.target.checked)} />Color sentences in editor</label>
           {!rhythm.highlightsAvailable && <p className="rhythm-hint">Editor colors are unavailable in this browser. The sentence map is still available.</p>}
@@ -76,7 +74,6 @@ export default function ToolsPanel() {
             {active ? <><p>Sentence {sentences.indexOf(active) + 1} · {active.words} words{active.unfinished ? ' · Unfinished' : ''}</p><blockquote>{active.text}</blockquote></>
               : <p>Point to a bar to read its sentence. Click to find it in your writing.</p>}
           </div>
-          <p className="rhythm-hint">The ratio covers the whole document. Its shortest sentence is 1; other lengths are rounded to whole numbers.</p>
           <p className="rhythm-hint">English prose · Hyphenated words count as one. Sentence boundaries are approximate, especially in dialogue. Length is descriptive; there is no ideal score.</p>
         </>}
     </div>}

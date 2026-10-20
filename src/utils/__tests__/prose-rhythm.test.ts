@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countProseWords, rhythmBand, rhythmRatio, segmentProse } from '../prose-rhythm';
+import { countProseWords, rhythmBand, segmentProse } from '../prose-rhythm';
 
 describe('English prose rhythm boundaries', () => {
   it.each([
@@ -36,11 +36,5 @@ describe('English prose rhythm boundaries', () => {
   it('uses fixed descriptive bands at their boundaries', () => {
     expect([1, 5, 6, 12, 13, 20, 21, 30, 31, 200].map(rhythmBand))
       .toEqual(['brief', 'brief', 'short', 'short', 'medium', 'medium', 'long', 'long', 'extended', 'extended']);
-  });
-  it('expresses relative sentence lengths as a whole-number rhythm ratio', () => {
-    expect(rhythmRatio([8, 8, 8, 16, 16, 8])).toBe('1:1:1:2:2:1');
-    expect(rhythmRatio([7, 10, 15, 20])).toBe('1:1:2:3');
-    expect(rhythmRatio([12])).toBe('1');
-    expect(rhythmRatio([])).toBe('');
   });
 });

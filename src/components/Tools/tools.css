@@ -39,9 +39,6 @@
 .rhythm-chart-heading { display: flex; justify-content: space-between; gap: 8px; margin-top: 18px; font-size: 11px; }
 .rhythm-chart-heading > span:last-child { color: var(--muted); font-size: 10px; }
 .rhythm-paragraph { font-size: 9px; color: var(--muted); margin: 14px 0 5px; min-width: 0; }
-.rhythm-ratio { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 0 0 18px; padding: 10px; border: 1px solid var(--line); border-radius: 4px; }
-.rhythm-ratio > span { font-size: 10px; color: var(--muted); }
-.rhythm-ratio code { display: block; max-width: 100%; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 12px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .rhythm-row { display: grid; grid-template-columns: 25px minmax(0, 1fr) 28px; align-items: center; width: 100%; gap: 5px; min-height: 27px; border-radius: 3px; text-align: left; }
 .rhythm-row:hover, .rhythm-row.is-active { background: var(--hover); }
 .rhythm-number, .rhythm-word-count { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; text-align: center; }
