@@ -7,6 +7,8 @@ import { DocumentCommit } from '@type/commit';
 import { LexicalEditor } from 'lexical';
 import { $resolveDocumentSelection, type DocumentSelection } from '@utils/editor-selection';
 import { checkpointSnapshot, copyVersionState, getVersionState, restoreCheckpointVersions, validateVersionName } from '@utils/document-versions';
+import { parsePageSetup } from '@utils/page-layout';
+import type { DocumentPageSetup } from '@type/page-setup';
 
 export interface Agent {
   id: string;
@@ -34,6 +36,7 @@ export interface DocumentSlice {
   editorInstance: LexicalEditor | null;
   setDocumentCurrent: (documentCurrent: DocumentCurrent) => void;
   setChats: (chats: DocumentInterface[]) => void;
+  setDocumentPageSetup: (documentId: string, setup: DocumentPageSetup) => void;
   setCurrentChatIndex: (currentChatIndex: number) => void;
   setForceEditorRefresh: (editorRefresh: boolean) => void;
   setGenerating: (generating: boolean) => void;
@@ -108,6 +111,9 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
     edited: false,
   },
   currentChatIndex: -1,
+  setDocumentPageSetup: (documentId, setup) => set(state => ({
+    chats: state.chats?.map(doc => doc.id === documentId ? { ...doc, pageSetup: parsePageSetup(setup) } : doc),
+  })),
   forceEditorRefresh: false,
   generating: false,
   error: '',

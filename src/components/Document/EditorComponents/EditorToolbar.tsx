@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState, useEffect, useId } from "react";
+import type { ReactNode } from "react";
 import defaultStyles from '@components/style';
 import { TextAlignCenter, TextAlignLeft, TextAlignRight, TextAlignJustify, TextBold, TextItalic, TextStrikethrough, TextUnderline, ChevronDown } from '@carbon/icons-react';
 import { ListNode } from "@lexical/list";
@@ -323,7 +324,7 @@ function SaveStatusIndicator({
   
 
 
-function EditorToolbar() {
+function EditorToolbar({ layoutControls }: { layoutControls?: ReactNode }) {
     const [editor] = useLexicalComposerContext();
     const toolbarTarget = useWorkspaceToolbar();
     const autosaveStatus = useStore(state => state.autosaveStatus);
@@ -697,6 +698,7 @@ function EditorToolbar() {
       </div>
       <div className="workspace-document-actions">
         <Divider />
+        {layoutControls}
         {/* Save Status Indicator */}
         <SaveStatusIndicator status={autosaveStatus} onRetry={autosaveRetry || undefined} />
       </div>

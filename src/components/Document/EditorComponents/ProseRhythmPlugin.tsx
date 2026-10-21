@@ -30,7 +30,8 @@ export default function ProseRhythmPlugin({ documentId, version }: { documentId?
           const sentence = sentences.find(item => item.id === id);
           const range = sentence && editor.getEditorState().read(() => $sentenceDOMRange(editor, sentence));
           const rect = range?.getClientRects?.()[0];
-          if (root && rect) root.scrollBy({ top: rect.top - root.getBoundingClientRect().top - root.clientHeight * .35, behavior: 'smooth' });
+          const scroller = root?.closest<HTMLElement>('[data-document-scroll]') || root;
+          if (scroller && rect) scroller.scrollBy({ top: rect.top - scroller.getBoundingClientRect().top - scroller.clientHeight * .35, behavior: 'smooth' });
         } });
     };
     const schedule = () => {

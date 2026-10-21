@@ -26,6 +26,8 @@ export function createSelectionHighlight(root: HTMLElement) {
     resetPaint();
     if (!alive || !range || range.collapsed || !root.contains(range.commonAncestorContainer)) return;
     const byBlock = new Map<HTMLElement, SelectionFragment[]>();
+    const logicalWidth = parseFloat(view.getComputedStyle(root).width);
+    const zoom = logicalWidth > 0 ? root.getBoundingClientRect().width / logicalWidth || 1 : 1;
     const visit = (node: Node) => {
       if (node.nodeType !== 3 || !node.textContent || !range!.intersectsNode(node)) return;
       const selected = doc.createRange();
@@ -39,7 +41,7 @@ export function createSelectionHighlight(root: HTMLElement) {
       const fragments = byBlock.get(block) || [];
       for (const rect of Array.from(selected.getClientRects())) {
         fragments.push({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
-          lineHeight: parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2 || rect.height });
+          lineHeight: (parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2 || rect.height / zoom) * zoom });
       }
       byBlock.set(block, fragments);
     };
@@ -67,8 +69,8 @@ export function createSelectionHighlight(root: HTMLElement) {
       // Opaque, merged bands make intersections the same shade. Block backgrounds
       // naturally clip and move with the editor, including horizontally scrolled code.
       block.style.backgroundImage = append(bands.map(() => `linear-gradient(${color}, ${color})`), 'background-image');
-      block.style.backgroundPosition = append(bands.map(band => `${band.left - bounds.left + block.scrollLeft}px ${band.top - bounds.top + block.scrollTop}px`), 'background-position');
-      block.style.backgroundSize = append(bands.map(band => `${band.right - band.left}px ${band.bottom - band.top}px`), 'background-size');
+      block.style.backgroundPosition = append(bands.map(band => `${(band.left - bounds.left) / zoom + block.scrollLeft}px ${(band.top - bounds.top) / zoom + block.scrollTop}px`), 'background-position');
+      block.style.backgroundSize = append(bands.map(band => `${(band.right - band.left) / zoom}px ${(band.bottom - band.top) / zoom}px`), 'background-size');
       block.style.backgroundRepeat = append(bands.map(() => 'no-repeat'), 'background-repeat');
       block.style.backgroundOrigin = append(bands.map(() => 'border-box'), 'background-origin');
       block.style.backgroundClip = append(bands.map(() => 'padding-box'), 'background-clip');
@@ -86,6 +88,7 @@ export function createSelectionHighlight(root: HTMLElement) {
   const theme = new MutationObserver(schedule);
   theme.observe(doc.documentElement, { attributes: true, attributeFilter: ['class'] });
   view.addEventListener('resize', schedule);
+  root.addEventListener('fthr:page-layout', schedule);
   doc.fonts?.addEventListener('loadingdone', schedule);
 
   const clear = () => {
@@ -100,6 +103,7 @@ export function createSelectionHighlight(root: HTMLElement) {
       alive = false;
       clear(); resize?.disconnect(); theme.disconnect();
       view.removeEventListener('resize', schedule);
+      root.removeEventListener('fthr:page-layout', schedule);
       doc.fonts?.removeEventListener('loadingdone', schedule);
     },
   };

@@ -45,6 +45,9 @@ export type StoreSlice<T> = (
 ) => T;
 
 export const createPartializedState = (state: StoreState) => ({
+  documentView: state.documentView,
+  mobileDocumentView: state.mobileDocumentView,
+  pageMeasurementUnit: state.pageMeasurementUnit,
   chats: state.chats,
   currentChatIndex: state.currentChatIndex,
   documentCurrent: state.documentCurrent,

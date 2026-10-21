@@ -14,12 +14,12 @@ import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import EditorRefresh from './EditorComponents/EditorRefresh';
 import EditorSelection from './EditorComponents/EditorSelection';
-import EditorToolbar from "./EditorComponents/EditorToolbar";
 import AutosavePlugin from "./EditorComponents/AutosavePlugin";
 import BlockIdNormalizationPlugin from "./EditorComponents/BlockIdNormalizationPlugin";
 import EditorStorePlugin from "./EditorComponents/EditorStorePlugin";
 import lexicalTheme from "./LexicalTheme";
 import ProseRhythmPlugin from './EditorComponents/ProseRhythmPlugin';
+import DocumentPageLayout from './PageLayout/DocumentPageLayout';
 
 const Document = () => {
   const currentChatIndex = useStore(state => state.currentChatIndex);
@@ -66,15 +66,16 @@ const Document = () => {
                   <div 
                     className="editor-inner group"
                   >
-                    <EditorToolbar />
                     <div className="workspace-document-surface">
-                      <RichTextPlugin
-                        placeholder={<div />}
-                        contentEditable={
-                          <ContentEditable className="editor-input text-base focus:outline-none" ariaLabel="Document content" />
-                        }
-                        ErrorBoundary={LexicalErrorBoundary}
-                      />
+                      <DocumentPageLayout>
+                        <RichTextPlugin
+                          placeholder={<div />}
+                          contentEditable={
+                            <ContentEditable className="editor-input text-base focus:outline-none" ariaLabel="Document content" />
+                          }
+                          ErrorBoundary={LexicalErrorBoundary}
+                        />
+                      </DocumentPageLayout>
                     </div>
                     <EditorRefresh />
                     <BlockIdNormalizationPlugin />

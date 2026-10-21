@@ -2,6 +2,7 @@ import { apiEndpointOptions, providerOptions } from '@constants/chat';
 import { Prompt } from './prompt';
 import { Theme } from './theme';
 import { SectionState } from './revision';
+import type { DocumentPageSetup } from './page-setup';
 
 export type Role = 'user' | 'assistant' | 'system' | 'developer' | 'tool';
 export const roles: Role[] = ['user', 'assistant', 'system', 'developer', 'tool'];
@@ -63,6 +64,7 @@ export interface Snippet {
 
 export interface DocumentInterface {
   id: string;
+  pageSetup?: DocumentPageSetup;
   title: string;
   description?: string; // Document description
   tags?: string[]; // Document tags

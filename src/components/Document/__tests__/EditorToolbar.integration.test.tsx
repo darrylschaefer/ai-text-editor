@@ -134,6 +134,25 @@ async function fillMessage(value: string) {
   });
 }
 
+async function pageOption(label: string, value: string) {
+  await act(async () => {
+    const input = document.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)!;
+    input.value = value; input.dispatchEvent(new Event('change', { bubbles: true })); await tick();
+  });
+}
+async function pageMargin(label: string, value: string) {
+  const input = document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
+  await act(async () => {
+    input.focus();
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true })); await tick();
+  });
+  await act(async () => { input.blur(); await tick(); });
+}
+async function pageCheck(label: string) {
+  await act(async () => { document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!.click(); await tick(); });
+}
+
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   // jsdom has no selection geometry. The editor and DOM selection still run;
@@ -145,6 +164,9 @@ beforeEach(() => {
     fixture('Beta', 'Beta draft text.', 'Beta finished text.')], currentChatIndex: 0,
     forceEditorRefresh: false, editorInstance: null, currentSelection: '',
     autosaveFlush: null, autosaveRetry: null, autosaveStatus: 'idle' });
+  useStore.setState({ documentView: 'continuous', setDocumentView: documentView => useStore.setState({ documentView }),
+    mobileDocumentView: 'screen', setMobileDocumentView: mobileDocumentView => useStore.setState({ mobileDocumentView }),
+    pageMeasurementUnit: 'in', setPageMeasurementUnit: pageMeasurementUnit => useStore.setState({ pageMeasurementUnit }) });
   container = document.createElement('div'); document.body.appendChild(container);
   modalRoot = document.createElement('div'); modalRoot.id = 'modal-root'; document.body.appendChild(modalRoot);
 });
@@ -156,6 +178,145 @@ afterEach(async () => {
 });
 
 describe('relocated editor toolbar', () => {
+  it('edits paper setup and converted custom margins without changing text or undo history', async () => {
+    useStore.setState({ documentView: 'pages' });
+    await mount(); await select(); await click('Format Bold');
+    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    const owner = editor(), before = owner.getEditorState().toJSON(), editable = content();
+    await click('Page settings');
+    await pageOption('Paper size', 'legal'); await pageOption('Page orientation', 'landscape');
+    const setupBeforeUnits = useStore.getState().chats![0].pageSetup;
+    await pageOption('Measurement units', 'mm');
+    expect(useStore.getState().chats![0].pageSetup).toBe(setupBeforeUnits);
+    await pageMargin('Top margin', '12.7');
+    expect(useStore.getState().chats![0].pageSetup?.margins).toEqual({ top: .5, right: .5, bottom: .5, left: .5 });
+    await pageCheck('Link all margins'); await pageMargin('Right margin', '25.4');
+    expect(useStore.getState().chats![0].pageSetup?.margins).toEqual({ top: .5, right: 1, bottom: .5, left: .5 });
+    await pageCheck('Show page numbers');
+    expect(useStore.getState().chats![0].pageSetup?.showPageNumbers).toBe(false);
+    expect(container.querySelector('.document-page-sheet > span')).toBeNull();
+    const lastValid = useStore.getState().chats![0].pageSetup;
+    await pageMargin('Top margin', '150');
+    expect(useStore.getState().chats![0].pageSetup).toBe(lastValid);
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain('leaving at least');
+    await pageMargin('Top margin', '19.05');
+    expect(useStore.getState().chats![0].pageSetup?.margins.top).toBeCloseTo(.75);
+    await pageOption('Measurement units', 'cm');
+    expect(document.querySelector<HTMLInputElement>('[aria-label="Top margin"]')!.value).toBe('1.905');
+    const beforeBlur = useStore.getState().chats![0].pageSetup;
+    await pageMargin('Top margin', '1.905');
+    expect(useStore.getState().chats![0].pageSetup).toBe(beforeBlur);
+    await pageOption('Paper size', 'a5'); await pageOption('Paper size', 'b5');
+    expect(useStore.getState().chats![0].pageSetup?.paper).toBe('b5');
+    await click('Reset page setup');
+    expect(useStore.getState().chats![0].pageSetup).toEqual({ paper: 'letter', orientation: 'portrait',
+      showPageNumbers: true, margins: { top: 1, right: 1, bottom: 1, left: 1 } });
+    expect(useStore.getState().pageMeasurementUnit).toBe('cm');
+    expect(document.querySelector<HTMLInputElement>('[aria-label="Link all margins"]')!.checked).toBe(true);
+    expect(useStore.getState().chats![1].pageSetup).toBeUndefined();
+    expect(content()).toBe(editable); expect(editor()).toBe(owner);
+    expect(owner.getEditorState().toJSON()).toEqual(before);
+    await click('Undo');
+    expect(content().querySelector('.editor-text-bold')).toBeNull();
+    expect(content().textContent).toBe('The blue bird sings.');
+  });
+
+  it('reflows the same editable manuscript on mobile and keeps desktop and mobile view choices separate', async () => {
+    let small = false;
+    const listeners = new Set<() => void>();
+    vi.stubGlobal('matchMedia', () => ({ get matches() { return small; },
+      addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener) }));
+    const resize = async (next: boolean) => {
+      await act(async () => { small = next; listeners.forEach(listener => listener()); await tick(); });
+    };
+    const docs = useStore.getState().chats!;
+    const setup = { paper: 'a4' as const, margins: { top: 1.25, right: 1.25, bottom: 1.25, left: 1.25 } };
+    useStore.setState({ documentView: 'pages', chats: [{ ...docs[0], pageSetup: setup }, docs[1]] });
+    await mount(); await select(); await click('Format Bold');
+    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    const owner = editor(), editable = content(), before = owner.getEditorState().toJSON();
+    const keys = owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()));
+    await resize(true);
+    expect(container.querySelector('[data-document-view="screen"]')).not.toBeNull();
+    expect(container.querySelector('.document-page-sheet')).toBeNull();
+    expect(content()).toBe(editable);
+    expect(editor()).toBe(owner);
+    expect(owner.read('latest', () => $getSelection()?.getTextContent())).toBe('blue');
+    await click('Page settings');
+    expect(control('Mobile view').getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('.document-page-count')).toBeNull();
+    await click('Pages');
+    expect(container.querySelector('[data-document-view="pages"]')).not.toBeNull();
+    expect(useStore.getState().mobileDocumentView).toBe('pages');
+    await click('Mobile view');
+    expect(useStore.getState().mobileDocumentView).toBe('screen');
+    expect(useStore.getState().documentView).toBe('pages');
+    await resize(false);
+    expect(container.querySelector('[data-document-view="pages"]')).not.toBeNull();
+    expect(content()).toBe(editable);
+    expect(owner.getEditorState().toJSON()).toEqual(before);
+    expect(owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()))).toEqual(keys);
+    expect(useStore.getState().chats![0].pageSetup).toEqual(setup);
+    await click('Undo');
+    expect(content().querySelector('.editor-text-bold')).toBeNull();
+    expect(content().textContent).toBe('The blue bird sings.');
+    // A phone's explicit paper-view choice must not change a desktop's saved Continuous view.
+    await act(async () => { useStore.getState().setDocumentView('continuous'); await tick(); });
+    await resize(true); await click('Page settings'); await click('Pages'); await resize(false);
+    expect(container.querySelector('[data-document-view="continuous"]')).not.toBeNull();
+    expect(useStore.getState().mobileDocumentView).toBe('pages');
+  });
+
+  it('changes page setup from the top toolbar dropdown without replacing the editor, its nodes, or its undo history', async () => {
+    await mount(); await select(); await click('Format Bold');
+    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    const owner = editor(), before = owner.getEditorState().toJSON();
+    const keys = owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()));
+    expect(container.querySelector('[aria-label="Paper size"]')).toBeNull();
+    await click('Page settings');
+    await click('Pages');
+    expect(container.querySelector('[data-document-view="pages"]')).not.toBeNull();
+    const toolbar = container.querySelector('[data-toolbar-target] [role="toolbar"]')!;
+    expect(container.querySelectorAll('[role="toolbar"]')).toHaveLength(1);
+    expect(toolbar.contains(control('Pages'))).toBe(true);
+    expect(toolbar.querySelector('[aria-label="Paper size"]')).not.toBeNull();
+    expect(toolbar.querySelector('[aria-label="Page margins"]')).not.toBeNull();
+    expect(toolbar.querySelector('.document-page-count')).not.toBeNull();
+    expect(container.querySelector('.document-layout [aria-label="Document layout"]')).toBeNull();
+    await act(async () => {
+      const paper = container.querySelector<HTMLSelectElement>('[aria-label="Paper size"]')!;
+      paper.value = 'a4'; paper.dispatchEvent(new Event('change', { bubbles: true })); await tick();
+    });
+    expect(useStore.getState().chats![0].pageSetup?.paper).toBe('a4');
+    expect(useStore.getState().chats![1].pageSetup).toBeUndefined();
+    expect(editor()).toBe(owner);
+    expect(owner.getEditorState().toJSON()).toEqual(before);
+    expect(owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()))).toEqual(keys);
+    await press('Escape');
+    expect(control('Page settings').getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(control('Page settings'));
+    expect(container.querySelector('[role="dialog"][aria-label="Page settings"]')).toBeNull();
+    await click('Page settings');
+    await click('Continuous'); await click('Undo');
+    expect(content().querySelector('.editor-text-bold')).toBeNull();
+    expect(content().textContent).toBe('The blue bird sings.');
+  });
+
+  it('keeps unsupported tables visible and editable in Continuous when Pages is preferred', async () => {
+    const docs = useStore.getState().chats!;
+    const saved = JSON.stringify(legacyDocument.editorState);
+    useStore.setState({ documentView: 'pages', chats: [{ ...docs[0], editorState: saved, draftEditorState: saved }, docs[1]] });
+    await mount();
+    await click('Page settings');
+    expect(control('Pages').disabled).toBe(true);
+    expect(control('Pages').getAttribute('aria-pressed')).toBe('false');
+    expect(control('Continuous').getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('[data-document-view="continuous"]')).not.toBeNull();
+    expect(content().querySelectorAll('table tr')).toHaveLength(2);
+    expect(content().getAttribute('contenteditable')).toBe('true');
+  });
+
   it('loads and autosaves an actual 0.11.1 document with its structure and formatting intact', async () => {
     const legacyState = JSON.stringify(legacyDocument.editorState);
     const docs = useStore.getState().chats!;

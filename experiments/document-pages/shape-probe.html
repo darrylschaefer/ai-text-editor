@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editable page-flow probe</title><style>
+*{box-sizing:border-box}body{margin:0;background:#e9e9e6;font:13px system-ui}header{position:sticky;top:0;z-index:2;padding:12px;background:#fff;border-bottom:1px solid #ccc}button{margin-right:15px}.scroll{overflow:auto;padding:20px}.editor{width:816px;min-height:4320px;margin:auto;padding:96px;font:16px/28.8px Georgia,serif;outline:0;background:repeating-linear-gradient(to bottom,#fff 0px,#fff 1056px,#e9e9e6 1056px,#e9e9e6 1088px)}.editor::before{content:'';float:left;width:100%;height:8704px;shape-outside:var(--bands);pointer-events:none}p{margin:0 0 18px}h1{font:30px/1.25 Georgia;margin:0 0 20px}
+</style><header><button id="inspect">Inspect text flow</button><output id="result"></output></header>
+<div class="scroll"><div class="editor" contenteditable="true" aria-label="Editable flow probe"><h1>One paragraph, several pages</h1><p id="long"></p><p>FINAL PARAGRAPH.</p></div></div>
+<script>
+const editor=document.querySelector('.editor');
+const points=['0 0'];for(let page=0;page<8;page++){const top=page*1088+864,bottom=(page+1)*1088;points.push(`0 ${top}px`,`100% ${top}px`,`100% ${bottom}px`,`0 ${bottom}px`);}points.push('0 8704px');editor.style.setProperty('--bands',`polygon(${points.join(',')})`);
+document.querySelector('#long').textContent=('The station stood beside the marsh. Mara waited beneath the clock and watched the rain. A light moved slowly across the water. She had been told to expect a letter. ').repeat(65);
+function inspect(){const start=editor.getBoundingClientRect().top,walker=document.createTreeWalker(editor,NodeFilter.SHOW_TEXT),range=document.createRange(),counts={};let node,overlaps=0;while(node=walker.nextNode()){range.selectNodeContents(node);for(const rect of range.getClientRects()){if(!rect.width)continue;const top=rect.top-start,bottom=rect.bottom-start,page=Math.floor(top/1088);counts[page+1]=(counts[page+1]||0)+1;if(top-page*1088<95||bottom-page*1088>961)overlaps++;}}document.querySelector('#result').textContent=JSON.stringify({lines:counts,linesInMargins:overlaps,lastParagraphBottom:editor.lastElementChild.getBoundingClientRect().bottom-start});}
+document.querySelector('#inspect').onclick=inspect;editor.addEventListener('input',inspect);requestAnimationFrame(inspect);
+</script></html>
