@@ -15,9 +15,9 @@ document.querySelector('#audit').addEventListener('click', () => {
   const sheets = [...doc.querySelectorAll('.document-page-sheet')];
   if (!root || !sheets.length) { document.querySelector('#result').textContent = 'Choose Pages view first.'; return; }
   const css = doc.defaultView.getComputedStyle(plane);
-  const paper = Math.abs(parseFloat(css.width) - 816) < .5 ? 'letter' : 'a4';
+  const { paper, orientation } = doc.querySelector('.document-layout').dataset;
   const margins = Object.fromEntries(['top','right','bottom','left'].map(side => [side, parseFloat(css.getPropertyValue(`--page-${side}`)) / 96]));
-  const geometry = pageGeometry(parsePageSetup({ paper, margins }));
+  const geometry = pageGeometry(parsePageSetup({ paper, orientation, margins }));
   const origin = root.getBoundingClientRect(), scale = origin.width / geometry.width;
   const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const lines = new Set(), violations = [], counts = Array(sheets.length).fill(0);
@@ -43,7 +43,7 @@ document.querySelector('#audit').addEventListener('click', () => {
       }
     }
   }
-  document.querySelector('#result').textContent = JSON.stringify({ pages: sheets.length, paper, margins, scale, linesPerPage: counts, violations,
+  document.querySelector('#result').textContent = JSON.stringify({ pages: sheets.length, paper, orientation, margins, scale, linesPerPage: counts, violations,
     textLength: root.textContent.length, blocks: root.children.length, editableRoots: doc.querySelectorAll('[aria-label="Document content"]').length }, null, 2);
 });
 </script>

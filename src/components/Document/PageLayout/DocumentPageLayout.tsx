@@ -141,14 +141,15 @@ export default function DocumentPageLayout({ children }: { children: ReactNode }
         if (mobile) setMobileView(view === 'pages' ? 'pages' : 'screen');
         else setView(view);
       }} />} />
-    <div className="document-layout" data-document-view={pageMode ? 'pages' : mobile ? 'screen' : 'continuous'}>
+    <div className="document-layout" data-document-view={pageMode ? 'pages' : mobile ? 'screen' : 'continuous'}
+      data-paper={setup.paper} data-orientation={setup.orientation}>
     <div className="document-page-viewport" ref={viewport} data-document-scroll={pageMode ? '' : undefined}>
       <div className="document-page-scale" style={pageMode ? { width: geometry.width * zoom, height: stackHeight * zoom } : undefined}>
         <div className="document-page-plane" ref={plane} style={style}>
           <div className="document-page-sheets" aria-hidden="true">
             {pageMode && Array.from({ length: pages }, (_, index) => <div key={index} className="document-page-sheet"
               style={{ top: index * geometry.stride, width: geometry.width, height: geometry.height }}>
-              <span style={{ bottom: geometry.margins.bottom / 2 }}>{index + 1}</span>
+              {setup.showPageNumbers && <span style={{ bottom: geometry.margins.bottom / 2 }}>{index + 1}</span>}
             </div>)}
           </div>
           {children}

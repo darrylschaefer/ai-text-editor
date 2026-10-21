@@ -6,11 +6,14 @@ The Lexical 0.52 upgrade was merged separately in [PR #30](https://github.com/da
 
 ## What works
 
-- Letter and A4 paper, four uniform margin presets, page numbers, and fit-to-pane scaling.
-- View, paper, margin, and page-count controls live in a Page settings dropdown in the existing top formatting toolbar, with no separate toolbar above the page canvas.
+- Letter, A4, Legal, A5, and ISO B5 paper in portrait or landscape, with fit-to-pane scaling.
+- Four uniform margin presets plus independent top, bottom, left, and right margins, with a link-all option. Values must be between zero and four inches and leave at least one inch of writing space in each direction. Invalid edits keep the last valid setup and show an inline explanation.
+- Inches, millimetres, or centimetres for displaying and editing measurements. Units are a personal workspace preference; changing them does not round or rewrite the document's physical margins.
+- Optional page numbers and Reset page setup. Reset restores Letter, portrait, one-inch margins, and visible numbers while keeping personal units and view preferences. Hiding numbers preserves the footer space and page count.
+- View, paper, margin, and page-count controls live in a Page settings dropdown in the existing top formatting toolbar, with no separate toolbar above the page canvas. Paper settings remain editable in Mobile and Continuous views, and the dropdown scrolls within short or narrow windows.
 - Page setup saved on each document, shared across its writing versions. Desktop and mobile viewing preferences are saved separately as workspace preferences.
 - Mobile view removes paper margins and gaps, wraps text to the screen, and keeps the existing editor mounted. Page settings offers an explicit Pages override on phones, without changing the desktop preference or document's paper settings.
-- Legacy documents open with Letter and one-inch margins without rewriting their saved editor state. Imported settings are validated.
+- Legacy documents open with Letter, portrait, one-inch margins, and visible page numbers without rewriting their saved editor state. Imported settings are validated.
 - One ContentEditable, one Lexical tree, and one undo history. Paper and margin changes do not call `editor.update`, insert automatic breaks, split paragraph nodes, or create manuscript revisions.
 - The real editor remains mounted when switching views. Text selection, formatting, autosave, assistant selection highlighting, and Prose Rhythm navigation use that editor.
 - Documents containing tables, code, or media use Continuous view, with an explanatory notice when Pages was preferred. The mode controls reflect the effective view.
@@ -29,7 +32,7 @@ This differs from the earlier [read-only preview study](document-pages-explorati
 
 ## Verification
 
-`npm run check` passed: both TypeScript checks, 310 tests in 19 files, and the production build. Tests cover legacy page defaults, imported settings, paper geometry, page boundaries, selection highlighting at different scales, editor/node identity across setup changes and responsive reflow, undo, independent desktop/mobile choices, and the unsupported-content fallback.
+`npm run check` passed: both TypeScript checks, 320 tests in 19 files, and the production build. Tests cover legacy page defaults, imported settings, all five paper sizes in both orientations, asymmetric margins, unit conversion, invalid input, reset, number visibility, page boundaries, selection highlighting at different scales, editor/node identity across setup changes and responsive reflow, undo, independent desktop/mobile choices, and the unsupported-content fallback.
 
 Manual checks used synthetic documents in the Windows in-app Chromium browser:
 
@@ -50,6 +53,11 @@ Manual checks used synthetic documents in the Windows in-app Chromium browser:
 | A sentence typed in Mobile view, then reload | Text retained, along with A4 paper and 0.75-inch margins |
 | Explicit Pages on a 375px phone, then reload | Paper view retained; returning to Mobile view restored 18px reflow |
 | Phone Mobile view back to a 1280px desktop | Desktop Pages restored with the saved A4 size, 0.75-inch margins, and appended text |
+| One 5,110-character paragraph across all five paper sizes in both orientations | Ten configurations passed the word-rectangle audit with no words entering margins; one paragraph and one editor throughout |
+| Asymmetric margins: top 0.75, bottom 1, left 0.5, right 1.25 inches | Letter portrait/landscape: 2/2 pages; A4: 2/2; Legal: 2/2; A5: 5/5; ISO B5: 4/3 |
+| Reload with custom margins, millimetres, and hidden numbers | Paper setup, units, visibility, and source text retained |
+| Switch millimetres to centimetres, link margins, then reset | Physical values unchanged by conversion; linking copied Top to all sides; reset restored defaults while retaining centimetres and all source text |
+| Expanded settings at 320px | Mobile view retained 18px text; dropdown had no horizontal overflow, and internal scrolling reached Reset |
 
 The manual text-rectangle audit is at `/experiments/document-pages/editable-flow-audit.html` on the local Vite server. It embeds the app on the same origin and reads its currently saved document, so use a disposable local test origin. It checks word rectangles, excluding hanging whitespace from clipping reports. The helper does not modify document content.
 
@@ -57,6 +65,6 @@ The manual text-rectangle audit is at `/experiments/document-pages/editable-flow
 
 This is a first editable prose milestone, not completion of issue #26. Tables, code, and media need a fragmentation strategy before enabling Pages for them. Quote decorations and list markers need further visual coverage. Oversized words, unusual imported styling, explicit page breaks, widow/orphan rules, headers/footers, and very large manuscripts need additional fixtures and performance work.
 
-Print/PDF output, per-side margin controls, user zoom, page navigation, IME input, clipboard/drag-and-drop, accessibility, other browsers, and the packaged Electron renderer still need implementation or dedicated validation. Deferring reflow during composition is not evidence of a full IME audit. CSS Shapes is an experimental approach here; the convergence fallback protects visibility but does not establish cross-browser correctness.
+Print/PDF output, user zoom, page navigation, IME input, clipboard/drag-and-drop, accessibility, other browsers, and the packaged Electron renderer still need implementation or dedicated validation. Deferring reflow during composition is not evidence of a full IME audit. CSS Shapes is an experimental approach here; the convergence fallback protects visibility but does not establish cross-browser correctness.
 
 The existing block-ID serialization limitation documented in [the upgrade notes](lexical-upgrade.md) remains. Pagination neither creates block wrappers nor changes AI block-operation semantics.

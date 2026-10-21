@@ -1,10 +1,12 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { DocumentBlank } from '@carbon/icons-react';
-import type { DocumentPageSetup, DocumentView, PaperSize } from '@type/page-setup';
-import { uniformMargins } from '@utils/page-layout';
+import useStore from '@store/store';
+import type { DocumentPageSetup, DocumentView, PageOrientation, PaperSize, ResolvedDocumentPageSetup } from '@type/page-setup';
+import { formatPageLength, paperDimensions, PAPER_SIZES, parsePageSetup, parsePageUnit, validPageMargins } from '@utils/page-layout';
+import MarginControls from './MarginControls';
 
 interface PageSettingsProps {
-  setup: DocumentPageSetup;
+  setup: ResolvedDocumentPageSetup;
   preference: DocumentView;
   pageMode: boolean;
   mobile: boolean;
@@ -17,19 +19,32 @@ interface PageSettingsProps {
 
 export default function PageSettings({ setup, preference, pageMode, pages, mobile, unsupported, failed, onViewChange, onSetupChange }: PageSettingsProps) {
   const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState({ left: 12, top: 96, width: 280 });
+  const [position, setPosition] = useState({ left: 12, top: 96, width: 320 });
+  const [error, setError] = useState(''), [resetCount, setResetCount] = useState(0);
+  const unit = parsePageUnit(useStore(state => state.pageMeasurementUnit));
+  const setUnit = useStore(state => state.setPageMeasurementUnit);
   const trigger = useRef<HTMLButtonElement>(null), panel = useRef<HTMLDivElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
   const panelId = useId();
-  const allMargins = Object.values(setup.margins);
-  const preset = allMargins.every(value => value === allMargins[0]) ? String(allMargins[0]) : 'custom';
+  const dimensions = paperDimensions(setup);
+  const changeSetup = (next: DocumentPageSetup) => {
+    if (!validPageMargins(next)) { setError('Reduce the margins to leave at least one inch of writing space before changing the paper layout.'); return; }
+    setError(''); onSetupChange(next);
+  };
 
   useLayoutEffect(() => {
     if (!open || !trigger.current || !panel.current) return;
-    const anchor = trigger.current.getBoundingClientRect(), bounds = panel.current.getBoundingClientRect();
-    const width = Math.min(280, window.innerWidth - 24);
-    const top = anchor.bottom + bounds.height + 18 <= window.innerHeight ? anchor.bottom + 6 : Math.max(12, anchor.top - bounds.height - 6);
-    setPosition({ width, top, left: Math.max(12, Math.min(anchor.right - width, window.innerWidth - width - 12)) });
+    const positionPanel = () => {
+      const anchor = trigger.current!.getBoundingClientRect(), height = panel.current!.scrollHeight + 2;
+      const width = Math.min(320, window.innerWidth - 24), below = window.innerHeight - anchor.bottom - 18, above = anchor.top - 18;
+      const top = height > below && above > below ? Math.max(12, anchor.top - height - 6) : anchor.bottom + 6;
+      const left = Math.max(12, Math.min(anchor.right - width, window.innerWidth - width - 12));
+      setPosition(previous => previous.width === width && previous.top === top && previous.left === left ? previous : { width, top, left });
+    };
+    positionPanel();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(positionPanel);
+    observer?.observe(panel.current);
+    return () => observer?.disconnect();
   }, [open, pageMode, unsupported, failed]);
 
   useEffect(() => {
@@ -72,22 +87,33 @@ export default function PageSettings({ setup, preference, pageMode, pages, mobil
             title={unsupported ? `Tables, code, and media currently use ${mobile ? 'Mobile' : 'Continuous'} view` : 'Edit on pages · experimental'}
             onClick={() => onViewChange('pages')}>Pages</button>
         </div>
-        {mobile && !pageMode && !unsupported && !failed && <p className="document-page-notice">Text reflows to fit your screen. Paper settings are unchanged.</p>}
-        {pageMode && <>
+        {!pageMode && !unsupported && !failed && <p className="document-page-notice">{mobile ? 'Text reflows to fit your screen. ' : ''}Paper settings apply in Pages view.</p>}
           <label className="document-page-settings-row"><span>Paper size</span>
-            <select aria-label="Paper size" value={setup.paper} onChange={event => onSetupChange({ ...setup, paper: event.target.value as PaperSize })}>
-              <option value="letter">Letter</option><option value="a4">A4</option>
+            <select aria-label="Paper size" value={setup.paper} onChange={event => changeSetup({ ...setup, paper: event.target.value as PaperSize })}>
+              {Object.entries(PAPER_SIZES).map(([value, size]) => <option key={value} value={value}>{size.label}</option>)}
             </select>
           </label>
-          <label className="document-page-settings-row"><span>Margins</span>
-            <select aria-label="Page margins" value={preset} onChange={event => onSetupChange({ ...setup, margins: uniformMargins(Number(event.target.value)) })}>
-              <option value="0.5">0.5 in</option><option value="0.75">0.75 in</option>
-              <option value="1">1 in</option><option value="1.25">1.25 in</option>
-              {!['0.5', '0.75', '1', '1.25'].includes(preset) && <option value={preset} disabled>Custom margins</option>}
-            </select>
-          </label>
-          <span className="document-page-count" aria-live="polite">{pages} {pages === 1 ? 'page' : 'pages'}</span>
-        </>}
+          <span className="document-page-dimensions">{formatPageLength(dimensions.width / 96, unit)} × {formatPageLength(dimensions.height / 96, unit)} {unit}</span>
+          <div className="document-page-settings-grid">
+            <label className="document-page-settings-field"><span>Orientation</span>
+              <select aria-label="Page orientation" value={setup.orientation} onChange={event => changeSetup({ ...setup, orientation: event.target.value as PageOrientation })}>
+                <option value="portrait">Portrait</option><option value="landscape">Landscape</option>
+              </select>
+            </label>
+            <label className="document-page-settings-field"><span>Units</span>
+              <select aria-label="Measurement units" value={unit} onChange={event => { setError(''); setUnit(parsePageUnit(event.target.value)); }}>
+                <option value="in">Inches</option><option value="mm">Millimetres</option><option value="cm">Centimetres</option>
+              </select>
+            </label>
+          </div>
+          <MarginControls key={resetCount} setup={setup} unit={unit} onChange={margins => changeSetup({ ...setup, margins })} />
+          {error && <p role="alert" className="document-page-error">{error}</p>}
+          <label className="document-page-settings-check"><input type="checkbox" aria-label="Show page numbers" checked={setup.showPageNumbers}
+            onChange={event => changeSetup({ ...setup, showPageNumbers: event.target.checked })} />Show page numbers</label>
+          <button type="button" className="document-page-reset" onClick={() => {
+            setError(''); onSetupChange(parsePageSetup(undefined)); setResetCount(value => value + 1);
+          }}>Reset page setup</button>
+          {pageMode && <span className="document-page-count" aria-live="polite">{pages} {pages === 1 ? 'page' : 'pages'}</span>}
         {(unsupported || failed) && preference === 'pages' && <p className="document-page-notice">
           {unsupported ? `This content uses ${mobile ? 'Mobile' : 'Continuous'} view.` : `Page layout could not settle. ${mobile ? 'Mobile' : 'Continuous'} view is available.`}</p>}
       </div>

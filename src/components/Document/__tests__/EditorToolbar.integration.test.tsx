@@ -134,6 +134,25 @@ async function fillMessage(value: string) {
   });
 }
 
+async function pageOption(label: string, value: string) {
+  await act(async () => {
+    const input = document.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)!;
+    input.value = value; input.dispatchEvent(new Event('change', { bubbles: true })); await tick();
+  });
+}
+async function pageMargin(label: string, value: string) {
+  const input = document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
+  await act(async () => {
+    input.focus();
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true })); await tick();
+  });
+  await act(async () => { input.blur(); await tick(); });
+}
+async function pageCheck(label: string) {
+  await act(async () => { document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!.click(); await tick(); });
+}
+
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   // jsdom has no selection geometry. The editor and DOM selection still run;
@@ -146,7 +165,8 @@ beforeEach(() => {
     forceEditorRefresh: false, editorInstance: null, currentSelection: '',
     autosaveFlush: null, autosaveRetry: null, autosaveStatus: 'idle' });
   useStore.setState({ documentView: 'continuous', setDocumentView: documentView => useStore.setState({ documentView }),
-    mobileDocumentView: 'screen', setMobileDocumentView: mobileDocumentView => useStore.setState({ mobileDocumentView }) });
+    mobileDocumentView: 'screen', setMobileDocumentView: mobileDocumentView => useStore.setState({ mobileDocumentView }),
+    pageMeasurementUnit: 'in', setPageMeasurementUnit: pageMeasurementUnit => useStore.setState({ pageMeasurementUnit }) });
   container = document.createElement('div'); document.body.appendChild(container);
   modalRoot = document.createElement('div'); modalRoot.id = 'modal-root'; document.body.appendChild(modalRoot);
 });
@@ -158,6 +178,49 @@ afterEach(async () => {
 });
 
 describe('relocated editor toolbar', () => {
+  it('edits paper setup and converted custom margins without changing text or undo history', async () => {
+    useStore.setState({ documentView: 'pages' });
+    await mount(); await select(); await click('Format Bold');
+    await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
+    const owner = editor(), before = owner.getEditorState().toJSON(), editable = content();
+    await click('Page settings');
+    await pageOption('Paper size', 'legal'); await pageOption('Page orientation', 'landscape');
+    const setupBeforeUnits = useStore.getState().chats![0].pageSetup;
+    await pageOption('Measurement units', 'mm');
+    expect(useStore.getState().chats![0].pageSetup).toBe(setupBeforeUnits);
+    await pageMargin('Top margin', '12.7');
+    expect(useStore.getState().chats![0].pageSetup?.margins).toEqual({ top: .5, right: .5, bottom: .5, left: .5 });
+    await pageCheck('Link all margins'); await pageMargin('Right margin', '25.4');
+    expect(useStore.getState().chats![0].pageSetup?.margins).toEqual({ top: .5, right: 1, bottom: .5, left: .5 });
+    await pageCheck('Show page numbers');
+    expect(useStore.getState().chats![0].pageSetup?.showPageNumbers).toBe(false);
+    expect(container.querySelector('.document-page-sheet > span')).toBeNull();
+    const lastValid = useStore.getState().chats![0].pageSetup;
+    await pageMargin('Top margin', '150');
+    expect(useStore.getState().chats![0].pageSetup).toBe(lastValid);
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain('leaving at least');
+    await pageMargin('Top margin', '19.05');
+    expect(useStore.getState().chats![0].pageSetup?.margins.top).toBeCloseTo(.75);
+    await pageOption('Measurement units', 'cm');
+    expect(document.querySelector<HTMLInputElement>('[aria-label="Top margin"]')!.value).toBe('1.905');
+    const beforeBlur = useStore.getState().chats![0].pageSetup;
+    await pageMargin('Top margin', '1.905');
+    expect(useStore.getState().chats![0].pageSetup).toBe(beforeBlur);
+    await pageOption('Paper size', 'a5'); await pageOption('Paper size', 'b5');
+    expect(useStore.getState().chats![0].pageSetup?.paper).toBe('b5');
+    await click('Reset page setup');
+    expect(useStore.getState().chats![0].pageSetup).toEqual({ paper: 'letter', orientation: 'portrait',
+      showPageNumbers: true, margins: { top: 1, right: 1, bottom: 1, left: 1 } });
+    expect(useStore.getState().pageMeasurementUnit).toBe('cm');
+    expect(document.querySelector<HTMLInputElement>('[aria-label="Link all margins"]')!.checked).toBe(true);
+    expect(useStore.getState().chats![1].pageSetup).toBeUndefined();
+    expect(content()).toBe(editable); expect(editor()).toBe(owner);
+    expect(owner.getEditorState().toJSON()).toEqual(before);
+    await click('Undo');
+    expect(content().querySelector('.editor-text-bold')).toBeNull();
+    expect(content().textContent).toBe('The blue bird sings.');
+  });
+
   it('reflows the same editable manuscript on mobile and keeps desktop and mobile view choices separate', async () => {
     let small = false;
     const listeners = new Set<() => void>();
