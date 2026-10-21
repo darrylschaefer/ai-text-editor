@@ -15,6 +15,7 @@ const PopupModal = ({
   children,
   fullWidth = false,
   initialFocus,
+  wide = false,
 }: {
   title?: string | React.ReactElement;
   message?: string;
@@ -26,6 +27,7 @@ const PopupModal = ({
   children?: React.ReactElement;
   fullWidth?: boolean;
   initialFocus?: string;
+  wide?: boolean;
 }) => {
   const modalRoot = document.getElementById('modal-root');
   const { t } = useTranslation();
@@ -49,7 +51,7 @@ const PopupModal = ({
       <ModalLayerContext.Provider value={scope}>
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={message ? messageId : undefined} tabIndex={-1}
         className='fixed top-0 left-0 z-[999] w-full p-4 overflow-x-hidden overflow-y-auto h-full flex justify-center items-center animate-fade-in'>
-        <div className={`relative z-2 max-w-2xl flex justify-center max-h-full w-full ${fullWidth ? 'w-full' : ''}`}>
+        <div className={`relative z-2 ${wide ? 'max-w-5xl' : 'max-w-2xl'} flex justify-center max-h-full w-full ${fullWidth ? 'w-full' : ''}`}>
           <div className={`relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] max-h-full overflow-y-auto border border-gray-200 dark:border-gray-800/40 animate-scale-in ${fullWidth ? 'w-full' : ''}`}>
             <div className='flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800/30'>
               <h3 id={titleId} className='text-xl font-semibold text-gray-900 dark:text-gray-100'>

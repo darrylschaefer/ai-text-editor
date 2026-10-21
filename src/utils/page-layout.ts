@@ -50,6 +50,10 @@ export function pageGeometry(setup: DocumentPageSetup) {
     contentWidth: size.width - margins.left - margins.right, stride: size.height + PAGE_GAP };
 }
 export type PageGeometry = ReturnType<typeof pageGeometry>;
+export function textFitsPage(top: number, bottom: number, geometry: PageGeometry) {
+  const pageTop = Math.floor(top / geometry.stride) * geometry.stride;
+  return top - pageTop >= geometry.margins.top - .5 && bottom - pageTop <= geometry.height - geometry.margins.bottom + .5;
+}
 export const pageStackHeight = (pages: number, geometry: PageGeometry) => pages * geometry.height + (pages - 1) * PAGE_GAP;
 export const pagesForBottom = (bottom: number, geometry: PageGeometry) =>
   Math.max(1, Math.ceil((bottom + geometry.margins.bottom + PAGE_GAP - 0.5) / geometry.stride));

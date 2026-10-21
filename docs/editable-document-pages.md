@@ -16,6 +16,7 @@ The Lexical 0.52 upgrade was merged separately in [PR #30](https://github.com/da
 - Legacy documents open with Letter, portrait, one-inch margins, and visible page numbers without rewriting their saved editor state. Imported settings are validated.
 - One ContentEditable, one Lexical tree, and one undo history. Paper and margin changes do not call `editor.update`, insert automatic breaks, split paragraph nodes, or create manuscript revisions.
 - The real editor remains mounted when switching views. Text selection, formatting, autosave, assistant selection highlighting, and Prose Rhythm navigation use that editor.
+- Print preview and document exports are available from the existing top toolbar. See [document export](document-export.md) for PDF saving, ranges, DOCX/HTML/Markdown/text/JSON, validation, and current limits.
 - Documents containing tables, code, or media use Continuous view, with an explanatory notice when Pages was preferred. The mode controls reflect the effective view.
 
 ## How it flows
@@ -65,6 +66,6 @@ The manual text-rectangle audit is at `/experiments/document-pages/editable-flow
 
 This is a first editable prose milestone, not completion of issue #26. Tables, code, and media need a fragmentation strategy before enabling Pages for them. Quote decorations and list markers need further visual coverage. Oversized words, unusual imported styling, explicit page breaks, widow/orphan rules, headers/footers, and very large manuscripts need additional fixtures and performance work.
 
-Print/PDF output, user zoom, page navigation, IME input, clipboard/drag-and-drop, accessibility, other browsers, and the packaged Electron renderer still need implementation or dedicated validation. Deferring reflow during composition is not evidence of a full IME audit. CSS Shapes is an experimental approach here; the convergence fallback protects visibility but does not establish cross-browser correctness.
+User zoom, writing-view page navigation, IME input, clipboard/drag-and-drop, accessibility, other browsers, and the packaged Electron renderer still need implementation or dedicated validation. Print/PDF has separate [verification and limits](document-export.md). Deferring reflow during composition is not evidence of a full IME audit. CSS Shapes is an experimental approach here; the convergence fallback protects visibility but does not establish cross-browser correctness.
 
 The existing block-ID serialization limitation documented in [the upgrade notes](lexical-upgrade.md) remains. Pagination neither creates block wrappers nor changes AI block-operation semantics.
