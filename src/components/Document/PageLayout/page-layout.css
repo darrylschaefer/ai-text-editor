@@ -45,7 +45,9 @@
 .dark .document-page-sheet { background: #101115; box-shadow: 0 1px 4px #0005, 0 0 0 1px #24242d; }
 .document-page-sheet > span { position: absolute; left: 0; width: 100%; text-align: center; color: #85858d; font: 12px/1 ui-sans-serif, system-ui, sans-serif; }
 .workspace-document .document-layout[data-document-view=pages] .editor-input { position: relative; z-index: 1; display: flow-root; height: auto; min-height: var(--page-stack-height); width: 100%; max-width: none; margin: 0; padding: var(--page-top) var(--page-right) var(--page-bottom) var(--page-left); overflow: visible; background: transparent; box-shadow: none; }
-.workspace-document .document-layout[data-document-view=pages] .editor-input::before { content: ''; float: left; width: 100%; height: var(--page-exclusion-height); shape-outside: var(--page-exclusions); pointer-events: none; }
+/* A small buffer prevents fractional paper dimensions from admitting the first
+   line of a new paragraph into a footer/header exclusion band. */
+.workspace-document .document-layout[data-document-view=pages] .editor-input::before { content: ''; float: left; width: 100%; height: var(--page-exclusion-height); shape-outside: var(--page-exclusions); shape-margin: 1px; pointer-events: none; }
 .document-page-gutters { z-index: 2; }
 .document-page-gutters > div { position: absolute; left: 0; background: #e9ecef; }
 .dark .document-page-gutters > div { background: #08090c; }

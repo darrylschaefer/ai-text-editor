@@ -13,7 +13,13 @@ import { WorkspaceToolbarContext } from '@components/Workspace/WorkspaceContext'
 import CreateCheckpoint from '@components/Menu/AIMenu/History/CreateCheckpoint';
 import legacyDocument from './fixtures/lexical-0.11.1.json';
 
-const memory = vi.hoisted(() => ({ commits: new Map<string, DocumentCommit>(), create: vi.fn() }));
+const memory = vi.hoisted(() => ({ commits: new Map<string, DocumentCommit>(), create: vi.fn(), print: vi.fn(), disposePrint: vi.fn() }));
+
+vi.mock('@utils/print-layout', () => ({
+  createPrintLayout: async () => ({ pages: 3, width: 816, height: 1056, dispose: memory.disposePrint,
+    documentHtml: (pages: number[], numbers: boolean) => `pages:${pages.join(',')};numbers:${numbers}` }),
+  printDocument: memory.print, flowingHtml: vi.fn(),
+}));
 
 // Real document slice, autosave hook, editor and portal toolbar. Only durable
 // storage/background indexing and unrelated toast UI are replaced.
@@ -178,6 +184,24 @@ afterEach(async () => {
 });
 
 describe('relocated editor toolbar', () => {
+  it('previews an export snapshot and prints selected source pages without changing the editor', async () => {
+    await mount(); await select(); await click('Format Bold');
+    const owner = editor(), before = owner.getEditorState().toJSON(), editable = content();
+    await click('Export document');
+    expect(document.querySelector('[aria-label="Export format"]')).not.toBeNull();
+    await act(async () => {
+      const input = document.querySelector<HTMLInputElement>('[aria-label="Page range"]')!;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '2-3');
+      input.dispatchEvent(new Event('input', { bubbles: true })); await tick();
+    });
+    await pageCheck('Include page numbers'); await click('Print / Save PDF');
+    expect(memory.print).toHaveBeenLastCalledWith('pages:2,3;numbers:false');
+    const close = document.querySelector<HTMLButtonElement>('#modal-root button[aria-label="Close"]')!;
+    await act(async () => { close.click(); await tick(); });
+    expect(memory.disposePrint).toHaveBeenCalled();
+    expect(editor()).toBe(owner); expect(content()).toBe(editable); expect(owner.getEditorState().toJSON()).toEqual(before);
+    await click('Undo'); expect(content().querySelector('.editor-text-bold')).toBeNull();
+  });
   it('edits paper setup and converted custom margins without changing text or undo history', async () => {
     useStore.setState({ documentView: 'pages' });
     await mount(); await select(); await click('Format Bold');

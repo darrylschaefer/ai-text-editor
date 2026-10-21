@@ -12,6 +12,7 @@ import {
 
 import { DocumentInterface, Folder, FolderCollection } from '@type/document';
 import { ExportBase } from '@type/export';
+import { importDocumentCopy } from '@utils/import-document-copy';
 
 const ImportChat = () => {
   const { t } = useTranslation();
@@ -39,6 +40,16 @@ const ImportChat = () => {
 
         try {
           const parsedData = JSON.parse(data);
+
+          // A document export is imported as a new copy, including on repeated
+          // imports into its source workspace. Never reuse its document ID.
+          if (parsedData.kind === 'fthr-document') {
+            if (!Array.isArray(parsedData.chats) || parsedData.chats.length !== 1 ||
+              typeof parsedData.chats[0]?.title !== 'string' || typeof parsedData.chats[0]?.draftEditorState !== 'string') {
+              throw new Error('Invalid document export.');
+            }
+            parsedData.chats = parsedData.chats.map(importDocumentCopy);
+          }
 
           // import folders
           parsedData.folders;

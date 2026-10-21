@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { formatPageLength, fromPageUnit, pageExclusions, pageGeometry, pageStackHeight, pagesForBottom, parsePageSetup, toPageUnit, uniformMargins, validPageMargins } from '../page-layout';
+import { formatPageLength, fromPageUnit, pageExclusions, pageGeometry, pageStackHeight, pagesForBottom, parsePageSetup, textFitsPage, toPageUnit, uniformMargins, validPageMargins } from '../page-layout';
 
 describe('document page setup', () => {
+  it('rejects a paragraph line hidden in a fractional landscape footer or next header', () => {
+    const geometry = pageGeometry(parsePageSetup({ paper: 'a5', orientation: 'landscape', margins: { top: .75, bottom: 1, left: .5, right: 1.25 } }));
+    const page = 2 * geometry.stride;
+    expect(textFitsPage(page + geometry.margins.top + 4, page + geometry.margins.top + 24, geometry)).toBe(true);
+    expect(textFitsPage(page + geometry.height - 80, page + geometry.height - 60, geometry)).toBe(false);
+    expect(textFitsPage(page + geometry.stride + 20, page + geometry.stride + 40, geometry)).toBe(false);
+    expect(textFitsPage(page + geometry.stride + geometry.margins.top + 4, page + geometry.stride + geometry.margins.top + 24, geometry)).toBe(true);
+  });
   it('defaults legacy documents to Letter with one-inch margins without changing the input', () => {
     const input = { unrelated: 'keep' };
     expect(parsePageSetup(input)).toEqual({ paper: 'letter', orientation: 'portrait', showPageNumbers: true, margins: uniformMargins(1) });
