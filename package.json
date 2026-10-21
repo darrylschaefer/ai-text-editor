@@ -106,7 +106,7 @@
     "@types/react-dom": "^18.0.10",
     "@types/react-scroll-to-bottom": "^4.2.0",
     "@types/uuid": "^9.0.1",
-    "@vitejs/plugin-react-swc": "^3.0.0",
+    "@vitejs/plugin-react-swc": "^4.3.3",
     "autoprefixer": "^10.4.13",
     "concurrently": "^8.0.1",
     "electron": "^23.2.0",
