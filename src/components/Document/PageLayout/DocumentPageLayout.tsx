@@ -135,13 +135,14 @@ export default function DocumentPageLayout({ children }: { children: ReactNode }
   } as CSSProperties : undefined;
 
   return <>
-    <EditorToolbar layoutControls={<><PageSettings setup={setup} preference={preference} pageMode={pageMode} pages={pages} mobile={mobile}
+    <EditorToolbar />
+    <PageSettings setup={setup} preference={preference} pageMode={pageMode} pages={pages} mobile={mobile}
       unsupported={unsupported} failed={failed} onSetupChange={change}
       onViewChange={view => {
         setFailed(false);
         if (mobile) setMobileView(view === 'pages' ? 'pages' : 'screen');
         else setView(view);
-      }} /><DocumentExport /></>} />
+      }} /><DocumentExport />
     <div className="document-layout" data-document-view={pageMode ? 'pages' : mobile ? 'screen' : 'continuous'}
       data-paper={setup.paper} data-orientation={setup.orientation}>
     <div className="document-page-viewport" ref={viewport} data-document-scroll={pageMode ? '' : undefined}>

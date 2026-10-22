@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { DocumentExport as ExportIcon } from '@carbon/icons-react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { WorkspaceDocumentMenuContext } from '@components/Workspace/WorkspaceDocumentMenu';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import PopupModal from '@components/PopupModal';
 import useStore from '@store/store';
 import { captureDocumentExport, documentJson, downloadDocument, parsePageRange, safeExportName,
   type DocumentExportSnapshot, type ExportFormat } from '@utils/document-export';
@@ -18,7 +18,7 @@ const formats: Record<ExportFormat, { label: string; description: string }> = {
   json: { label: 'Editable document (.json)', description: 'Rich editor data and page setup, compatible with Import / Export in workspace settings. Assistant chats and account settings are excluded.' },
 };
 
-function ExportDialog({ snapshot, setOpen }: { snapshot: DocumentExportSnapshot; setOpen: React.Dispatch<React.SetStateAction<boolean>> }) {
+function ExportPanel({ snapshot }: { snapshot: DocumentExportSnapshot }) {
   const unit = parsePageUnit(useStore(state => state.pageMeasurementUnit));
   const [format, setFormat] = useState<ExportFormat>('pdf');
   const [name, setName] = useState(() => safeExportName(`${snapshot.document.title} - ${snapshot.versionName}`));
@@ -64,8 +64,7 @@ function ExportDialog({ snapshot, setOpen }: { snapshot: DocumentExportSnapshot;
     finally { setBusy(false); }
   };
   const scale = layout ? Math.min(1, width / layout.width) : 1;
-  return <PopupModal title="Export document" setIsModalOpen={setOpen} fullWidth wide={format === 'pdf'} cancelButton initialFocus="[aria-label='Export format']">
-    <div className={`document-export-body${format === 'pdf' ? ' document-export-with-preview' : ''}`}>
+  return <div className={`document-export-body${format === 'pdf' ? ' document-export-with-preview' : ''}`}>
       <div className="document-export-options">
       <p className="document-export-context">{snapshot.document.title} · {snapshot.versionName}</p>
       <div className="document-export-fields">
@@ -110,22 +109,20 @@ function ExportDialog({ snapshot, setOpen }: { snapshot: DocumentExportSnapshot;
           </div>
         </>}
       </div>}
-    </div>
-  </PopupModal>;
+    </div>;
 }
 
 export default function DocumentExport() {
   const [editor] = useLexicalComposerContext();
-  const [open, setOpen] = useState(false), [snapshot, setSnapshot] = useState<DocumentExportSnapshot | null>(null);
-  const [error, setError] = useState('');
-  return <>
-    <button type="button" className="document-page-settings-trigger" aria-label="Export document" title="Export document" onClick={() => {
-      const store = useStore.getState(), doc = store.chats?.[store.currentChatIndex];
-      if (!doc) return;
-      try { setSnapshot(captureDocumentExport(editor, doc)); setError(''); setOpen(true); }
-      catch (reason) { setError(reason instanceof Error ? reason.message : 'This document could not be prepared for export.'); }
-    }}><ExportIcon size={16} aria-hidden="true" /></button>
-    {error && <span role="alert">{error}</span>}
-    {open && snapshot && <ExportDialog snapshot={snapshot} setOpen={setOpen} />}
-  </>;
+  const menu = useContext(WorkspaceDocumentMenuContext);
+  const current = useStore(state => state.chats?.[state.currentChatIndex]);
+  // Capture once each time the Export view opens. The editor remains mounted,
+  // and a refreshed capture picks up page changes made in the adjacent tab.
+  const prepared = useMemo(() => {
+    if (menu?.view !== 'export' || !menu.target || !current) return null;
+    try { return { snapshot: captureDocumentExport(editor, current) }; }
+    catch (reason) { return { error: reason instanceof Error ? reason.message : 'This document could not be prepared for export.' }; }
+  }, [editor, menu?.view, menu?.target, current?.id, current?.currentVersion]);
+  if (!prepared || !menu?.target) return null;
+  return createPortal(prepared.snapshot ? <ExportPanel snapshot={prepared.snapshot} /> : <p className="document-export-body document-export-error" role="alert">{prepared.error}</p>, menu.target);
 }

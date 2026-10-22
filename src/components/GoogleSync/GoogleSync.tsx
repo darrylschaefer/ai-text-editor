@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { EmbeddedPopupContext } from '@components/PopupModal/EmbeddedPopupContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
 
@@ -25,7 +27,7 @@ import { Edit as EditIcon } from '@carbon/icons-react';
 import { Close as CrossIcon } from '@carbon/icons-react';
 import { TrashCan as DeleteIcon } from '@carbon/icons-react';
 
-const GoogleSync = ({ clientId }: { clientId: string }) => {
+const GoogleSync = ({ clientId, menuTarget, setMenuOpen }: { clientId: string; menuTarget?: HTMLElement | null; setMenuOpen?: React.Dispatch<React.SetStateAction<boolean>> }) => {
   const { t } = useTranslation(['drive']);
 
   const fileId = useGStore((state) => state.fileId);
@@ -83,6 +85,9 @@ const GoogleSync = ({ clientId }: { clientId: string }) => {
 
   return (
     <GoogleOAuthProvider clientId={clientId}>
+      {setMenuOpen ? (menuTarget && createPortal(<EmbeddedPopupContext.Provider value={true}><GooglePopup
+        setIsModalOpen={setMenuOpen} files={files} setFiles={setFiles} />
+      </EmbeddedPopupContext.Provider>, menuTarget)) : <>
       <div
         className='flex py-2 px-2 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm'
         onClick={() => {
@@ -99,6 +104,7 @@ const GoogleSync = ({ clientId }: { clientId: string }) => {
           setFiles={setFiles}
         />
       )}
+      </>}
     </GoogleOAuthProvider>
   );
 };

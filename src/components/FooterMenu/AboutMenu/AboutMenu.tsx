@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import PopupModal from '@components/PopupModal';
-import { Information, LogoGithub, FavoriteFilled } from '@carbon/icons-react';
+import { LogoGithub, FavoriteFilled } from '@carbon/icons-react';
 import useStore from '@store/store';
 import Brand from '@components/Workspace/Brand';
 
-const AboutMenu = () => {
+const AboutMenu = ({ setIsModalOpen }: { setIsModalOpen: Dispatch<SetStateAction<boolean>> }) => {
   const { t } = useTranslation('main');
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const firstVisit = useStore((state) => state.firstVisit);
   const setFirstVisit = useStore((state) => state.setFirstVisit);
@@ -15,7 +14,6 @@ const AboutMenu = () => {
   useEffect(() => {
     if (firstVisit === true) {
       setFirstVisit(false);
-      setIsModalOpen(true);
     }
   }, [firstVisit, setFirstVisit]);
 
@@ -24,19 +22,6 @@ const AboutMenu = () => {
   }
 
   return (
-    <>
-      <a
-        className='flex py-2 mb-1 px-2 items-center gap-3 rounded-md hover:bg-gray-500/10 dark:hover:bg-gray-500/10 transition-colors duration-200 text-gray-900 dark:text-white cursor-pointer text-sm'
-        onClick={() => {
-          setIsModalOpen(true);
-        }}
-      >
-        <div>
-          <Information size={16} />
-        </div>
-        More Information
-      </a>
-      {isModalOpen && (
         <PopupModal
           title={<Brand className="fthr-brand-about" />}
           setIsModalOpen={setIsModalOpen}
@@ -101,8 +86,6 @@ const AboutMenu = () => {
             </div>
           </div>
         </PopupModal>
-      )}
-    </>
   );
 };
 

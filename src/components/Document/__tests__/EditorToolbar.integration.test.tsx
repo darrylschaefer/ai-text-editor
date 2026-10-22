@@ -10,6 +10,8 @@ import { type DocumentCommit } from '@type/commit';
 import Document from '../Document';
 import VersionSwitcher from '../EditorComponents/VersionSwitcher';
 import { WorkspaceToolbarContext } from '@components/Workspace/WorkspaceContext';
+import { WorkspaceDocumentMenuProvider } from '@components/Workspace/WorkspaceDocumentMenu';
+import WorkspaceSearch from '@components/Search/WorkspaceSearch';
 import CreateCheckpoint from '@components/Menu/AIMenu/History/CreateCheckpoint';
 import legacyDocument from './fixtures/lexical-0.11.1.json';
 
@@ -67,16 +69,17 @@ function Host() {
   const chats = useStore(value => value.chats);
   const index = useStore(value => value.currentChatIndex);
   const doc = chats![index];
-  return <WorkspaceToolbarContext.Provider value={target}>
+  return <WorkspaceDocumentMenuProvider><WorkspaceToolbarContext.Provider value={target}>
     <header>
       <button onClick={() => useStore.getState().setCurrentChatIndex(0)}>Open Alpha</button>
       <button onClick={() => useStore.getState().setCurrentChatIndex(1)}>Open Beta</button>
       <VersionSwitcher currentVersion={doc.currentVersion} onVersionChange={version => useStore.getState().setDocumentVersion(doc.id, version)} />
+      <WorkspaceSearch navigate={() => {}} />
       <div ref={setTarget} data-toolbar-target />
     </header>
     <Document />
     <aside aria-label="History fixture"><CreateCheckpoint key={`${doc.id}:${doc.currentVersion}`} documentId={doc.id} /></aside>
-  </WorkspaceToolbarContext.Provider>;
+  </WorkspaceToolbarContext.Provider></WorkspaceDocumentMenuProvider>;
 }
 
 let container: HTMLDivElement;
@@ -99,6 +102,12 @@ function control(label: string) {
 }
 
 async function click(label: string) {
+  if (label === 'Page setup' || label === 'Export document') {
+    const dialog = document.querySelector('[role="dialog"]');
+    if (dialog?.getAttribute('aria-label') === label) return;
+    if (document.querySelector('[data-menu-back]')) await click('Back to search');
+    if (!document.querySelector('[role="combobox"]')) await click('Search workspace');
+  }
   if (label === 'v1 Version' || label === 'v2 Version') {
     const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
     if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');
@@ -196,7 +205,7 @@ describe('relocated editor toolbar', () => {
     });
     await pageCheck('Include page numbers'); await click('Print / Save PDF');
     expect(memory.print).toHaveBeenLastCalledWith('pages:2,3;numbers:false');
-    const close = document.querySelector<HTMLButtonElement>('#modal-root button[aria-label="Close"]')!;
+    const close = document.querySelector<HTMLButtonElement>('[role="dialog"] button[aria-label="Close"]')!;
     await act(async () => { close.click(); await tick(); });
     expect(memory.disposePrint).toHaveBeenCalled();
     expect(editor()).toBe(owner); expect(content()).toBe(editable); expect(owner.getEditorState().toJSON()).toEqual(before);
@@ -207,7 +216,7 @@ describe('relocated editor toolbar', () => {
     await mount(); await select(); await click('Format Bold');
     await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
     const owner = editor(), before = owner.getEditorState().toJSON(), editable = content();
-    await click('Page settings');
+    await click('Page setup');
     await pageOption('Paper size', 'legal'); await pageOption('Page orientation', 'landscape');
     const setupBeforeUnits = useStore.getState().chats![0].pageSetup;
     await pageOption('Measurement units', 'mm');
@@ -240,6 +249,7 @@ describe('relocated editor toolbar', () => {
     expect(useStore.getState().chats![1].pageSetup).toBeUndefined();
     expect(content()).toBe(editable); expect(editor()).toBe(owner);
     expect(owner.getEditorState().toJSON()).toEqual(before);
+    await click('Close');
     await click('Undo');
     expect(content().querySelector('.editor-text-bold')).toBeNull();
     expect(content().textContent).toBe('The blue bird sings.');
@@ -267,9 +277,9 @@ describe('relocated editor toolbar', () => {
     expect(content()).toBe(editable);
     expect(editor()).toBe(owner);
     expect(owner.read('latest', () => $getSelection()?.getTextContent())).toBe('blue');
-    await click('Page settings');
+    await click('Page setup');
     expect(control('Mobile view').getAttribute('aria-pressed')).toBe('true');
-    expect(container.querySelector('.document-page-count')).toBeNull();
+    expect(document.querySelector('.document-page-count')).toBeNull();
     await click('Pages');
     expect(container.querySelector('[data-document-view="pages"]')).not.toBeNull();
     expect(useStore.getState().mobileDocumentView).toBe('pages');
@@ -282,34 +292,37 @@ describe('relocated editor toolbar', () => {
     expect(owner.getEditorState().toJSON()).toEqual(before);
     expect(owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()))).toEqual(keys);
     expect(useStore.getState().chats![0].pageSetup).toEqual(setup);
+    await click('Close');
     await click('Undo');
     expect(content().querySelector('.editor-text-bold')).toBeNull();
     expect(content().textContent).toBe('The blue bird sings.');
     // A phone's explicit paper-view choice must not change a desktop's saved Continuous view.
     await act(async () => { useStore.getState().setDocumentView('continuous'); await tick(); });
-    await resize(true); await click('Page settings'); await click('Pages'); await resize(false);
+    await resize(true); await click('Page setup'); await click('Pages'); await resize(false);
     expect(container.querySelector('[data-document-view="continuous"]')).not.toBeNull();
     expect(useStore.getState().mobileDocumentView).toBe('pages');
   });
 
-  it('changes page setup from the top toolbar dropdown without replacing the editor, its nodes, or its undo history', async () => {
+  it('changes page setup inside the workspace menu without replacing the editor, its nodes, or its undo history', async () => {
     await mount(); await select(); await click('Format Bold');
     await act(async () => { await useStore.getState().autosaveFlush!(); await tick(); });
     const owner = editor(), before = owner.getEditorState().toJSON();
     const keys = owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()));
     expect(container.querySelector('[aria-label="Paper size"]')).toBeNull();
-    await click('Page settings');
+    await click('Page setup');
     await click('Pages');
     expect(container.querySelector('[data-document-view="pages"]')).not.toBeNull();
     const toolbar = container.querySelector('[data-toolbar-target] [role="toolbar"]')!;
     expect(container.querySelectorAll('[role="toolbar"]')).toHaveLength(1);
-    expect(toolbar.contains(control('Pages'))).toBe(true);
-    expect(toolbar.querySelector('[aria-label="Paper size"]')).not.toBeNull();
-    expect(toolbar.querySelector('[aria-label="Page margins"]')).not.toBeNull();
-    expect(toolbar.querySelector('.document-page-count')).not.toBeNull();
+    expect(toolbar.contains(control('Pages'))).toBe(false);
+    expect(toolbar.querySelector('[aria-label="Page setup"]')).toBeNull();
+    expect(toolbar.querySelector('[aria-label="Export document"]')).toBeNull();
+    expect(document.querySelector('[role="dialog"] [aria-label="Paper size"]')).not.toBeNull();
+    expect(document.querySelector('[role="dialog"] [aria-label="Page margins"]')).not.toBeNull();
+    expect(document.querySelector('[role="dialog"] .document-page-count')).not.toBeNull();
     expect(container.querySelector('.document-layout [aria-label="Document layout"]')).toBeNull();
     await act(async () => {
-      const paper = container.querySelector<HTMLSelectElement>('[aria-label="Paper size"]')!;
+      const paper = document.querySelector<HTMLSelectElement>('[aria-label="Paper size"]')!;
       paper.value = 'a4'; paper.dispatchEvent(new Event('change', { bubbles: true })); await tick();
     });
     expect(useStore.getState().chats![0].pageSetup?.paper).toBe('a4');
@@ -318,11 +331,10 @@ describe('relocated editor toolbar', () => {
     expect(owner.getEditorState().toJSON()).toEqual(before);
     expect(owner.read('latest', () => $getRoot().getAllTextNodes().map(node => node.getKey()))).toEqual(keys);
     await press('Escape');
-    expect(control('Page settings').getAttribute('aria-expanded')).toBe('false');
-    expect(document.activeElement).toBe(control('Page settings'));
-    expect(container.querySelector('[role="dialog"][aria-label="Page settings"]')).toBeNull();
-    await click('Page settings');
-    await click('Continuous'); await click('Undo');
+    expect(document.activeElement?.getAttribute('role')).toBe('combobox');
+    expect(document.querySelector('[role="dialog"][aria-label="Page setup"]')).toBeNull();
+    await click('Page setup');
+    await click('Continuous'); await click('Close'); await click('Undo');
     expect(content().querySelector('.editor-text-bold')).toBeNull();
     expect(content().textContent).toBe('The blue bird sings.');
   });
@@ -332,7 +344,7 @@ describe('relocated editor toolbar', () => {
     const saved = JSON.stringify(legacyDocument.editorState);
     useStore.setState({ documentView: 'pages', chats: [{ ...docs[0], editorState: saved, draftEditorState: saved }, docs[1]] });
     await mount();
-    await click('Page settings');
+    await click('Page setup');
     expect(control('Pages').disabled).toBe(true);
     expect(control('Pages').getAttribute('aria-pressed')).toBe('false');
     expect(control('Continuous').getAttribute('aria-pressed')).toBe('true');

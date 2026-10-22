@@ -35,12 +35,12 @@ export const PromptConfig = (
 
     return (
         <>
-        <div
+        <button type="button" aria-label={`Configure macro ${prompt.name || 'Untitled macro'}`}
         onClick={() => setIsPromptConfigModalOpen(true)
         }
         >
             <Settings />
-            </div>
+            </button>
         {isPromptConfigModalOpen ? (
         <PromptPopup setIsModalOpen={setIsPromptConfigModalOpen} prompt={prompt} index={index} _prompts={_prompts} _setPrompts={_setPrompts} _updatePrompt={_updatePrompt} />
         ) : (<></>)
