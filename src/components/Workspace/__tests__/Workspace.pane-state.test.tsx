@@ -14,7 +14,6 @@ const services = vi.hoisted(() => ({ submit: vi.fn(), stream: vi.fn(), tool: vi.
 // metadata fields and macro search real. Editor/footer actions, AI execution
 // and scroll measurement are outside these pane-state checks.
 vi.mock('@components/Document/Document', () => ({ default: () => <p>Synthetic document content</p> }));
-vi.mock('@components/FooterMenu', () => ({ default: () => null }));
 vi.mock('@components/Chat/ChatContent/ChatContent', () => ({ default: () => <p>No conversation selected</p> }));
 vi.mock('@hooks/useUnifiedSubmit', () => ({ default: () => ({ handleSubmit: services.submit, generating: false }) }));
 vi.mock('@hooks/useSubmitPromptAdjust', () => ({ default: () => ({ handleFunction: services.submit }) }));

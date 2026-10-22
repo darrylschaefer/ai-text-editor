@@ -9,6 +9,9 @@ import EditorAgentsToggle from '@components/Menu/DocumentMenu/EditorAgentsToggle
 import VersionSwitcher from '@components/Document/EditorComponents/VersionSwitcher';
 import { DocumentVersion } from '@type/document';
 import { WorkspaceAssistantContext, WorkspaceToolbarContext } from './WorkspaceContext';
+import { WorkspaceDocumentMenuProvider } from './WorkspaceDocumentMenu';
+import WorkspaceSearch from '@components/Search/WorkspaceSearch';
+import type { SettingsDestination } from '@utils/workspace-search';
 import { ModalLayerContext, useModalLayer } from '@components/ModalLayer/ModalLayer';
 import Brand from './Brand';
 import { ProseRhythmProvider } from '@components/Tools/ProseRhythmContext';
@@ -171,6 +174,15 @@ const Workspace = () => {
     if (currentDoc) await setDocumentVersion(currentDoc.id, version);
   };
 
+  const navigateSearch = (destination: SettingsDestination) => {
+    if (compact) setMobilePane(null);
+    if (destination !== 'pages' && destination !== 'export') {
+      setActiveMenu(destination === 'macros' ? 'actions' : destination);
+      if (compact) setMobilePane('right');
+      else setHideRight(false);
+    }
+  };
+
   const resizePane = (side: PaneSide, requested: number) => {
     const next = clampPaneWidth(side, Math.min(requested, limits[side]));
     // An arrow or pointer move against a fitted boundary must not overwrite a
@@ -254,6 +266,7 @@ const Workspace = () => {
   } as CSSProperties;
 
   return (
+    <WorkspaceDocumentMenuProvider>
     <ProseRhythmProvider active={activeMenu === 'tools' && !hideRight}>
     <WorkspaceAssistantContext.Provider value={openAssistant}>
     <WorkspaceToolbarContext.Provider value={toolbarTarget}>
@@ -266,6 +279,7 @@ const Workspace = () => {
               <span>{currentDoc?.title || 'Untitled document'}</span>
             </div>
             {currentDoc && <VersionSwitcher currentVersion={currentDoc.currentVersion || 'Draft'} onVersionChange={changeVersion} />}
+            <WorkspaceSearch navigate={navigateSearch} />
             <div className="workspace-layout-controls" role="group" aria-label="Workspace layout">
               <button id="toggle-left-pane" type="button" className="workspace-icon-button" aria-expanded={!hideLeft}
                 aria-controls="workspace-library" aria-label={`${hideLeft ? 'Show' : 'Hide'} library pane`}
@@ -319,6 +333,7 @@ const Workspace = () => {
     </WorkspaceToolbarContext.Provider>
     </WorkspaceAssistantContext.Provider>
     </ProseRhythmProvider>
+    </WorkspaceDocumentMenuProvider>
   );
 };
 
