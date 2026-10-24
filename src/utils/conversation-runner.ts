@@ -16,6 +16,12 @@ const conversationById = (id: string) => useStore.getState().conversations.find(
 function assertRunning(run: ChatGeneration) {
   if (!ownsChatGeneration(run) || run.controller.signal.aborted || !conversationById(run.conversationId)) throw new DOMException('Response stopped', 'AbortError');
 }
+async function saveBeforeTool(run: ChatGeneration) {
+  // Document tools read stored snapshots, so include writing still waiting for
+  // the editor's autosave timer. Stop during a save must prevent execution.
+  await useStore.getState().autosaveFlush?.();
+  assertRunning(run);
+}
 function patchMessage(id: string, index: number, updates: Partial<MessageInterface>) {
   const conversation = conversationById(id);
   if (!conversation?.messages[index]) return;
@@ -120,6 +126,7 @@ async function continueResponses(run: ChatGeneration, input: unknown[], config: 
         waiting = true; continue;
       }
       if (automaticToolCalls++ >= (toolContext.budgets?.max_tool_calls ?? 20)) throw new Error('Reached the tool limit for this turn. Send a new message to continue.');
+      if (session?.enabledTools.includes(call.function.name)) await saveBeforeTool(run);
       let result: string;
       try {
         if (!session?.enabledTools.includes(call.function.name)) throw new Error('This tool is not enabled for this chat.');
@@ -175,6 +182,7 @@ export async function approveConversationTool(id: string, index: number, approve
     let result: string;
     if (approve) {
       const args = toolArguments(id, index, call!);
+      await saveBeforeTool(run);
       try { result = await executeTool(pending.tool_name, args, buildToolContext({ allowedTools: session.enabledTools, canWrite: true })); }
       catch (error) { result = JSON.stringify({ ok: false, error: { code: 'tool_error', message: error instanceof Error ? error.message : 'Tool execution failed.' } }); }
     } else result = JSON.stringify({ ok: false, error: { code: 'approval_denied', message: 'User denied the action' } });

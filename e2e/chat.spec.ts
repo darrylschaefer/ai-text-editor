@@ -99,8 +99,11 @@ test('rejects oversized context before contacting a model', async ({ page, provi
 });
 
 test('runs a real document read tool and continues with its matching result', async ({ page, provider }) => {
-  await page.getByRole('textbox', { name: 'Document content', exact: true }).fill('Synthetic manuscript for the document read test.');
   await connect(page); await newChat(page); await enableTool(page, 'Read passages');
+  await page.getByRole('button', { name: 'Close assistant pane', exact: true }).filter({ visible: true }).click();
+  await page.getByRole('textbox', { name: 'Document content', exact: true }).fill('Synthetic manuscript for the document read test.');
+  await expect(page.getByRole('status', { name: 'Unsaved changes', exact: true })).toBeVisible();
+  await restoreAssistant(page);
   provider.reply('', [toolCall('read-1', 'doc_read', { selector: { type: 'cursor', limit_blocks: 5 } })]); provider.reply('The manuscript was read.'); await send(page, 'Read my document');
   await expect(assistant(page).getByText('The manuscript was read.', { exact: true })).toBeVisible();
   expect(provider.requests).toHaveLength(2);

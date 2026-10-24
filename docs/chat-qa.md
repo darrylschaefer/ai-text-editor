@@ -1,6 +1,6 @@
 # Chat regression testing
 
-Tested the local `codex/api-connections` change set on October 23, 2026, then expanded the automated coverage on October 24. No changes were published to GitHub and no issues were opened.
+Tested the `codex/api-connections` change set on October 23, 2026, then expanded the automated coverage on October 24. The changes are under review in [PR #34](https://github.com/darrylschaefer/fthr/pull/34). No issues were opened.
 
 ## Test levels
 
@@ -24,6 +24,7 @@ The fast automated suite is Vitest, including React tests in jsdom. Playwright a
 | An automatic tool finishes after the response completion event | Await tool results before continuation; reconcile duplicate events by call ID and submit all outputs together |
 | Multiple approval requests or another tool round after approval | Queue approvals and use the same streaming handler for continuations |
 | Stop during an approved action | Retain a completed action's result so it cannot be approved and executed twice |
+| A document tool runs before the editor's autosave timer | Flush pending writing before automatic or approved execution; abort execution after Stop or a save failure |
 | Missing context metadata or excessive tool-result context | Block continuation while retaining local results; old requests can still be declined offline |
 | Failed, incomplete, refused, malformed or disconnected responses | Preserve partial text and surface an actionable error or refusal |
 | Repeated automatic tool calls | Bound automatic tool execution for the turn |
@@ -72,7 +73,7 @@ Composer and chat lifecycle regressions also extend `NewChatPicker.test.tsx`; pa
 - Added 11 stream-decoder tests, including exhaustive byte-split checks, and seven approval-card component tests.
 - Added two integration regressions for Ctrl+K above mobile library/chat drawers, and fixed the shortcut incorrectly treating those drawers as blocking settings dialogs.
 - Reproduced and fixed approval cards being hidden for read tools and canonical note tools, despite the conversation explicitly requiring confirmation.
-- Added a separate browser CI job with retained reports, traces, screenshots, console errors and synthetic request payloads. This workflow remains a local change until published.
+- Added a separate browser CI job with retained reports, traces, screenshots, console errors and synthetic request payloads.
 - Added TypeScript checking for browser tests, the production static server and network guards that reject unexpected traffic.
 - The expanded unit/integration suite passes **518 tests in 36 files**. Typechecks, production build, lockfile consistency, CI YAML parsing and discovery of all 100 configured browser cases also pass.
 
@@ -90,7 +91,15 @@ The final production-build run passed **all 100 browser cases in 14.3 minutes**,
 
 Earlier attempts hit `ENOSPC`, startup/storage delays and a Firefox cancellation problem in the simulated provider redirect. An isolated probe reproduced the redirect problem without the app: redirected streams stayed open after abort, while direct streams closed correctly. The fixture now bridges the provider URL to loopback and preserves native fetch, request options and abort signals. Browser tests use the same static server as Docker, with update checks disabled.
 
-After freeing C:, normal temporary browser profiles restored reliable Firefox storage. Browser binaries and the final report remain under `D:/codex-test-runtime`, with the report in `merge-final-report/`. Earlier failed-run logs and traces remain available there. The CI workflow has not been published or run remotely; GitHub checks remain required before merging.
+After freeing C:, normal temporary browser profiles restored reliable Firefox storage. Browser binaries and the final report remain under `D:/codex-test-runtime`, with the report in `merge-final-report/`. Earlier failed-run logs and traces remain available there. GitHub checks are required on the final commit before merging.
+
+### Autosave regression found in GitHub CI
+
+The first GitHub browser run passed with one retry in the document-read journey. A focused reproduction confirmed that the tool could read the previous saved snapshot while the editor still had pending changes. The runner now flushes autosave before automatic and approved tools, stops execution if saving fails, and checks cancellation again after saving. An approval remains pending when execution has not started.
+
+Six additional integration cases cover waiting for the latest writing, Stop during the save, and save failures for both execution paths. All six failed before the fix. The browser journey now edits immediately before requesting the tool and checks that the returned passage includes those edits.
+
+The updated unit/integration suite passes **524 tests in 36 files**, and application/test/browser typechecks pass.
 
 ## Remaining validation limits
 

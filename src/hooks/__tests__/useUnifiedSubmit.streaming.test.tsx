@@ -71,6 +71,55 @@ function confirmations(names: string[]) {
   act(() => useStore.getState().updateConversation('chat', { agentProfile: { ...profile, toolConfirmationSettings: Object.fromEntries(names.map(name => [name, true])) } }));
 }
 
+it.each([false, true])('saves the latest writing before executing a tool (approved=%s)', async approved => {
+  if (approved) confirmations(['doc_read']);
+  queueResponse(event(completed([call('fresh-read')])));
+  if (approved) await send();
+  let resolveSave!: () => void, saved = false, pending!: Promise<void>;
+  const saving = new Promise<void>(resolve => { resolveSave = () => { saved = true; resolve(); }; });
+  const flush = vi.fn(() => saving);
+  act(() => useStore.setState({ autosaveFlush: flush }));
+  vi.mocked(executeTool).mockImplementationOnce(async () => saved ? 'Latest writing' : 'Stale writing');
+  queueResponse(event(text('Read current draft')) + event(completed([], 'fresh-response')));
+  await act(async () => { pending = approved ? approveConversationTool('chat', 1, true) : submit.handleSubmit(); });
+  try {
+    expect(flush).toHaveBeenCalledOnce(); expect(executeTool).not.toHaveBeenCalled();
+    expect(getResponseStream).toHaveBeenCalledOnce(); expect(useStore.getState().generating).toBe(true);
+  } finally { await act(async () => { resolveSave(); await pending; }); }
+  expect(executeTool).toHaveBeenCalledOnce();
+  expect(vi.mocked(getResponseStream).mock.calls[1][1]).toEqual([{ type: 'function_call_output', call_id: 'fresh-read', output: 'Latest writing' }]);
+  expect(chat().messages.at(-1)?.content).toBe('Read current draft');
+});
+
+it.each([false, true])('does not execute a tool if Stop is pressed while saving (approved=%s)', async approved => {
+  if (approved) confirmations(['doc_read']);
+  queueResponse(event(completed([call('cancelled-read')])));
+  if (approved) await send();
+  let resolveSave!: () => void, pending!: Promise<void>;
+  const saving = new Promise<void>(resolve => { resolveSave = resolve; });
+  const flush = vi.fn(() => saving);
+  act(() => useStore.setState({ autosaveFlush: flush }));
+  await act(async () => { pending = approved ? approveConversationTool('chat', 1, true) : submit.handleSubmit(); });
+  try { expect(flush).toHaveBeenCalledOnce(); }
+  finally { await act(async () => { useStore.getState().setGenerating(false); resolveSave(); await pending; }); }
+  expect(executeTool).not.toHaveBeenCalled(); expect(getResponseStream).toHaveBeenCalledOnce();
+  expect(chat().messages.some(message => message.role === 'tool')).toBe(false);
+  expect(Boolean(chat().messages[1].pending_approval)).toBe(approved);
+  expect(useStore.getState().error).toBe(''); expect(useStore.getState().generating).toBe(false);
+});
+
+it.each([false, true])('blocks tool execution when saving the current writing fails (approved=%s)', async approved => {
+  if (approved) confirmations(['doc_read']);
+  queueResponse(event(completed([call('unsaved-read')])));
+  if (approved) await send();
+  act(() => useStore.setState({ autosaveFlush: vi.fn(async () => { throw new Error('Could not save the current writing.'); }) }));
+  if (approved) await approve(); else await send();
+  expect(executeTool).not.toHaveBeenCalled(); expect(getResponseStream).toHaveBeenCalledOnce();
+  expect(chat().messages.some(message => message.role === 'tool')).toBe(false);
+  expect(Boolean(chat().messages[1].pending_approval)).toBe(approved);
+  expect(useStore.getState().error).toContain('Could not save'); expect(useStore.getState().generating).toBe(false);
+});
+
 it('decodes UTF-8 and SSE metadata when every byte arrives separately', async () => {
   const body = encoder.encode(': heartbeat\r\nevent: response.output_text.delta\r\n' + event(text('Café 🪶'), '\r\n') + event(completed(), '\r\n'));
   vi.mocked(getResponseStream).mockResolvedValueOnce(new ReadableStream({ start(controller) { for (const byte of body) controller.enqueue(new Uint8Array([byte])); controller.close(); } }));
