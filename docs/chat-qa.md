@@ -25,6 +25,7 @@ The fast automated suite is Vitest, including React tests in jsdom. Playwright a
 | Multiple approval requests or another tool round after approval | Queue approvals and use the same streaming handler for continuations |
 | Stop during an approved action | Retain a completed action's result so it cannot be approved and executed twice |
 | A document tool runs before the editor's autosave timer | Flush pending writing before automatic or approved execution; abort execution after Stop or a save failure |
+| A document read races background indexing or shares block IDs with another version | Read full passage text from the same document snapshot as the block map and revision |
 | Missing context metadata or excessive tool-result context | Block continuation while retaining local results; old requests can still be declined offline |
 | Failed, incomplete, refused, malformed or disconnected responses | Preserve partial text and surface an actionable error or refusal |
 | Repeated automatic tool calls | Bound automatic tool execution for the turn |
@@ -95,11 +96,11 @@ After freeing C:, normal temporary browser profiles restored reliable Firefox st
 
 ### Autosave regression found in GitHub CI
 
-The first GitHub browser run passed with one retry in the document-read journey. A focused reproduction confirmed that the tool could read the previous saved snapshot while the editor still had pending changes. The runner now flushes autosave before automatic and approved tools, stops execution if saving fails, and checks cancellation again after saving. An approval remains pending when execution has not started.
+The first GitHub browser run passed with one retry in the document-read journey. Focused reproduction found two races: pending editor autosave and passage content coming from the background search index. The runner now flushes autosave before automatic and approved tools, stops execution if saving fails, and checks cancellation again after saving. An approval remains pending when execution has not started. Document reads obtain full passage text from the same snapshot as their block map and revision, independent of background indexing.
 
-Six additional integration cases cover waiting for the latest writing, Stop during the save, and save failures for both execution paths. All six failed before the fix. The browser journey now edits immediately before requesting the tool and checks that the returned passage includes those edits.
+Six additional integration cases cover waiting for the latest writing, Stop during the save, and save failures for both execution paths. Three more document-read cases cover missing or stale index entries, full text beyond preview length, inline formatting and empty passages. All nine failed before their respective fixes. The browser journey now types immediately before requesting the tool and checks that the returned passage includes those edits.
 
-The updated unit/integration suite passes **524 tests in 36 files**, and application/test/browser typechecks pass.
+The updated unit/integration suite passes **527 tests in 37 files**, and application/test/browser typechecks pass.
 
 ## Remaining validation limits
 
