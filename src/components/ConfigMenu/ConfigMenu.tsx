@@ -23,6 +23,7 @@ const ConfigMenu = ({
   const [_apiEndpoint, _setApiEndpoint] = useState<ApiEndpointOptions>(config.apiEndpoint);
   const [_maxToken, _setMaxToken] = useState<number>(config.max_completion_tokens);
   const [_model, _setModel] = useState<ModelOptions>(config.model);
+  const [_connectionId, _setConnectionId] = useState<string | undefined>(config.connectionId);
   const [_temperature, _setTemperature] = useState<number>(config.temperature);
   const [_presencePenalty, _setPresencePenalty] = useState<number>(
     config.presence_penalty
@@ -37,7 +38,7 @@ const ConfigMenu = ({
     setConfig({
       ...config,
       max_completion_tokens: _maxToken,
-      model: _model,
+      model: _model, connectionId: _connectionId,
       temperature: _temperature,
       presence_penalty: _presencePenalty,
       top_p: _topP,
@@ -59,8 +60,8 @@ const ConfigMenu = ({
       <div className='p-6 border-b border-gray-200 dark:border-gray-800/30'>
       <ProviderSelector _provider={_provider} _setProvider={_setProvider} />
       <ApiEndpointSelector _apiEndpoint={_apiEndpoint} _setApiEndpoint={_setApiEndpoint} />
-        <ModelSelector _model={_model} _setModel={_setModel} _provider={_provider} _apiEndpoint={_apiEndpoint} />
-        <MaxTokenSlider
+        <ModelSelector _connectionId={_connectionId} _setConnectionId={_setConnectionId} _model={_model} _setModel={_setModel} _provider={_provider} _apiEndpoint={_apiEndpoint} />
+        <MaxTokenSlider _connectionId={_connectionId}
           _maxToken={_maxToken}
           _setMaxToken={_setMaxToken}
           _model={_model}

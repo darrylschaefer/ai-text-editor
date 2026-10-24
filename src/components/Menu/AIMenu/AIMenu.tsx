@@ -7,6 +7,7 @@ import MetaMenu from './MetaMenu';
 import NotesView from './Notes/NotesView';
 import DocumentHistory from './History/DocumentHistory';
 import ToolsPanel from '@components/Tools/ToolsPanel';
+import './assistant-sections.css';
 
 interface AIMenuProps {
   activeMenu: string;

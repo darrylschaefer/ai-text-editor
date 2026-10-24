@@ -2,12 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '@store/store';
 import PopupModal from '@components/PopupModal';
-
-const EMBEDDING_MODELS = [
-  { value: 'text-embedding-3-small', label: 'text-embedding-3-small (Default, 1536 dimensions)' },
-  { value: 'text-embedding-3-large', label: 'text-embedding-3-large (3072 dimensions)' },
-  { value: 'text-embedding-ada-002', label: 'text-embedding-ada-002 (Legacy, 1536 dimensions)' },
-];
+import { ModelSelector } from '@components/Configuration/sliders';
 
 const EmbeddingsSettingsMenu = ({
   setIsModalOpen,
@@ -31,6 +26,7 @@ const EmbeddingsSettingsMenu = ({
   // Local state
   const [_enabled, _setEnabled] = useState<boolean>(embeddingsEnabled);
   const [_model, _setModel] = useState<string>(embeddingModel);
+  const [_connectionId, _setConnectionId] = useState<string | undefined>(useStore.getState().embeddingConnectionId);
   const [_inactivityDelay, _setInactivityDelay] = useState<number>(embeddingInactivityDelayMs);
   const [_rateLimit, _setRateLimit] = useState<number>(embeddingRateLimitMs);
   const [_batchSize, _setBatchSize] = useState<number>(embeddingBatchSize);
@@ -47,6 +43,7 @@ const EmbeddingsSettingsMenu = ({
   const handleSave = () => {
     setEmbeddingsEnabled(_enabled);
     setEmbeddingModel(_model);
+    if (_connectionId) useStore.getState().setEmbeddingConnectionId(_connectionId);
     setEmbeddingInactivityDelayMs(_inactivityDelay);
     setEmbeddingRateLimitMs(_rateLimit);
     setEmbeddingBatchSize(_batchSize);
@@ -93,17 +90,7 @@ const EmbeddingsSettingsMenu = ({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Embedding Model
               </label>
-              <select
-                value={_model}
-                onChange={(e) => _setModel(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-              >
-                {EMBEDDING_MODELS.map((model) => (
-                  <option key={model.value} value={model.value}>
-                    {model.label}
-                  </option>
-                ))}
-              </select>
+              <ModelSelector _model={_model} _setModel={_setModel} _provider="openai" _apiEndpoint="embeddings" _connectionId={_connectionId} _setConnectionId={_setConnectionId} />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Changing the model will require regenerating embeddings for all blocks.
               </p>

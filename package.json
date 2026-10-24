@@ -10,15 +10,18 @@
   "description": "Open-source, AI-assisted word processor.",
   "scripts": {
     "dev": "vite",
-    "typecheck": "tsc --noEmit && tsc --project tsconfig.tests.json --noEmit",
+    "typecheck": "tsc --noEmit && tsc --project tsconfig.tests.json --noEmit && tsc --project tsconfig.e2e.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run typecheck && npm test && npm run build",
+    "check:all": "npm run check && playwright test",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "electron": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && electron .\"",
     "pack": "npm run build && electron-builder --dir",
-    "make": "npm run build && electron-builder"
+    "make": "npm run build && electron-builder",
+    "test:e2e": "npm run build && playwright test",
+    "test:e2e:quick": "playwright test"
   },
   "build": {
     "appId": "aiTextEditor",
@@ -96,6 +99,7 @@
     "zustand": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@swc/cli": "^0.3.9",
     "@swc/core": "^1.4.2",
     "@tailwindcss/typography": "^0.5.9",

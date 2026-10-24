@@ -1,0 +1,20 @@
+.api-connections { padding: 24px; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.api-connections > p { margin-bottom: 16px; }
+.api-connections-storage, .api-connections-help { color: var(--muted, #737d89); font-size: 12px; }
+.api-connections-list { display: grid; gap: 16px; margin: 20px 0; }
+.api-connections-list article, .api-connections form { padding: 18px; border: 1px solid var(--line, #7d819144); border-radius: 8px; }
+.api-connection-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.api-connections h3 { font-size: 14px; font-weight: 600; }
+.api-connection-heading > span { font-size: 11px; color: var(--accent, #7275d9); }
+.api-connection-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.api-connections button:not(.btn) { padding: 6px 10px; border: 1px solid var(--line, #7d819144); border-radius: 5px; font-size: 12px; }
+.api-connections button:disabled { opacity: .5; cursor: default; }
+.api-connections form { margin-top: 20px; }
+.api-connections form label { display: block; margin: 14px 0; }
+.api-connections input { display: block; width: 100%; margin-top: 5px; padding: 8px 10px; border: 1px solid var(--line, #7d819144); border-radius: 5px; background: transparent; }
+.api-connection-confirm { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line, #7d819144); }
+.api-connection-confirm button { margin: 10px 8px 0 0; }
+.api-connections-empty { margin: 24px 0; }
+.api-connections-help { margin-top: 22px; }
+.api-connections a { text-decoration: underline; }
+@media (max-width: 767px) { .api-connections { padding: 20px 16px; } .api-connections input { font-size: 16px; } }

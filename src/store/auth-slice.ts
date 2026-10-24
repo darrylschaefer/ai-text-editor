@@ -15,7 +15,8 @@ export interface AuthSlice {
 }
 
 export const createAuthSlice: StoreSlice<AuthSlice> = (set, get) => ({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY || undefined,
+  // Runtime compatibility field; credentials live in the separate device store.
+  apiKey: undefined,
   apiEndpoint: defaultAPIEndpoint,
   apiCalls: 0,
   firstVisit: true,

@@ -1,295 +1,31 @@
 import { ConfigInterface, MessageInterface, LegacyConfigInterface } from '@type/document';
 import { isAzureEndpoint } from '@utils/api';
 import { debug } from '@utils/debug';
+import { resolveConnectionRequest } from '@store/connection-store';
+import { useConnections } from '@store/connection-store';
 
 const dbg = debug.tag('API');
 
-// ============================================================================
-// COMPLETIONS API (Legacy)
-// ============================================================================
+// Historical callers retain typed exports so saved data remains readable. No retired route sends HTTP.
+const retiredApiError = () => new Error('This API was retired in fthr. Start a new chat with a Responses model, or update this macro’s configuration.');
 
 export const getLegacyCompletion = async (
-  endpoint: string,
-  prompt: string,
-  config: LegacyConfigInterface,
-  apiKey?: string,
-  customHeaders?: Record<string, string>
-) => {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...customHeaders,
-  };
-  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
-
-  if (isAzureEndpoint(endpoint) && apiKey) {
-    headers['api-key'] = apiKey;
-
-    const azureInstructModel = 'gpt-35-turbo-instruct';
-    const model =
-      config.model === 'gpt-3.5-turbo-instruct'
-        ? azureInstructModel
-        : config.model;
-    const apiVersion = '2023-03-15-preview';
-    const path = `openai/deployments/${model}/completions?api-version=${apiVersion}`;
-
-    if (!endpoint.endsWith(path)) {
-      if (!endpoint.endsWith('/')) {
-        endpoint += '/';
-      }
-      endpoint += path;
-    }
-  }
-
-  // Transform max_completion_tokens to max_tokens for completions API
-  const { max_completion_tokens, ...restConfig } = config as any;
-  const requestBody = {
-    prompt,
-    ...restConfig,
-    // Use max_tokens if available, otherwise convert max_completion_tokens to max_tokens
-    max_tokens: (config as any).max_tokens || max_completion_tokens || 100,
-  };
-  dbg.log('[Legacy Completions API - getLegacyCompletion] Request config:', JSON.stringify(requestBody, null, 2));
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(requestBody),
-  });
-
-  if (!response.ok) {
-    throw new Error(await response.text());
-  }
-
-  const data = await response.json();
-  return data;
-};
+  _endpoint: string, _prompt: string, _config: LegacyConfigInterface, _apiKey?: string, _customHeaders?: Record<string, string>
+): Promise<any> => { throw retiredApiError(); };
 
 export const getLegacyCompletionStream = async (
-  endpoint: string,
-  prompt: string,
-  config: LegacyConfigInterface,
-  apiKey?: string,
-  customHeaders?: Record<string, string>
-) => {
-
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...customHeaders,
-  };
-  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
-
-  if (isAzureEndpoint(endpoint) && apiKey) {
-    headers['api-key'] = apiKey;
-
-    const azureInstructModel = 'gpt-35-turbo-instruct';
-    const model =
-      config.model === 'gpt-3.5-turbo-instruct'
-        ? azureInstructModel
-        : config.model;
-    const apiVersion = '2023-03-15-preview';
-    const path = `openai/deployments/${model}/completions?api-version=${apiVersion}`;
-
-    if (!endpoint.endsWith(path)) {
-      if (!endpoint.endsWith('/')) {
-        endpoint += '/';
-      }
-      endpoint += path;
-    }
-  }
-
-  // Transform max_completion_tokens to max_tokens for completions API
-  const { max_completion_tokens, ...restConfig } = config as any;
-  const requestBody = {
-    prompt,
-    ...restConfig,
-    // Use max_tokens if available, otherwise convert max_completion_tokens to max_tokens
-    max_tokens: (config as any).max_tokens || max_completion_tokens || 100,
-    stream: true,
-  };
-  dbg.log('[Legacy Completions API - getLegacyCompletionStream] Request config:', JSON.stringify(requestBody, null, 2));
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(requestBody),
-  });
-
-  if (response.status === 404 || response.status === 405) {
-    const text = await response.text();
-    if (text.includes('model_not_found')) {
-      throw new Error(
-        text + ' Please ensure that you have access to this model.'
-      );
-    } else {
-      throw new Error('Invalid API endpoint!');
-    }
-  }
-
-  if (response.status === 429 || !response.ok) {
-    const text = await response.text();
-    let error = text;
-    if (text.includes('insufficient_quota')) {
-      error += ' Insufficient quota.';
-    } else if (response.status === 429) {
-      error += '\nRate limited!';
-    }
-    throw new Error(error);
-  }
-
-  const stream = response.body;
-  return stream;
-};
-
-// ============================================================================
-// CHAT COMPLETIONS API
-// ============================================================================
+  _endpoint: string, _prompt: string, _config: LegacyConfigInterface, _apiKey?: string, _customHeaders?: Record<string, string>
+): Promise<ReadableStream<Uint8Array> | null> => { throw retiredApiError(); };
 
 export const getChatCompletion = async (
-  endpoint: string,
-  messages: MessageInterface[],
-  config: ConfigInterface,
-  apiKey?: string,
-  customHeaders?: Record<string, string>
-) => {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...customHeaders,
-  };
-  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
-
-  if (isAzureEndpoint(endpoint) && apiKey) {
-    headers['api-key'] = apiKey;
-
-    const gpt3forAzure = 'gpt-35-turbo';
-    const model =
-      config.model === 'gpt-3.5-turbo' ? gpt3forAzure : config.model;
-    const apiVersion = '2023-03-15-preview';
-
-    const path = `openai/deployments/${model}/chat/completions?api-version=${apiVersion}`;
-
-    if (!endpoint.endsWith(path)) {
-      if (!endpoint.endsWith('/')) {
-        endpoint += '/';
-      }
-      endpoint += path;
-    }
-  }
-
-  // Filter out Responses API-specific parameters and other non-API fields
-  const {
-    reasoning_effort,
-    verbosity,
-    provider,
-    apiEndpoint,
-    notes,
-    ...chatCompletionsConfig
-  } = config;
-  
-  const requestBody = {
-    messages,
-    ...chatCompletionsConfig,
-    max_completion_tokens: undefined,
-  };
-  dbg.log('[Chat Completions API - getChatCompletion] Request config:', JSON.stringify(requestBody, null, 2));
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) throw new Error(await response.text());
-
-  const data = await response.json();
-  return data;
-};
+  _endpoint: string, _messages: MessageInterface[], _config: ConfigInterface, _apiKey?: string, _customHeaders?: Record<string, string>
+): Promise<any> => { throw retiredApiError(); };
 
 export const getChatCompletionStream = async (
-  endpoint: string,
-  messages: MessageInterface[],
-  config: ConfigInterface,
-  apiKey?: string,
-  customHeaders?: Record<string, string>
-) => {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...customHeaders,
-  };
-  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+  _endpoint: string, _messages: MessageInterface[], _config: ConfigInterface, _apiKey?: string, _customHeaders?: Record<string, string>
+): Promise<ReadableStream<Uint8Array> | null> => { throw retiredApiError(); };
 
-  if (isAzureEndpoint(endpoint) && apiKey) {
-    headers['api-key'] = apiKey;
-
-    const gpt3forAzure = 'gpt-35-turbo';
-    const model =
-      config.model === 'gpt-3.5-turbo' ? gpt3forAzure : config.model;
-    const apiVersion = '2023-03-15-preview';
-
-    const path = `openai/deployments/${model}/chat/completions?api-version=${apiVersion}`;
-
-    if (!endpoint.endsWith(path)) {
-      if (!endpoint.endsWith('/')) {
-        endpoint += '/';
-      }
-      endpoint += path;
-    }
-  }
-
-  // Filter out Responses API-specific parameters and other non-API fields
-  const {
-    reasoning_effort,
-    verbosity,
-    provider,
-    apiEndpoint,
-    notes,
-    ...chatCompletionsConfig
-  } = config;
-  
-  const requestBody = {
-    messages,
-    ...chatCompletionsConfig,
-    stream: true,
-  };
-  dbg.log('[Chat Completions API - getChatCompletionStream] Request config:', JSON.stringify(requestBody, null, 2));
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(requestBody),
-  });
-  if (response.status === 404 || response.status === 405) {
-    const text = await response.text();
-    if (text.includes('model_not_found')) {
-      throw new Error(
-        text +
-          'Please ensure that you have access to this model.'
-      );
-    } else {
-      throw new Error(
-        'Invalid API endpoint!'
-      );
-    }
-  }
-
-  if (response.status === 429 || !response.ok) {
-    const text = await response.text();
-    let error = text;
-    if (text.includes('insufficient_quota')) {
-      error +=
-        'Insufficient quota.';
-    } else if (response.status === 429) {
-      error += '\nRate limited!';
-    }
-    throw new Error(error);
-  }
-
-  const stream = response.body;
-  return stream;
-};
-
-// ============================================================================
-// RESPONSES API
-// ============================================================================
-
+// Responses API
 export const getResponse = async (
   endpoint: string,
   messages: MessageInterface[],
@@ -297,6 +33,9 @@ export const getResponse = async (
   apiKey?: string,
   customHeaders?: Record<string, string>
 ) => {
+  if (config.connectionId || useConnections.getState().activeConnectionId) {
+    const resolved = resolveConnectionRequest(config, 'responses'); endpoint = resolved.endpoint; apiKey = resolved.apiKey;
+  }
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...customHeaders,
@@ -335,6 +74,8 @@ export const getResponse = async (
     top_p,
     frequency_penalty,
     provider,
+    connectionId,
+    contextPolicy,
     apiEndpoint,
     notes,
     ...restConfig 
@@ -382,8 +123,12 @@ export const getResponseStream = async (
   messages: MessageInterface[],
   config: ConfigInterface,
   apiKey?: string,
-  customHeaders?: Record<string, string>
+  customHeaders?: Record<string, string>,
+  signal?: AbortSignal
 ) => {
+  if (config.connectionId || useConnections.getState().activeConnectionId) {
+    const resolved = resolveConnectionRequest(config, 'responses'); endpoint = resolved.endpoint; apiKey = resolved.apiKey;
+  }
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...customHeaders,
@@ -423,6 +168,8 @@ export const getResponseStream = async (
     top_p,
     frequency_penalty,
     provider,
+    connectionId,
+    contextPolicy,
     apiEndpoint,
     notes,
     ...restConfig 
@@ -486,6 +233,7 @@ export const getResponseStream = async (
     method: 'POST',
     headers,
     body: JSON.stringify(requestBody),
+    signal,
   });
   if (response.status === 404 || response.status === 405) {
     const text = await response.text();

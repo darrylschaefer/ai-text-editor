@@ -8,7 +8,11 @@ import { PromptSlice, createPromptSlice } from './prompt-slice';
 import { ToastSlice, createToastSlice } from './toast-slice';
 import { ChatSlice, createChatSlice } from './chat-slice';
 import { ActionQueueSlice, createActionQueueSlice } from './action-queue-slice';
+import { AgentProfileSlice, createAgentProfileSlice } from './agent-profile-slice';
 import { get, set } from "idb-keyval";
+import { migrateLegacyConnection, useConnections } from './connection-store';
+import { bindWorkspaceConnection } from '@utils/provider-connections';
+import { parseAgent } from '@utils/agent-profiles';
 // import {
 //   LocalStorageInterfaceV0ToV1,
 //   LocalStorageInterfaceV1ToV2,
@@ -37,6 +41,7 @@ export type StoreState = DocumentSlice &
   PromptSlice &
   ToastSlice &
   ChatSlice &
+  AgentProfileSlice &
   ActionQueueSlice;
 
 export type StoreSlice<T> = (
@@ -51,7 +56,6 @@ export const createPartializedState = (state: StoreState) => ({
   chats: state.chats,
   currentChatIndex: state.currentChatIndex,
   documentCurrent: state.documentCurrent,
-  apiKey: state.apiKey,
   apiEndpoint: state.apiEndpoint,
   theme: state.theme,
   autoTitle: state.autoTitle,
@@ -70,11 +74,19 @@ export const createPartializedState = (state: StoreState) => ({
   markdownMode: state.markdownMode,
   totalTokenUsed: state.totalTokenUsed,
   countTotalTokens: state.countTotalTokens,
-  fineTuneModels: state.fineTuneModels,
   editorAgentsMode: state.editorAgentsMode,
   enabledTools: state.enabledTools,
+  toolConfirmationSettings: state.toolConfirmationSettings,
+  agents: state.agents,
+  defaultAgentId: state.defaultAgentId,
+  agentProfilesVersion: state.agentProfilesVersion,
   agentApiEndpoint: state.agentApiEndpoint,
-  fetchedModels: state.fetchedModels,
+  embeddingConnectionId: state.embeddingConnectionId,
+  embeddingModel: state.embeddingModel,
+  embeddingsEnabled: state.embeddingsEnabled,
+  embeddingInactivityDelayMs: state.embeddingInactivityDelayMs,
+  embeddingRateLimitMs: state.embeddingRateLimitMs,
+  embeddingBatchSize: state.embeddingBatchSize,
   conversations: state.conversations,
   activeConversationId: state.activeConversationId,
 });
@@ -87,14 +99,25 @@ export const IDBStorage = {
     }
 
     const value = await get(name);
-    return value || null;
+    if (!value) return null;
+    const parsed = JSON.parse(value);
+    if (typeof parsed?.state?.apiKey === 'string' && parsed.state.apiKey.trim()) {
+      // Finish the separate device write before removing the legacy credential.
+      const id = await migrateLegacyConnection(parsed.state.apiKey, parsed.state.apiEndpoint || 'https://api.openai.com/v1/chat/completions');
+      parsed.state = bindWorkspaceConnection(parsed.state, id);
+    }
+    if (parsed?.state && ('apiKey' in parsed.state || 'fetchedModels' in parsed.state)) {
+      delete parsed.state.apiKey; delete parsed.state.fetchedModels;
+      await set(name, JSON.stringify(parsed));
+    }
+    return JSON.stringify(parsed);
   },
   setItem: async (name: any, value: any) => {
     // Exit early on server
     if (typeof indexedDB === "undefined") {
       return;
     }
-    set(name, value);
+    await set(name, value);
   },
   removeItem: async (name: any) => {
     // No code here
@@ -112,6 +135,7 @@ const useStore = create<StoreState>()(
       ...createPromptSlice(set, get),
       ...createToastSlice(set, get),
       ...createChatSlice(set, get),
+      ...createAgentProfileSlice(set, get),
       ...createActionQueueSlice(set, get),
     }),
     {
@@ -119,6 +143,19 @@ const useStore = create<StoreState>()(
       partialize: (state) => createPartializedState(state),
       version: 0,
       storage: createJSONStorage(() => IDBStorage),
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) useConnections.setState({ storageError: 'Could not load the saved workspace. Stored data has not been reset. Check browser storage and retry.' });
+        else if (useConnections.getState().storageError.startsWith('Could not load the saved workspace.')) useConnections.setState({ storageError: '' });
+      },
+      // Imported/cloud workspace data never installs credentials or model catalogs.
+      merge: (persisted, current) => {
+        const { apiKey: _key, fetchedModels: _models, fineTuneModels: _retiredFineTunes, ...workspace } = (persisted || {}) as Partial<StoreState> & { fineTuneModels?: unknown };
+        const merged = { ...current, ...workspace, apiKey: current.apiKey, fetchedModels: current.fetchedModels };
+        if (Array.isArray(workspace.agents)) merged.agents = workspace.agents.map(agent => parseAgent(agent, merged));
+        if (merged.defaultAgentId && !merged.agents.some(agent => agent.id === merged.defaultAgentId)) merged.defaultAgentId = null;
+        if (workspace.agentProfilesVersion !== 1 || !Array.isArray(workspace.agents)) merged.agentProfilesVersion = 0;
+        return merged;
+      },
       // migrate: (persistedState, version) => {
       //   switch (version) {
       //     case 0:

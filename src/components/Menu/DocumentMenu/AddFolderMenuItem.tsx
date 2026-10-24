@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import useStore from '@store/store';
 import { FolderAdd } from '@carbon/icons-react';
 import { Folder, FolderCollection } from '@type/document';
+import { libraryActionClass } from './library-styles';
 
 const AddFolderMenuItem = () => {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ const AddFolderMenuItem = () => {
 
   return (
     <a
-      className={`flex py-1.5 pr-2 pl-2 items-center gap-2.5 relative bg-transparent hover:bg-gray-100/70 dark:hover:bg-gray-800/30 break-all group transition-colors text-gray-700 dark:text-gray-400 rounded-md ${
+      className={`${libraryActionClass} ${
         generating
           ? 'cursor-not-allowed opacity-40'
           : 'cursor-pointer opacity-100'

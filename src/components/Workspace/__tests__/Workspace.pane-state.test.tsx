@@ -8,14 +8,15 @@ import type { ChatConversation, ChatType } from '@store/chat-slice';
 import type { DocumentInterface } from '@type/document';
 import Workspace from '../Workspace';
 
-const services = vi.hoisted(() => ({ submit: vi.fn(), stream: vi.fn(), tool: vi.fn(), macro: vi.fn() }));
+const services = vi.hoisted(() => ({ submit: vi.fn(), prepared: vi.fn(), stream: vi.fn(), tool: vi.fn(), macro: vi.fn() }));
 
-// Keep the workspace, store, tabs, library/search, chat/completion composer,
+// Keep the workspace, store, tabs, library/search, chat composer and saved history,
 // metadata fields and macro search real. Editor/footer actions, AI execution
 // and scroll measurement are outside these pane-state checks.
 vi.mock('@components/Document/Document', () => ({ default: () => <p>Synthetic document content</p> }));
 vi.mock('@components/Chat/ChatContent/ChatContent', () => ({ default: () => <p>No conversation selected</p> }));
 vi.mock('@hooks/useUnifiedSubmit', () => ({ default: () => ({ handleSubmit: services.submit, generating: false }) }));
+vi.mock('@utils/conversation-runner', () => ({ submitConversation: services.prepared, approveConversationTool: services.tool }));
 vi.mock('@hooks/useSubmitPromptAdjust', () => ({ default: () => ({ handleFunction: services.submit }) }));
 vi.mock('@api/api', () => ({ getResponseStream: services.stream, getLegacyCompletionStream: services.stream, getChatCompletionStream: services.stream }));
 vi.mock('@api/tools', () => ({ executeTool: services.tool, getEnabledToolDefinitions: () => [] }));
@@ -26,7 +27,7 @@ vi.mock('@utils/actionRunner', () => ({
   replaceMacroReferences: (text: string) => text,
   replaceSpecialCommands: (text: string) => ({ result: text }),
 }));
-vi.mock('@utils/messageUtils', () => ({ limitMessageTokens: vi.fn() }));
+vi.mock('@utils/messageUtils', () => ({ limitMessageTokens: vi.fn(), estimateContextTokens: (text: string) => Math.ceil(text.length / 4) }));
 vi.mock('@components/Menu/AIMenu/PromptLibrary/PromptButton/Config', () => ({ PromptButtonConfig: () => null }));
 vi.mock('react-scroll-to-bottom', () => ({ default: ({ children }: PropsWithChildren) => <div>{children}</div> }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
@@ -38,6 +39,7 @@ let container: HTMLDivElement;
 let modalRoot: HTMLDivElement;
 let root: Root | undefined;
 let compact = false;
+let expectedPreparedRequests = 0;
 const mediaListeners = new Set<() => void>();
 
 function fixtureDocument(): DocumentInterface {
@@ -51,7 +53,7 @@ function fixtureDocument(): DocumentInterface {
 function conversation(type: ChatType): ChatConversation {
   return { id: 'pane-conversation', type, title: 'Synthetic conversation', messages: [],
     agentId: type === 'agent' ? 'pane-agent' : undefined,
-    config: { ...initialStore.defaultChatConfig, apiEndpoint: type === 'completion' ? 'completions' : 'chat_completions' },
+    config: { ...initialStore.defaultChatConfig, apiEndpoint: type === 'completion' ? 'completions' : 'responses' },
     createdAt: '2026-10-18T12:00:00Z', updatedAt: '2026-10-18T12:00:00Z' };
 }
 
@@ -90,6 +92,10 @@ async function click(selector: string) {
 
 async function tab(group: 'Library' | 'Assistant', label: string) {
   const heading = compact ? `#workspace-${group === 'Library' ? 'library' : 'assistant'} .workspace-mobile-pane-heading` : '.workspace-commandbar';
+  if (group === 'Assistant') {
+    const trigger = container.querySelector<HTMLButtonElement>(`${heading} [aria-label^="Assistant section:"]`)!;
+    if (trigger.getAttribute('aria-expanded') !== 'true') await act(async () => { trigger.click(); await tick(); });
+  }
   const buttons = [...container.querySelectorAll<HTMLButtonElement>(`${heading} [aria-label="${group} view"] button`)];
   const target = buttons.find(button => button.textContent === label);
   if (!target) throw new Error(`Missing ${group} tab: ${label}`);
@@ -130,6 +136,7 @@ function expectPanes(left: boolean, right: boolean) {
 }
 
 beforeEach(() => {
+  expectedPreparedRequests = 0;
   vi.useFakeTimers();
   vi.clearAllMocks();
   compact = false;
@@ -151,8 +158,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  // Finish deferred UI/blur work while jsdom still exists. The Macro Run
-  // checks explicitly cancel their provider-execution timer before this.
+  // Finish deferred UI/blur work while jsdom still exists.
   await act(async () => { root?.unmount(); await vi.runOnlyPendingTimersAsync(); });
   expect(vi.getTimerCount()).toBe(0);
   root = undefined;
@@ -160,6 +166,7 @@ afterEach(async () => {
   modalRoot.remove();
   vi.unstubAllGlobals();
   expect(services.submit).not.toHaveBeenCalled();
+  expect(services.prepared).toHaveBeenCalledTimes(expectedPreparedRequests);
   expect(services.stream).not.toHaveBeenCalled();
   expect(services.tool).not.toHaveBeenCalled();
   expect(services.macro).not.toHaveBeenCalled();
@@ -169,7 +176,7 @@ afterEach(async () => {
 async function addAlternativeConversation(type: ChatType = 'regular') {
   await act(async () => {
     useStore.setState({ conversations: [...useStore.getState().conversations,
-      { ...conversation(type), id: 'another-conversation', title: 'Another synthetic conversation' }] });
+      { ...conversation(type), id: 'another-conversation', title: 'Another synthetic conversation', messages: [{ role: 'user', content: 'Another synthetic message' }] }] });
     await tick();
   });
 }
@@ -182,6 +189,22 @@ async function selectAlternativeConversation() {
 }
 
 describe('programmatic assistant opening', () => {
+  it.each(layouts)('opens New chat with Ctrl+M from the $name library and returns on Escape', async ({ width }) => {
+    await mount(width); await open('left');
+    const before = useStore.getState().conversations;
+    const trigger = element<HTMLButtonElement>('#workspace-library [aria-label="New chat"]');
+    await act(async () => {
+      trigger.focus(); trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', ctrlKey: true, bubbles: true, cancelable: true })); await tick();
+    });
+    const picker = document.querySelector('[role="dialog"][aria-label="New chat"]');
+    expect(picker).not.toBeNull(); expect(document.activeElement?.getAttribute('aria-label')).toBe('Search profiles and models');
+    await act(async () => {
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); await tick();
+    });
+    expect(document.querySelector('[role="dialog"][aria-label="New chat"]')).toBeNull();
+    expect(document.activeElement).toBe(trigger); expect(element('#workspace-library').hidden).toBe(false);
+    expect(useStore.getState().conversations).toBe(before); expect(services.submit).not.toHaveBeenCalled();
+  });
   it.each([
     { hideSideMenu: false, hideSideAIMenu: false },
     { hideSideMenu: false, hideSideAIMenu: true },
@@ -219,7 +242,7 @@ describe('programmatic assistant opening', () => {
     await selectAlternativeConversation();
     expectPanes(false, true);
     expect(useStore.getState().getActiveConversation()!.type).toBe(type);
-    expect(element('#workspace-assistant').textContent).toContain('Another synthetic conversation');
+    expect(element('#workspace-assistant').textContent).toContain('Another synthetic message');
   });
 
   it('opens the assistant on desktop while retaining the library', async () => {
@@ -241,7 +264,7 @@ describe('programmatic assistant opening', () => {
     await selectAlternativeConversation();
     expectPanes(false, true);
     expectTab('Assistant', 'Chat');
-    expect(element('#workspace-assistant').textContent).toContain('Another synthetic conversation');
+    expect(element('#workspace-assistant').textContent).toContain('Another synthetic message');
   });
 
   it('leaves the drawer and selection unchanged when generation blocks conversation selection', async () => {
@@ -262,8 +285,8 @@ describe('programmatic assistant opening', () => {
     await open('right');
     const saved = useStore.getState().hideSideAIMenu;
     await tab('Assistant', 'Macros');
-    const target = [...container.querySelectorAll<HTMLElement>('#workspace-assistant div')]
-      .find(item => item.textContent === 'Synthetic macro' && item.classList.contains('truncate'))!;
+    const target = [...container.querySelectorAll<HTMLButtonElement>('#workspace-assistant button')]
+      .find(item => item.textContent?.trim() === 'Synthetic macro')!;
     await act(async () => { target.click(); await tick(); });
     expectPanes(width <= 1023 ? false : true, true);
     expectTab('Assistant', 'Chat');
@@ -277,15 +300,15 @@ describe('programmatic assistant opening', () => {
     await open('right');
     const saved = useStore.getState().hideSideAIMenu;
     await tab('Assistant', 'Macros');
-    // Exercise the real Run handler's immediate UI transition. Hold its 100ms
-    // execution timer so this test cannot start a provider request.
+    // Exercise the real Run handler's UI transition with provider work mocked.
+    expectedPreparedRequests = 1;
     try {
       await act(async () => { element<HTMLButtonElement>('button[title="Run macro"]').click(); await Promise.resolve(); });
       expectPanes(width <= 1023 ? false : true, true);
       expectTab('Assistant', 'Chat');
       expect(useStore.getState().hideSideAIMenu).toBe(saved);
       expect(useStore.getState().getActiveConversation()!.title).toBe('Synthetic macro');
-      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      expect(services.prepared).toHaveBeenCalledWith(useStore.getState().activeConversationId, { prepared: true });
     } finally {
       vi.clearAllTimers();
     }
@@ -293,11 +316,11 @@ describe('programmatic assistant opening', () => {
 });
 
 describe.each(layouts)('pane contents on $name', ({ width }) => {
-  it.each(['regular', 'agent', 'completion'] as const)('preserves the %s composer across repeated close/reopen cycles', async type => {
+  it.each(['regular', 'agent'] as const)('preserves the %s composer across repeated close/reopen cycles', async type => {
     await mount(width, type);
     await open('right');
     const selector = '#workspace-assistant textarea';
-    expect(element<HTMLTextAreaElement>(selector).placeholder).toBe(type === 'completion' ? 'Enter your prompt...' : 'Type a message...');
+    expect(element<HTMLTextAreaElement>(selector).placeholder).toBe('Type a message...');
     await enter(selector, 'Keep this unfinished message.');
     for (let cycle = 0; cycle < 2; cycle++) {
       await close('right');
@@ -309,7 +332,25 @@ describe.each(layouts)('pane contents on $name', ({ width }) => {
     expect(element<HTMLTextAreaElement>(selector).value).toBe('Keep this unfinished message. More to write.');
     expect(useStore.getState().activeConversationId).toBe('pane-conversation');
     expect(useStore.getState().selectedAgentId).toBe(type === 'agent' ? 'pane-agent' : null);
-    if (type !== 'completion') expect(useStore.getState().getActiveConversation()!.messages).toEqual([]);
+    expect(useStore.getState().getActiveConversation()!.messages).toEqual([]);
+  });
+
+  it('keeps retired completion messages readable across repeated close/reopen cycles', async () => {
+    await mount(width, 'completion');
+    await act(async () => { useStore.getState().updateConversation('pane-conversation', { messages: [
+      { role: 'user', content: 'Saved completion prompt.' }, { role: 'assistant', content: 'Saved completion result.' },
+    ] }); await tick(); });
+    const saved = useStore.getState().getActiveConversation();
+    for (let cycle = 0; cycle < 2; cycle++) {
+      await open('right');
+      expect(element('#workspace-assistant').textContent).toContain('Saved completion prompt.');
+      expect(element('#workspace-assistant').textContent).toContain('Saved completion result.');
+      expect(element('#workspace-assistant').textContent).toContain('retired configuration');
+      expect(container.querySelector('#workspace-assistant textarea')).toBeNull();
+      await close('right');
+    }
+    expect(useStore.getState().getActiveConversation()).toBe(saved);
+    expect(services.stream).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -326,29 +367,28 @@ describe.each(layouts)('pane contents on $name', ({ width }) => {
     expect(element<HTMLInputElement>(selector).value).toBe(value);
   });
 
-  it.each(['Documents', 'Agents'])('preserves the selected %s library view', async view => {
+  it.each(['Documents', 'Chats'])('preserves the selected %s library view', async view => {
     await mount(width);
     await open('left');
     await tab('Library', view);
     await close('left');
     await open('left');
     expectTab('Library', view);
-    expect(element('#workspace-library nav').getAttribute('aria-label')).toBe(view === 'Documents' ? 'Documents' : 'Agents and conversations');
+    expect(element('#workspace-library nav').getAttribute('aria-label')).toBe(view);
   });
 
-  it('preserves the real library search and filtered results', async () => {
+  it('keeps search exclusively in the header in both library views', async () => {
     await mount(width);
     await open('left');
-    const search = [...container.querySelectorAll<HTMLAnchorElement>('#workspace-library a')].find(link => link.textContent?.trim() === 'Search')!;
-    await act(async () => { search.click(); await tick(); });
-    const selector = '[placeholder="Search agents, chats, completions..."]';
-    await enter(selector, 'no matching synthetic agent');
-    await close('left');
-    await open('left');
-    expect(element<HTMLInputElement>(selector).value).toBe('no matching synthetic agent');
+    for (const view of ['Documents', 'Chats']) {
+      await tab('Library', view);
+      expect(element('#workspace-library').querySelector('input[type="search"], input[placeholder*="Search"]')).toBeNull();
+      expect([...element('#workspace-library').querySelectorAll('button, a')].some(item => item.textContent?.trim() === 'Search')).toBe(false);
+    }
+    expect(element('#workspace-library').textContent).toContain('Synthetic conversation');
     expect(element('#workspace-library').textContent).not.toContain('Synthetic Writer');
-    await enter(selector, 'Synthetic Writer');
-    expect(element('#workspace-library').textContent).toContain('Synthetic Writer');
+    await close('left');
+    expect(container.querySelector('[aria-label="Search workspace"]')).not.toBeNull();
   });
 });
 
@@ -427,7 +467,7 @@ describe('branded browser title', () => {
     for (let cycle = 0; cycle < 2; cycle++) {
       await tab('Library', 'Documents');
       expect(document.title).toBe('Synthetic pane document — fthr');
-      await tab('Library', 'Agents');
+      await tab('Library', 'Chats');
       expect(document.title).toBe('Synthetic pane document — fthr');
     }
   });
@@ -457,7 +497,7 @@ describe('branded browser title', () => {
     });
     expect(useStore.getState().chats![0].title).toBe('Notes — 2');
     expect(document.title).toBe('Notes — 2 — fthr');
-    await tab('Library', 'Agents');
+    await tab('Library', 'Chats');
     await tab('Library', 'Documents');
     expect(document.title).toBe('Notes — 2 — fthr');
   });

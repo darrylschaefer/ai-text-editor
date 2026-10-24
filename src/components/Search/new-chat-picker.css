@@ -1,0 +1,9 @@
+.new-chat-picker { width: min(600px, 100%); }
+.new-chat-picker .workspace-search-results { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.new-chat-picker .workspace-search-group { margin-bottom: 8px; }
+.new-chat-picker .workspace-search-group-heading { display: flex; align-items: center; justify-content: space-between; }
+.new-chat-picker .workspace-search-group-heading button { font-size: 11px; text-transform: none; letter-spacing: normal; }
+.new-chat-picker .new-chat-unavailable { opacity: .5; cursor: default; }
+.new-chat-empty-section { padding: 9px 13px 18px; color: var(--search-muted); font-size: 12px; }
+.new-chat-picker .workspace-search-more { width: 100%; text-align: left; }
+@media (max-width: 767px) { .new-chat-picker .workspace-search-footer { font-size: 10px; gap: 8px; } }

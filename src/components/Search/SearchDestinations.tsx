@@ -1,34 +1,34 @@
 import { Dispatch, SetStateAction, useState } from 'react';
 import PopupModal from '@components/PopupModal';
-import ApiMenu from '@components/FooterMenu/Api/ApiMenu';
+import ApiMenu from './ApiConnections';
 import AgentSetupMenu from '@components/FooterMenu/AgentSetup/AgentSetupMenu';
 import EmbeddingsSettingsMenu from '@components/FooterMenu/EmbeddingsSettings/EmbeddingsSettingsMenu';
 import ImportChat from '@components/FooterMenu/ImportExportChat/ImportChat';
 import ExportChat from '@components/FooterMenu/ImportExportChat/ExportChat';
 import AboutMenu from '@components/FooterMenu/AboutMenu/AboutMenu';
 import { PromptLibraryMenuPopUp } from '@components/PromptLibraryMenu/PromptLibraryMenu';
-import { LegacyConfigPopup } from '@components/FooterMenu/SettingsMenu/Config/Config';
-import { FineTuneMenuPopUp } from '@components/FooterMenu/SettingsMenu/FineTuneMenu/FineTuneMenu';
 import useInitialiseNewDocument from '@hooks/useInitialiseNewDocument';
 import { modelCost } from '@constants/chat';
 import useStore from '@store/store';
 import type { SearchEntry } from '@utils/workspace-search';
+import { resolveConnectionRequest, setActiveConnection, useConnections } from '@store/connection-store';
 
 export default function SearchDestination({ entry, setOpen }: { entry: SearchEntry; setOpen: Dispatch<SetStateAction<boolean>> }) {
   const theme = useStore(state => state.theme), setTheme = useStore(state => state.setTheme);
   const generating = useStore(state => state.generating);
   const [status, setStatus] = useState('');
+  const [modelSaving, setModelSaving] = useState(false);
+  const connections = useConnections(state => state.connections);
+  const connection = connections.find(item => item.id === entry.model?.connectionId);
   const initialiseNewDocument = useInitialiseNewDocument();
   const tokenUsage = useStore(state => state.totalTokenUsed);
   const trackTokens = useStore(state => state.countTotalTokens);
   const setTrackTokens = useStore(state => state.setCountTotalTokens);
   if (entry.destination === 'api') return <ApiMenu setIsModalOpen={setOpen} />;
-  if (entry.destination === 'agents') return <AgentSetupMenu setIsModalOpen={setOpen} />;
+  if (entry.destination === 'agents') return <AgentSetupMenu key={`${entry.agentId || ''}:${!!entry.createAgent}`} setIsModalOpen={setOpen} initialAgentId={entry.agentId} create={entry.createAgent} />;
   if (entry.destination === 'embeddings') return <EmbeddingsSettingsMenu setIsModalOpen={setOpen} />;
   if (entry.destination === 'about') return <AboutMenu setIsModalOpen={setOpen} />;
   if (entry.destination === 'macro-library') return <PromptLibraryMenuPopUp setIsModalOpen={setOpen} />;
-  if (entry.destination === 'legacy-config') return <LegacyConfigPopup setIsModalOpen={setOpen} />;
-  if (entry.destination === 'fine-tune') return <FineTuneMenuPopUp setIsModalOpen={setOpen} />;
   if (entry.destination === 'clear-documents') return <PopupModal title="Delete all documents" setIsModalOpen={setOpen}
     message="Delete all documents and folders in this workspace? This cannot be undone."
     handleConfirm={generating ? undefined : () => {
@@ -63,27 +63,32 @@ export default function SearchDestination({ entry, setOpen }: { entry: SearchEnt
       </>}
       {entry.model && <>
         <h4>{entry.title}</h4><p>{entry.model.id}</p>
-        <dl><dt>Provider</dt><dd>{entry.model.provider}</dd><dt>API endpoint</dt><dd>{entry.model.endpoint.replaceAll('_', ' ')}</dd>
+        <dl><dt>Provider</dt><dd>{entry.model.provider}</dd><dt>Connection</dt><dd>{connection?.name || 'Connection unavailable'}</dd>
           <dt>Catalog</dt><dd>{entry.model.source === 'saved' ? 'Saved from your provider' : 'Included with fthr'}</dd>
           {typeof entry.model.metadata?.context_window === 'number' && <><dt>Context window</dt><dd>{entry.model.metadata.context_window.toLocaleString()} tokens</dd></>}
           {typeof (entry.model.metadata?.max_output_tokens ?? entry.model.metadata?.max_completion_tokens) === 'number' && <><dt>Maximum output</dt><dd>{(entry.model.metadata!.max_output_tokens ?? entry.model.metadata!.max_completion_tokens)!.toLocaleString()} tokens</dd></>}
         </dl>
         {entry.text && <p>{entry.text}</p>}
-        <p>Catalog entries may not be available to your API account. No request is sent when you browse or select a model.</p>
-        <p>Using this model updates the shared default configuration for new conversations and actions. Existing conversations keep their configuration.</p>
-        <button type="button" className="btn btn-primary" disabled={generating || !!status} onClick={() => {
+        <p>API: Responses. No generation request is sent when you browse or select a model.</p>
+        <p>Using this model updates the default agent profile and inherited model settings for new conversations and actions. Existing conversations keep their configuration.</p>
+        <button type="button" className="btn btn-primary" disabled={generating || modelSaving || !!status || !connection} onClick={async () => {
           const store = useStore.getState(), model = entry.model!;
-          if (store.generating) return;
-          const limit = model.metadata?.max_output_tokens ?? model.metadata?.max_completion_tokens;
-          if (model.endpoint === 'completions') store.setDefaultLegacyConfig({ ...store.defaultLegacyConfig,
-            model: model.id, provider: model.provider, apiEndpoint: model.endpoint });
-          else store.setDefaultChatConfig({ ...store.defaultChatConfig, model: model.id, provider: model.provider, apiEndpoint: model.endpoint,
-            ...(typeof limit === 'number' && limit > 0 ? {
-              max_completion_tokens: Math.min(store.defaultChatConfig.max_completion_tokens, limit),
-              ...(store.defaultChatConfig.max_output_tokens !== undefined ? { max_output_tokens: Math.min(store.defaultChatConfig.max_output_tokens, limit) } : {}),
-            } : {}),
-          });
-          setStatus(`Default model set to ${model.id}.`);
+          if (store.generating || modelSaving || !model.connectionId) return;
+          setModelSaving(true);
+          try {
+            resolveConnectionRequest({ connectionId: model.connectionId, model: model.id }, 'responses');
+            await setActiveConnection(model.connectionId);
+            const limit = model.metadata?.max_output_tokens ?? model.metadata?.max_completion_tokens;
+            store.setAgentApiEndpoint('responses');
+            store.setDefaultChatConfig({ ...store.defaultChatConfig, connectionId: model.connectionId, model: model.id, provider: model.provider, apiEndpoint: 'responses',
+              ...(typeof limit === 'number' && limit > 0 ? {
+                max_completion_tokens: Math.min(store.defaultChatConfig.max_completion_tokens, limit),
+                ...(store.defaultChatConfig.max_output_tokens !== undefined ? { max_output_tokens: Math.min(store.defaultChatConfig.max_output_tokens, limit) } : {}),
+              } : {}),
+            });
+            setStatus(`Default model set to ${model.id}.`);
+          } catch (reason) { setStatus(reason instanceof Error ? reason.message : 'Could not set this model.'); }
+          finally { setModelSaving(false); }
         }}>Use as default</button>
         {status && <p role="status">{status}</p>}
         {generating && <p>Wait for the current response before changing the default model.</p>}

@@ -5,13 +5,7 @@ import useInitialiseNewDocument from '@hooks/useInitialiseNewDocument';
 import { Document, TrashCan, Close, Edit, Checkmark } from '@carbon/icons-react';
 import useStore from '@store/store';
 import { set } from 'lodash';
-
-const DocumentButtonClass = {
-  normal:
-    'flex min-w-0 min-h-[2.25rem] py-1.5 px-2 items-center gap-2.5 relative bg-transparent hover:bg-gray-100/70 dark:hover:bg-gray-800/30 group transition-colors text-gray-700 dark:text-gray-400 rounded-md',
-  active:
-    'flex min-w-0 min-h-[2.25rem] py-1.5 px-2 items-center gap-2.5 relative bg-gray-100 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 group transition-colors text-gray-900 dark:text-gray-200 rounded-md',
-};
+import { libraryRowClass } from './library-styles';
 
 const DocumentButton = React.memo(
   ({ title, chatIndex: documentIndex }: { title: string; chatIndex: number }) => {
@@ -94,7 +88,7 @@ const DocumentButton = React.memo(
       <a
         title={title}
         className={`${
-          active ? DocumentButtonClass.active : DocumentButtonClass.normal
+          active ? libraryRowClass.active : libraryRowClass.normal
         } ${
           generating
             ? 'cursor-not-allowed opacity-40'

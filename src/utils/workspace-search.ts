@@ -1,26 +1,27 @@
 import type { AvailableEndpoints, DocumentInterface, FolderCollection, ModelMetadata } from '@type/document';
 import { getDocumentVersions, getVersionState } from './document-versions';
+import { catalogAvailable, modelApis, type ApiConnection } from './provider-connections';
+import type { ChatConversation } from '@store/chat-slice';
 
-export type SearchCategory = 'documents' | 'settings' | 'models';
+export type SearchCategory = 'documents' | 'chats' | 'settings' | 'models';
 export type SearchFilter = 'all' | SearchCategory;
-export type SettingsDestination = 'api' | 'agents' | 'embeddings' | 'appearance' | 'backup' | 'pages' | 'export' | 'history' | 'notes' | 'tools' | 'meta' | 'macros' | 'about' | 'macro-library' | 'legacy-config' | 'fine-tune' | 'usage' | 'sync' | 'clear-documents';
+export type SettingsDestination = 'api' | 'agents' | 'embeddings' | 'appearance' | 'backup' | 'pages' | 'export' | 'history' | 'notes' | 'tools' | 'meta' | 'macros' | 'about' | 'macro-library' | 'usage' | 'sync' | 'clear-documents';
 export type SearchEntry = {
   id: string; category: SearchCategory; title: string; subtitle: string; keywords: string; text: string;
   documentId?: string; versionId?: string; noteId?: string; destination?: SettingsDestination;
-  model?: { id: string; provider: string; endpoint: string; source: 'built-in' | 'saved'; metadata?: ModelMetadata };
+  agentId?: string; createAgent?: boolean; conversationId?: string;
+  model?: { id: string; provider: string; endpoint: string; source: 'built-in' | 'saved'; metadata?: ModelMetadata; connectionId?: string };
 };
 
 export const SEARCH_SETTINGS: SearchEntry[] = [
   ['pages', 'Page setup', 'Paper, margins, orientation, numbering, and writing view', 'page settings layout letter a4 legal size landscape portrait inches millimeters continuous mobile'],
   ['export', 'Export document', 'Print preview, PDF, Word, HTML, Markdown, text, and JSON', 'download docx print save pdf output'],
-  ['api', 'API key and connection', 'Configure the connection used by AI features', 'credentials password authentication openai endpoint'],
-  ['agents', 'Agent setup', 'Default model, generation settings, tools, and model catalog updates', 'models provider temperature tokens reasoning verbosity permissions refresh update'],
+  ['api', 'Manage API keys', 'Add connections, load model catalogs, and manage access keys', 'credentials password authentication openai endpoint api key connection models refresh update'],
+  ['agents', 'Agent profiles', 'Named writing assistants, default profile, model settings, and tools', 'agent setup agents profiles instructions models provider temperature tokens reasoning verbosity permissions'],
   ['appearance', 'Appearance', 'Choose light or dark mode', 'theme color display night day'],
   ['embeddings', 'Embeddings settings', 'Configure document indexing and embedding generation', 'semantic search index model batch rate limit'],
   ['backup', 'Import / Export workspace', 'Import documents or download a workspace backup', 'restore backup json upload data'],
   ['macro-library', 'Macro library', 'Create, edit, import, and export reusable prompts', 'manage macros prompts library settings templates'],
-  ['legacy-config', 'Legacy model settings', 'Default chat and completion configuration', 'legacy config system message temperature tokens provider'],
-  ['fine-tune', 'Fine-tune models', 'Manage custom fine-tuned model names and IDs', 'custom models fine tune training settings'],
   ['usage', 'Token usage', 'Review locally recorded token usage', 'cost accounting tracking total tokens spend'],
   ['sync', 'Google Drive sync', 'Manage the connected Google Drive workspace', 'cloud synchronization account files storage'],
   ['about', 'About fthr', 'App information, privacy, and project links', 'more information help credits github'],
@@ -79,6 +80,22 @@ export function documentSearchEntries(documents: DocumentInterface[], folders: F
   });
 }
 
+const conversationCache = new WeakMap<ChatConversation, SearchEntry>();
+export function conversationSearchEntries(conversations: ChatConversation[]): SearchEntry[] {
+  return [...conversations].sort((a, b) => (b.updatedAt || b.createdAt).localeCompare(a.updatedAt || a.createdAt)).map(conversation => {
+    let entry = conversationCache.get(conversation);
+    if (!entry) {
+      entry = { id: `chat:${conversation.id}`, category: 'chats', conversationId: conversation.id,
+        title: conversation.title || 'Untitled chat',
+        subtitle: [conversation.agentProfile?.name, conversation.config?.model].filter(Boolean).join(' · ') || 'Chat',
+        keywords: '', text: conversation.messages.filter(message => message.role === 'user' || message.role === 'assistant')
+          .map(message => typeof message.content === 'string' ? message.content : '').join('\n') };
+      conversationCache.set(conversation, entry);
+    }
+    return entry;
+  });
+}
+
 export function modelSearchEntries(builtIn: AvailableEndpoints[], fetched: AvailableEndpoints[]): SearchEntry[] {
   const models = new Map<string, SearchEntry>();
   for (const [groups, source] of [[builtIn, 'built-in'], [fetched, 'saved']] as const) {
@@ -100,11 +117,22 @@ export function modelSearchEntries(builtIn: AvailableEndpoints[], fetched: Avail
   return [...models.values()];
 }
 
+export function connectionSearchEntries(connections: ApiConnection[]): SearchEntry[] {
+  return connections.filter(catalogAvailable).flatMap(connection => connection.models.map(metadata => ({
+    id: `model:${JSON.stringify([connection.id, metadata.id])}`, category: 'models' as const,
+    title: typeof metadata.name === 'string' ? metadata.name : metadata.id,
+    subtitle: `${connection.name} · ${connection.provider}${connection.status === 'stale' ? ' · Cached catalog' : ''}`,
+    keywords: `${metadata.id} ${metadata.owned_by || ''}`, text: typeof metadata.description === 'string' ? metadata.description : '',
+    model: { id: metadata.id, provider: connection.provider, endpoint: modelApis(connection, metadata.id)[0] || 'unclassified',
+      source: 'saved' as const, metadata, connectionId: connection.id },
+  })));
+}
+
 export const normalizeSearch = (value: string) => value.normalize('NFKD').replace(/\p{M}/gu, '').toLocaleLowerCase();
 const searchable = (value: string) => normalizeSearch(value).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 export function parseSearchQuery(input: string) {
-  const scope = input.match(/^\s*(docs?|documents?|settings?|models?):\s*/i);
-  const filter: SearchFilter | undefined = scope ? (/^doc/i.test(scope[1]) ? 'documents' : /^setting/i.test(scope[1]) ? 'settings' : 'models') : undefined;
+  const scope = input.match(/^\s*(docs?|documents?|chats?|settings?|models?):\s*/i);
+  const filter: SearchFilter | undefined = scope ? (/^doc/i.test(scope[1]) ? 'documents' : /^chat/i.test(scope[1]) ? 'chats' : /^setting/i.test(scope[1]) ? 'settings' : 'models') : undefined;
   const query = scope ? input.slice(scope[0].length) : input;
   const terms = [...query.matchAll(/["“]([^"”]+)["”]|(\S+)/g)].map(match => ({ text: match[1] || match[2], phrase: !!match[1] }));
   return { filter, terms, query: query.trim() };

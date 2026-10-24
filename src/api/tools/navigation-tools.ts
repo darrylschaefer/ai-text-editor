@@ -5,8 +5,7 @@
 
 import { ToolContext } from './context';
 import { search, context as contextUtil } from '@utils/ai-navigation';
-import { extractBlockMap, getBlockMapForSection } from '@utils/block-map';
-import { getBlockIndex } from '@store/block-index-store';
+import { extractBlockMap, extractTextFromNode, getBlockMapForSection } from '@utils/block-map';
 import { applyPatches } from '@utils/block-patch';
 import { PatchOperation, PatchResult } from '@type/block';
 import { SearchResult, ContextPacket } from '@type/block-index';
@@ -14,7 +13,7 @@ import { DocumentVersion } from '@type/document';
 import useStore from '@store/store';
 import { getDocumentVersions, getVersionName, getVersionState } from '@utils/document-versions';
 import { LexicalEditor } from 'lexical';
-import { normalizeBlockIds, getBlockId, setBlockId, isAddressableBlockType } from '@utils/block-ids';
+import { normalizeBlockIds, getBlockId, setBlockId, isAddressableBlockType, extractBlockMap as extractBlockNodes } from '@utils/block-ids';
 import { $getRoot } from 'lexical';
 import {
   buildBeforeImages,
@@ -907,13 +906,14 @@ export async function readBlocksTool(
     
     // Import heading utilities
     const { buildHeadingPath } = await import('@utils/heading-utils');
+    const blockNodes = extractBlockNodes(editorStateJson);
     
     for (const blockId of orderedBlockIds) {
       const blockInfo = blockMap.find(b => b.block_id === blockId);
       if (blockInfo) {
-        // Get full content from block index
-      const index = await getBlockIndex(blockId);
-        const content = index?.plain_text || '';
+        // Read the same snapshot as the block map and revision. The background
+        // search index may still contain an older save or another version.
+        const content = extractTextFromNode(blockNodes.get(blockId)).trim();
         
         const block: {
           block_id: string;

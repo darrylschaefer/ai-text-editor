@@ -1,5 +1,6 @@
 import useStore from '@store/store';
 import { isAzureEndpoint } from './api';
+import { resolveConnectionRequest } from '@store/connection-store';
 
 /**
  * Get embeddings API endpoint from chat completions endpoint
@@ -34,16 +35,15 @@ function getEmbeddingsEndpoint(baseEndpoint: string): string {
  */
 export async function generateEmbedding(
   text: string,
-  model: string = 'text-embedding-3-small'
+  model: string = useStore.getState().embeddingModel
 ): Promise<number[]> {
-  const apiKey = useStore.getState().apiKey;
-  const apiEndpoint = useStore.getState().apiEndpoint;
+  const { apiKey, endpoint: embeddingsEndpoint } = resolveConnectionRequest({ connectionId: useStore.getState().embeddingConnectionId, model }, 'embeddings');
+  const apiEndpoint = embeddingsEndpoint;
   
   if (!apiKey || !apiEndpoint) {
     throw new Error('API key or endpoint not configured');
   }
   
-  const embeddingsEndpoint = getEmbeddingsEndpoint(apiEndpoint);
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',

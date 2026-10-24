@@ -7,6 +7,7 @@ import downloadFile from '@utils/downloadFile';
 import { getToday } from '@utils/date';
 
 import Export from '@type/export';
+import { parseAgent } from '@utils/agent-profiles';
 
 const ExportChat = () => {
   const { t } = useTranslation();
@@ -24,6 +25,8 @@ const ExportChat = () => {
             folders: useStore.getState().folders,
             prompts: useStore.getState().prompts,
             config: useStore.getState().defaultChatConfig,
+            agents: useStore.getState().agents.map(agent => parseAgent(agent, useStore.getState())),
+            defaultAgentId: useStore.getState().defaultAgentId,
             version: 0,
           };
           downloadFile(fileData, getToday());

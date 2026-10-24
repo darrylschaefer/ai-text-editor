@@ -1,4 +1,4 @@
-import { CSSProperties, KeyboardEvent, PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { CSSProperties, KeyboardEvent, PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Close, Maximize, Minimize, SidePanelClose, SidePanelOpen } from '@carbon/icons-react';
 import useStore from '@store/store';
 import Document from '@components/Document/Document';
@@ -11,6 +11,8 @@ import { DocumentVersion } from '@type/document';
 import { WorkspaceAssistantContext, WorkspaceToolbarContext } from './WorkspaceContext';
 import { WorkspaceDocumentMenuProvider } from './WorkspaceDocumentMenu';
 import WorkspaceSearch from '@components/Search/WorkspaceSearch';
+import NewChatPicker from '@components/Search/NewChatPicker';
+import { ConversationDraftContext, type ConversationDraft } from './ConversationDraftContext';
 import type { SettingsDestination } from '@utils/workspace-search';
 import { ModalLayerContext, useModalLayer } from '@components/ModalLayer/ModalLayer';
 import Brand from './Brand';
@@ -34,6 +36,8 @@ const Workspace = () => {
   const notesOpenRequest = useStore(state => state.notesOpenRequest);
   const setNotesOpenRequest = useStore(state => state.setNotesOpenRequest);
   const [activeMenu, setActiveMenu] = useState('chat');
+  const [conversationDraft, setConversationDraft] = useState<ConversationDraft>(null);
+  const draftContext = useMemo(() => ({ draft: conversationDraft, setDraft: setConversationDraft }), [conversationDraft]);
   const [toolbarTarget, setToolbarTarget] = useState<HTMLDivElement | null>(null);
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1023px)').matches);
   // Drawer visibility is temporary; only desktop controls save pane preferences.
@@ -267,6 +271,7 @@ const Workspace = () => {
 
   return (
     <WorkspaceDocumentMenuProvider>
+    <ConversationDraftContext.Provider value={draftContext}>
     <ProseRhythmProvider active={activeMenu === 'tools' && !hideRight}>
     <WorkspaceAssistantContext.Provider value={openAssistant}>
     <WorkspaceToolbarContext.Provider value={toolbarTarget}>
@@ -304,7 +309,7 @@ const Workspace = () => {
             </div>
             <div className="workspace-editor-tools" ref={setToolbarTarget} />
             <div className="workspace-pane-heading workspace-assistant-heading" hidden={hideRight}>
-              <AssistantTabs activeMenu={activeMenu} setActiveMenu={setActiveMenu} />{closeButton('right')}
+              <AssistantTabs activeMenu={activeMenu} setActiveMenu={setActiveMenu} enabled={!compact && !hideRight} />{closeButton('right')}
             </div>
           </div>
         </header>
@@ -324,15 +329,17 @@ const Workspace = () => {
           <aside id="workspace-assistant" ref={assistantRef} className="workspace-pane workspace-assistant" hidden={hideRight} aria-label="Assistant"
             role={compact && !hideRight ? 'dialog' : undefined} aria-modal={compact && !hideRight ? true : undefined} tabIndex={-1}>
             <ModalLayerContext.Provider value={drawerScope}>
-              <div className="workspace-mobile-pane-heading"><AssistantTabs activeMenu={activeMenu} setActiveMenu={setActiveMenu} />{closeButton('right')}</div>
+              <div className="workspace-mobile-pane-heading"><AssistantTabs activeMenu={activeMenu} setActiveMenu={setActiveMenu} enabled={compact && !hideRight} />{closeButton('right')}</div>
               <AIMenu activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
             </ModalLayerContext.Provider>
           </aside>
         </div>
       </div>
+      <NewChatPicker />
     </WorkspaceToolbarContext.Provider>
     </WorkspaceAssistantContext.Provider>
     </ProseRhythmProvider>
+    </ConversationDraftContext.Provider>
     </WorkspaceDocumentMenuProvider>
   );
 };

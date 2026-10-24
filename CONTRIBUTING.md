@@ -26,6 +26,8 @@ The development server uses port 5173. An OpenAI API key is required for AI feat
 | `npm run test:watch` | Re-run relevant tests while editing. Stop with Ctrl+C. |
 | `npm run build` | Check application types and produce the web build in `dist/`. |
 | `npm run check` | Run type checks, unit tests, and the production build in sequence. |
+| `npm run test:e2e` | Build and run Playwright chat journeys across desktop and phone browser projects. |
+| `npm run check:all` | Run all type checks, unit/integration tests, the production build, and browser projects. |
 
 The test runner uses a separate configuration so browser/WASM build plugins are not loaded for Node unit tests. Its aliases are derived from `tsconfig.json`. The tests have a separate TypeScript project so production exclusions cannot silently hide test type errors.
 
@@ -37,7 +39,9 @@ The initial suite exercises revision-history utilities, including captured conte
 
 Tests should use synthetic content and run without paid AI calls. Cover behavior that can break for a user. Do not weaken an assertion or skip a failing test merely to make CI green.
 
-GitHub Actions runs `npm ci` and `npm run check` on Linux and Windows. The Linux job also builds the web Docker image. CI skips the Electron binary download because those jobs validate the web build and unit tests. It does not launch/package the desktop app, deploy a site, or publish a release. If you skipped the Electron download locally and later need desktop development, run `npm rebuild electron` with that environment variable unset.
+Install the test browsers with `npx playwright install chromium firefox webkit` before running browser tests. These tests use fresh browser storage and a synthetic loopback provider, with real streaming, document tools and persistence. They reject unexpected external requests. See [browser testing](e2e/README.md) for coverage, engine selection and failure traces. Use `npm run check:all` before proposing changes to chat execution or its controls.
+
+GitHub Actions runs `npm ci` and `npm run check` on Linux and Windows. The Linux validation job also builds the web Docker image. A separate Linux browser job installs browser engines and system dependencies, runs the chat journeys, and retains failure reports. CI skips the Electron binary download because those jobs validate the web app. It does not launch/package the desktop app, deploy a site, or publish a release. If you skipped the Electron download locally and later need desktop development, run `npm rebuild electron` with that environment variable unset.
 
 ## Propose a change
 

@@ -10,6 +10,8 @@ import { DocumentVersion } from '@type/document';
  * Tool execution context
  */
 export interface ToolContext {
+  // An empty list explicitly disables every tool for this execution.
+  allowedTools?: string[];
   // Current document/section defaults
   doc_id?: string;
   section?: DocumentVersion;

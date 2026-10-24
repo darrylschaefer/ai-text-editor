@@ -11,6 +11,7 @@ import useStore from '@store/store';
  * Build ToolContext from current application state
  */
 export function buildToolContext(options: {
+  allowedTools?: string[];
   editor?: LexicalEditor;
   canWrite?: boolean;
   approval_token?: string;
@@ -22,6 +23,7 @@ export function buildToolContext(options: {
   const currentDoc = chats && currentChatIndex >= 0 ? chats[currentChatIndex] : null;
   
   return {
+    allowedTools: options.allowedTools,
     doc_id: currentDoc?.id,
     section: (currentDoc?.currentVersion || 'Draft') as DocumentVersion,
     editor: options.editor,

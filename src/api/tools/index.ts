@@ -404,6 +404,9 @@ export const executeTool = async (
   args: any,
   context?: import('./context').ToolContext
 ): Promise<string> => {
+  if (context?.allowedTools && !context.allowedTools.includes(toolName)) {
+    return JSON.stringify({ success: false, error: `Tool "${toolName}" is disabled for this conversation.` });
+  }
   const tool = toolRegistry[toolName];
   
   if (!tool) {

@@ -32,12 +32,10 @@ const DocumentList = () => {
   const [noDocumentFolders, setNoDocumentFolders] = useState<DocumentHistoryInterface[]>(
     []
   );
-  const [filter, setFilter] = useState<string>('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const chatsRef = useRef<DocumentInterface[]>(useStore.getState().chats || []);
   const foldersRef = useRef<FolderCollection>(useStore.getState().folders);
-  const filterRef = useRef<string>(filter);
 
   const updateFolders = useRef(() => {
     const _folders: DocumentHistoryFolderInterface = {};
@@ -51,23 +49,10 @@ const DocumentList = () => {
 
     if (documents) {
       documents.forEach((document, index) => {
-        const _filterLowerCase = filterRef.current.toLowerCase();
-        const _documentTitle = document.title.toLowerCase();
-        const _documentFolderName = document.folder
-          ? folders[document.folder].name.toLowerCase()
-          : '';
-
-        if (
-          !_documentTitle.includes(_filterLowerCase) &&
-          !_documentFolderName.includes(_filterLowerCase) &&
-          index !== useStore.getState().currentChatIndex
-        )
-          return;
-
         if (!document.folder) {
           _noFolders.push({ title: document.title, index: index, id: document.id });
         } else {
-          if (!_folders[document.folder]) _folders[_documentFolderName] = [];
+          if (!_folders[document.folder]) _folders[document.folder] = [];
           _folders[document.folder].push({
             title: document.title,
             index: index,
@@ -121,11 +106,6 @@ const DocumentList = () => {
       }
     }
   }, [currentDocumentIndex, documentTitles]);
-
-  useEffect(() => {
-    filterRef.current = filter;
-    updateFolders();
-  }, [filter]);
 
   // Handle scroll detection for scrollbar visibility
   useEffect(() => {
@@ -188,9 +168,6 @@ const DocumentList = () => {
       onDragLeave={handleDragLeave}
       onDragEnd={handleDragEnd}
     >
-      {/* <div className="pt-2 px-2">
-      <ChatSearch filter={filter} setFilter={setFilter} />
-      </div> */}
       <div className='flex flex-col gap-1 text-gray-900 dark:text-gray-100 text-sm px-2 py-2'>
         <AddDocumentMenuItem />
         <AddFolderMenuItem />

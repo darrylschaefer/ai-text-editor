@@ -10,7 +10,6 @@ import {
 import { roles } from '@type/document';
 import {
   defaultModel,
-  completionModels,
   _defaultChatConfig,
 } from '@constants/chat';
 import { ExportV1 } from '@type/export';
@@ -45,7 +44,7 @@ const validateMessage = (messages: MessageInterface[]) => {
 
 const validateAndFixChatConfig = (config: ConfigInterface) => {
   if (config === undefined) config = _defaultChatConfig;
-  if (!(typeof config === 'object')) return false;
+  if (!config || !(typeof config === 'object')) return false;
 
   if (!config.temperature) config.temperature = _defaultChatConfig.temperature;
   if (!(typeof config.temperature === 'number')) return false;
@@ -62,7 +61,9 @@ const validateAndFixChatConfig = (config: ConfigInterface) => {
   if (!(typeof config.frequency_penalty === 'number')) return false;
 
   if (!config.model) config.model = defaultModel;
-  if (!completionModels.includes(config.model)) return false;
+  // Import preserves recorded choices; the connected catalog determines availability.
+  if (typeof config.model !== 'string') return false;
+  if (config.connectionId !== undefined && typeof config.connectionId !== 'string') return false;
 
   return true;
 };

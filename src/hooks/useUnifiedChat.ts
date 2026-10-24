@@ -2,7 +2,8 @@ import { useCallback } from 'react';
 import useStore from '@store/store';
 import { ChatConversation, ChatType } from '@store/chat-slice';
 import { MessageInterface, ConfigInterface } from '@type/document';
-import { _defaultChatConfig } from '@constants/chat';
+import { snapshotAgent } from '@utils/agent-profiles';
+import { useConnections } from '@store/connection-store';
 
 /**
  * Unified chat hook that works with both agents and regular chat
@@ -27,6 +28,7 @@ export const useUnifiedChat = () => {
   const defaultChatConfig = useStore((state) => state.defaultChatConfig);
   const selectedAgentId = useStore((state) => state.selectedAgentId);
   const agents = useStore((state) => state.agents);
+  const defaultAgentId = useStore((state) => state.defaultAgentId);
   const editorAgentsMode = useStore((state) => state.editorAgentsMode);
 
   const activeConversation = getActiveConversation();
@@ -38,6 +40,10 @@ export const useUnifiedChat = () => {
    * - If activeConversationId is set, returns that conversation
    */
   const getOrCreateConversation = useCallback((): ChatConversation | null => {
+    // Event handlers can outlive the render that created them.
+    const state = useStore.getState();
+    const activeConversation = state.getActiveConversation();
+    const { conversations, activeConversationId, defaultChatConfig, editorAgentsMode, selectedAgentId } = state;
     // If we have an active conversation, return it
     if (activeConversation) {
       return activeConversation;
@@ -55,31 +61,23 @@ export const useUnifiedChat = () => {
     let type: ChatType = 'regular';
     let title = 'New Chat';
     let agentId: string | undefined = undefined;
+    let agentProfile: ChatConversation['agentProfile'];
     let config: ConfigInterface | undefined = defaultChatConfig;
 
     if (editorAgentsMode === 'agents') {
       type = 'agent';
+      const state = useStore.getState();
+      const agent = state.agents.find(item => item.id === (selectedAgentId || state.defaultAgentId));
+      agentId = agent?.id;
+      agentProfile = snapshotAgent(agent, state);
+      title = agentProfile.name;
       // Use agent API endpoint from store
-      const agentApiEndpoint = useStore.getState().agentApiEndpoint;
       config = {
-        ...defaultChatConfig,
-        apiEndpoint: agentApiEndpoint as any,
+        ...(agent?.config ?? defaultChatConfig),
+        apiEndpoint: 'responses',
       };
+      if (config.model && !config.connectionId) config.connectionId = useConnections.getState().activeConnectionId ?? undefined;
       
-      // If there's a selected agent, use its name and ID
-      if (selectedAgentId) {
-        const agent = agents.find((a) => a.id === selectedAgentId);
-        if (agent) {
-          title = agent.name;
-          agentId = selectedAgentId;
-        } else {
-          // Agent not found, but still create agent conversation
-          title = 'New Agent Chat';
-        }
-      } else {
-        // No agent selected, but still create agent conversation
-        title = 'New Agent Chat';
-      }
     }
 
     // Check if conversation already exists for this context
@@ -87,18 +85,17 @@ export const useUnifiedChat = () => {
       if (type === 'agent') {
         return conv.type === 'agent' && conv.agentId === agentId;
       } else {
-        return conv.type === 'regular' && !conv.agentId && !conv.config?.apiEndpoint || conv.config?.apiEndpoint === 'chat_completions';
+        return conv.type === 'regular' && !conv.agentId && (!conv.config?.apiEndpoint || conv.config.apiEndpoint === 'responses');
       }
     });
 
     if (existingConversation) {
       // If it's an agent conversation without a config, update it with the current agent API endpoint
       if (type === 'agent' && existingConversation.type === 'agent' && !existingConversation.config?.apiEndpoint) {
-        const agentApiEndpoint = useStore.getState().agentApiEndpoint;
         updateConversation(existingConversation.id, {
           config: {
             ...defaultChatConfig,
-            apiEndpoint: agentApiEndpoint as any,
+            apiEndpoint: 'responses',
           },
         });
       }
@@ -107,12 +104,13 @@ export const useUnifiedChat = () => {
     }
 
     // Create new conversation
-    const conversationId = addConversation({
+    addConversation({
       type,
       title,
       messages: [],
       config,
       agentId,
+      agentProfile,
     });
 
     return getActiveConversation();
@@ -122,6 +120,7 @@ export const useUnifiedChat = () => {
     editorAgentsMode,
     selectedAgentId,
     agents,
+    defaultAgentId,
     conversations,
     defaultChatConfig,
     addConversation,
@@ -150,18 +149,12 @@ export const useUnifiedChat = () => {
   /**
    * Get messages for the current conversation
    */
-  const getMessages = useCallback((): MessageInterface[] => {
-    const conversation = getOrCreateConversation();
-    return conversation?.messages || [];
-  }, [getOrCreateConversation]);
+  const getMessages = () => activeConversation?.messages || [];
 
   /**
    * Get config for the current conversation
    */
-  const getConfig = useCallback((): ConfigInterface => {
-    const conversation = getOrCreateConversation();
-    return conversation?.config || defaultChatConfig;
-  }, [getOrCreateConversation, defaultChatConfig]);
+  const getConfig = () => activeConversation?.config || defaultChatConfig;
 
   /**
    * Update conversation config

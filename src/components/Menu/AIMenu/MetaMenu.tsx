@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useStore from '@store/store';
-import { Calendar, Folder, Tag, Add, TrashCan } from '@carbon/icons-react';
+import { Calendar, Folder, Add, TrashCan } from '@carbon/icons-react';
 
 /**
  * Converts a string to camelCase format
@@ -164,70 +164,73 @@ const MetaMenu = () => {
 
   if (!currentDocument) {
     return (
-      <div className='flex-1 flex items-center justify-center text-gray-500 text-sm p-4'>
-        No document selected
-      </div>
+      <section className="assistant-section" aria-label="Document metadata"><div className="assistant-section-content">
+        <p className="assistant-section-empty">Open a document to edit its properties.</p>
+      </div></section>
     );
   }
 
   return (
-    <div className='flex-1 overflow-y-auto p-4 bg-white dark:bg-gray-950'>
-      <div className='flex items-center justify-between mb-4'>
-        <h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>Document Metadata</h2>
-      </div>
+    <section className="assistant-section" aria-label="Document metadata">
+      <header className="assistant-section-heading">
+        <div><h2>Document properties</h2><p>Details saved with your writing.</p></div>
+      </header>
 
-      <div className='space-y-4'>
+      <div className="assistant-section-content"><div className="assistant-section-fields">
         {/* Title */}
-        <div>
-          <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
+        <div className="assistant-section-field">
+          <label htmlFor="document-meta-title">
             Title
           </label>
           <input
             type='text'
+            id="document-meta-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className='w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+            className="assistant-section-input"
           />
         </div>
 
         {/* Description */}
-        <div>
-          <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
+        <div className="assistant-section-field">
+          <label htmlFor="document-meta-description">
             Description
           </label>
           <textarea
+            id="document-meta-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className='w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'
+            className="assistant-section-input"
             placeholder='Add a description...'
           />
         </div>
 
         {/* Tags */}
-        <div>
-          <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
+        <div className="assistant-section-field">
+          <label htmlFor="document-meta-tags">
             Tags
           </label>
-          <div>
+          <div className="assistant-section-field">
             <input
               type='text'
+              id="document-meta-tags"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleAddTag}
               placeholder='Type a tag and press Enter'
-              className='w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2'
+              className="assistant-section-input"
             />
-            <div className='flex flex-wrap gap-2'>
+            <div className="assistant-section-tags">
               {tags.map((tag) => (
                 <span
                   key={tag}
-                  className='inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md'
+                  className="assistant-section-tag"
                 >
                   {tag}
                   <button
                     onClick={() => handleRemoveTag(tag)}
-                    className='hover:text-blue-900 dark:hover:text-blue-100'
+                    type="button" aria-label={`Remove tag ${tag}`}
                   >
                     ×
                   </button>
@@ -238,12 +241,12 @@ const MetaMenu = () => {
         </div>
 
         {/* Dates */}
-        <div className='space-y-2 pt-2 border-t border-gray-200 dark:border-gray-800/30'>
-          <div className='flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400'>
+        <div className="assistant-section-group assistant-section-dates">
+          <div>
             <Calendar size={16} />
             <span>Created: {createdDate || 'Unknown'}</span>
           </div>
-          <div className='flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400'>
+          <div>
             <Calendar size={16} />
             <span>Modified: {modifiedDate || 'Unknown'}</span>
           </div>
@@ -251,22 +254,20 @@ const MetaMenu = () => {
 
         {/* Folder */}
         {currentDocument.folder && (
-          <div className='flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-800/30'>
+          <div className="assistant-section-group assistant-section-dates"><div>
             <Folder size={16} />
             <span>Folder: {currentDocument.folder}</span>
-          </div>
+          </div></div>
         )}
 
         {/* Custom Meta Fields */}
-        <div className='pt-2 border-t border-gray-200 dark:border-gray-800/30'>
-          <div className='flex items-center justify-between mb-3'>
-            <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
-              Custom Meta Fields
-            </label>
+        <div className="assistant-section-group">
+          <div className="assistant-section-field-heading">
+            <h3>Custom fields</h3>
             <button
               onClick={(e) => handleAddMeta(e)}
               disabled={!newMetaName.trim() || !newMetaValue.trim()}
-              className='flex items-center gap-1 px-2 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'
+              className="assistant-section-action"
               type='button'
             >
               <Add size={14} />
@@ -275,31 +276,33 @@ const MetaMenu = () => {
           </div>
 
           {/* Add New Meta Field */}
-          <div className='mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-800/30'>
-            <div className='space-y-2'>
-              <div>
-                <label className='block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'>
-                  Field Name (will be converted to camelCase)
+          <div>
+            <div className="assistant-section-fields">
+              <div className="assistant-section-field">
+                <label htmlFor="document-meta-field-name">
+                  Field name
                 </label>
                 <input
                   type='text'
+                  id="document-meta-field-name"
                   value={newMetaName}
                   onChange={(e) => setNewMetaName(e.target.value)}
                   placeholder='e.g., Author Name, Project ID'
-                  className='w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  className="assistant-section-input"
                 />
                 {newMetaName && (
-                  <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
-                    Handle: <code className='px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded'>{toCamelCase(newMetaName)}</code>
+                  <p className="assistant-section-help">
+                    Handle: <code>{toCamelCase(newMetaName)}</code>
                   </p>
                 )}
               </div>
-              <div>
-                <label className='block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'>
+              <div className="assistant-section-field">
+                <label htmlFor="document-meta-field-value">
                   Value
                 </label>
                 <input
                   type='text'
+                  id="document-meta-field-value"
                   value={newMetaValue}
                   onChange={(e) => setNewMetaValue(e.target.value)}
                   placeholder='Enter value...'
@@ -308,7 +311,7 @@ const MetaMenu = () => {
                       handleAddMeta(e);
                     }
                   }}
-                  className='w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  className="assistant-section-input"
                 />
               </div>
             </div>
@@ -316,30 +319,30 @@ const MetaMenu = () => {
 
           {/* Existing Meta Fields */}
           {Object.keys(customMeta).length === 0 ? (
-            <div className='text-sm text-gray-500 dark:text-gray-400 py-2'>
+            <div className="assistant-section-help">
               No custom meta fields
             </div>
           ) : (
-            <div className='space-y-2'>
+            <div className="assistant-section-fields">
               {Object.entries(customMeta).map(([key, value]) => (
                 <div
                   key={key}
-                  className='flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-800/30'
+                  className="assistant-section-custom-field"
                 >
-                  <div className='flex-1 min-w-0'>
-                    <div className='text-xs font-mono text-gray-600 dark:text-gray-400 mb-1'>
+                  <label className="assistant-section-field">
+                    <span>
                       {key}
-                    </div>
+                    </span>
                     <input
                       type='text'
                       value={value}
                       onChange={(e) => handleUpdateMeta(key, e.target.value)}
-                      className='w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                      className="assistant-section-input"
                     />
-                  </div>
+                  </label>
                   <button
                     onClick={() => handleDeleteMeta(key)}
-                    className='flex items-center justify-center w-8 h-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors'
+                    type="button" className="workspace-icon-button" aria-label={`Delete ${key} field`}
                     title='Delete meta field'
                   >
                     <TrashCan size={16} />
@@ -349,8 +352,8 @@ const MetaMenu = () => {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </div></div>
+    </section>
   );
 };
 

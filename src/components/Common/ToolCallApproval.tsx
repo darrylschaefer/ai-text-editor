@@ -25,23 +25,8 @@ const ToolCallApproval: React.FC<ToolCallApprovalProps> = ({
 }) => {
   dbg.log('Rendering with toolCall:', toolCall);
   
-  // Check if this tool requires approval
-  const requiresApproval = [
-    'doc_create',
-    'doc_rename',
-    'doc_move',
-    'edit_apply',
-    'meta_write',
-    'clip_create',
-    'clip_update',
-  ].includes(toolCall.name);
-
-  dbg.log('Requires approval?', requiresApproval, 'tool name:', toolCall.name);
-
-  if (!requiresApproval) {
-    dbg.log('Tool does not require approval, returning null');
-    return null;
-  }
+  // The conversation snapshot already decided whether approval is required.
+  // Read tools and canonical note tools can require it too.
 
   // Format tool call for display
   const formatToolCall = () => {

@@ -10,6 +10,7 @@ import { generateDefaultMessage } from '@constants/chat';
 import { LegacyModels } from '@type/document';
 import { legacyCompletionModels } from '@constants/chat';
 import { constructEndpointUrl, removeProviderAndApiEndpoint } from '@utils/api';
+import { resolveConnectionRequest } from '@store/connection-store';
 import { extractMacroReferences, replaceMacroReferences, executeMacroQueue, replaceSpecialCommands } from '@utils/actionRunner';
 
 const useSubmitPromptAdjust = () => {  
@@ -35,32 +36,13 @@ const useSubmitPromptAdjust = () => {
 //     },
 // ];
 
-  const generateTitle = async (
-    message: MessageInterface[]
-  ): Promise<string> => {
-    let data;
-    if (!apiKey || apiKey.length === 0) {
-      // official endpoint
-      if (apiEndpoint === officialAPIEndpoint) {
-        throw new Error(t('noApiKeyWarning') as string);
-      }
-
-      // other endpoints
-      data = await getChatCompletion(
-        useStore.getState().apiEndpoint,
-        message,
-        _defaultChatConfig
-      );
-    } else if (apiKey) {
-      // own apikey
-      data = await getChatCompletion(
-        useStore.getState().apiEndpoint,
-        message,
-        _defaultChatConfig,
-        apiKey
-      );
-    }
-    return data.choices[0].message.content;
+  const generateTitle = async (message: MessageInterface[]): Promise<string> => {
+    const config = useStore.getState().defaultChatConfig;
+    const { endpoint, apiKey } = resolveConnectionRequest(config, 'responses');
+    const data = await getResponse(endpoint, message, config, apiKey);
+    return (data.output || []).flatMap((item: any) => item.type === 'message' ? (item.content || []) : [])
+      .filter((part: any) => part.type === 'output_text' && typeof part.text === 'string')
+      .map((part: any) => part.text).join('');
   };
 
   const handleSubmit = async ({prompt, modifiedConfig}:{prompt: any, modifiedConfig?: ConfigInterface}) => {
@@ -76,6 +58,10 @@ const useSubmitPromptAdjust = () => {
     }
     // Use the API endpoint from config, or default to responses
     const apiEndpointType = ('apiEndpoint' in modifiedConfig ? modifiedConfig.apiEndpoint : undefined) || defaultChatConfig.apiEndpoint || 'responses';
+    let resolved;
+    try { resolved = resolveConnectionRequest(modifiedConfig, apiEndpointType); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'Configure an API connection first.'); return; }
+    const apiKey = resolved.apiKey;
 
     // Convert prompt to string if it's an array
     let promptContent = '';
@@ -761,7 +747,7 @@ const useSubmitPromptAdjust = () => {
   }) => {
     const chats = useStore.getState().chats;
     const currentChatIndex = useStore.getState().currentChatIndex;
-    const apiKey = useStore.getState().apiKey;
+    let apiKey = useStore.getState().apiKey;
     const setChats = useStore.getState().setChats;
     const setGenerating = useStore.getState().setGenerating;
     const setError = useStore.getState().setError;
@@ -775,6 +761,8 @@ const useSubmitPromptAdjust = () => {
     const updatedChats: DocumentInterface[] = JSON.parse(JSON.stringify(chats));
     const defaultLegacyConfig = useStore.getState().defaultLegacyConfig;
     const config = modifiedConfig ? modifiedConfig : defaultLegacyConfig;
+    try { apiKey = resolveConnectionRequest(config, 'completions').apiKey; }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'Configure an API connection first.'); return; }
   
     // -- MAIN FIX: Setup/clear messages in the chat before streaming --
     const outputRole = "assistant"; // or match your output role

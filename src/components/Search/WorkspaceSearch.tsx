@@ -1,21 +1,24 @@
 import { Fragment, lazy, Suspense, useContext, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { $getRoot } from 'lexical';
-import { ArrowLeft, ArrowRight, Close, Document, MachineLearningModel, Search, Settings } from '@carbon/icons-react';
+import { ArrowLeft, ArrowRight, Chat, Close, Document, MachineLearningModel, Search, Settings } from '@carbon/icons-react';
 import useStore from '@store/store';
-import { modelOptions } from '@constants/chat';
+import ModelLogo from '@components/Common/ModelLogo';
+import { useConnections } from '@store/connection-store';
 import { EmbeddedPopupContext } from '@components/PopupModal/EmbeddedPopupContext';
 import { ModalLayerContext, useModalLayer } from '@components/ModalLayer/ModalLayer';
 import { WorkspaceDocumentMenuContext } from '@components/Workspace/WorkspaceDocumentMenu';
-import { documentSearchEntries, modelSearchEntries, parseSearchQuery, SEARCH_SETTINGS, searchExcerpt,
+import { WorkspaceAssistantContext } from '@components/Workspace/WorkspaceContext';
+import { documentSearchEntries, conversationSearchEntries, connectionSearchEntries, parseSearchQuery, SEARCH_SETTINGS, searchExcerpt,
   searchHighlights, searchWorkspace, type SearchEntry, type SearchFilter, type SettingsDestination } from '@utils/workspace-search';
 import './workspace-search.css';
 
 const SearchDestination = lazy(() => import('./SearchDestinations'));
 const GoogleSync = lazy(() => import('@components/GoogleSync'));
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || undefined;
-const categories = [['all', 'All'], ['documents', 'Documents'], ['settings', 'Settings'], ['models', 'Models']] as const;
+const categories = [['all', 'All'], ['documents', 'Documents'], ['chats', 'Chats'], ['settings', 'Settings'], ['models', 'Models']] as const;
 const emptyDocuments: NonNullable<ReturnType<typeof useStore.getState>['chats']> = [];
+const emptyConversations: ReturnType<typeof useStore.getState>['conversations'] = [];
 const recentKey = 'fthr-search-recent';
 function readRecent(): string[] {
   try { const value: unknown = JSON.parse(localStorage.getItem(recentKey) || '[]');
@@ -44,7 +47,9 @@ function SearchPalette({ close, select, trigger, destination, clearDestination }
   const deferred = useDeferredValue(query), parsed = parseSearchQuery(deferred), scope = parsed.filter || filter;
   const documents = useStore(state => state.chats) || emptyDocuments;
   const folders = useStore(state => state.folders), currentIndex = useStore(state => state.currentChatIndex);
-  const models = useStore(state => state.fetchedModels), editor = useStore(state => state.editorInstance);
+  const connections = useConnections(state => state.connections), editor = useStore(state => state.editorInstance);
+  const agents = useStore(state => state.agents);
+  const conversations = useStore(state => state.conversations) || emptyConversations;
   const generating = useStore(state => state.generating), currentDoc = documents[currentIndex];
   const [live, setLive] = useState<{ documentId: string; versionId: string; text: string } | null>(null);
   const root = useRef<HTMLDivElement>(null), backdrop = useRef<HTMLDivElement>(null), input = useRef<HTMLInputElement>(null);
@@ -65,14 +70,19 @@ function SearchPalette({ close, select, trigger, destination, clearDestination }
   }, [editor, currentDoc?.id, currentDoc?.currentVersion]);
   const entries = useMemo(() => [
     ...documentSearchEntries(documents, folders).map(entry => live && entry.documentId === live.documentId && entry.versionId === live.versionId ? { ...entry, text: live.text } : entry),
+    ...conversationSearchEntries(conversations),
     ...SEARCH_SETTINGS.filter(entry => (currentDoc || !['pages', 'export', 'notes', 'history', 'meta'].includes(entry.destination!)) &&
       (entry.destination !== 'sync' || googleClientId)),
-    ...modelSearchEntries(modelOptions, models || []),
-  ], [documents, folders, models, live, !!currentDoc]);
+    ...connectionSearchEntries(connections),
+    ...agents.map(agent => ({ id: `agent:${agent.id}`, category: 'settings' as const, title: agent.name,
+      subtitle: `Agent profile · ${agent.config?.model || 'No model selected'}`, keywords: 'agent profile assistant',
+      text: agent.description || '', destination: 'agents' as const, agentId: agent.id })),
+  ], [documents, folders, conversations, connections, agents, live, !!currentDoc]);
   const results = useMemo(() => searchWorkspace(entries, deferred, filter, currentDoc?.id, recent), [entries, deferred, filter, currentDoc?.id, recent]);
   const counts = useMemo(() => {
     const all = searchWorkspace(entries, deferred, 'all', currentDoc?.id, recent);
     return { all: all.length, documents: all.filter(entry => entry.category === 'documents').length,
+      chats: all.filter(entry => entry.category === 'chats').length,
       settings: all.filter(entry => entry.category === 'settings').length, models: all.filter(entry => entry.category === 'models').length };
   }, [entries, deferred, currentDoc?.id, recent]);
   const browsing = !parsed.query;
@@ -122,9 +132,9 @@ function SearchPalette({ close, select, trigger, destination, clearDestination }
         <div className="workspace-search-footer"><span>{menu.view === 'pages' ? 'Page changes save automatically' : menu.view === 'export' ? 'Exports the current writing version' : 'Workspace settings'}</span><span><kbd>esc</kbd> Back</span></div>
       </> : <>
       <div className="workspace-search-input-row"><Search size={20} aria-hidden="true" />
-        <input ref={input} role="combobox" aria-label="Search documents, settings, and models" aria-autocomplete="list" aria-expanded="true"
+        <input ref={input} role="combobox" aria-label="Search documents, chats, settings, and models" aria-autocomplete="list" aria-expanded="true"
           aria-controls={`${id}-results`} aria-activedescendant={visible[active] ? `${id}-result-${active}` : undefined}
-          placeholder="Search documents, settings, models…" value={query} autoComplete="off" spellCheck={false}
+          placeholder="Search documents, chats, settings, models…" value={query} autoComplete="off" spellCheck={false}
           onChange={event => { setQuery(event.target.value); setSelected(0); }}
           onKeyDown={event => {
             if (event.nativeEvent.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -148,27 +158,31 @@ function SearchPalette({ close, select, trigger, destination, clearDestination }
             {group.label === 'Recent' && <button type="button" onClick={() => { setRecent([]); try { localStorage.removeItem(recentKey); } catch {} }}>Clear recent</button>}
           </div>
           {group.entries.map(entry => {
-            const index = row++, Icon = entry.category === 'documents' ? Document : entry.category === 'models' ? MachineLearningModel : Settings;
+            const index = row++, Icon = entry.category === 'documents' ? Document : entry.category === 'chats' ? Chat : entry.category === 'models' ? MachineLearningModel : Settings;
             return <div role="option" aria-selected={active === index} id={`${id}-result-${index}`} key={entry.id}
               className="workspace-search-result" onMouseMove={() => { if (activeRef.current !== entry.id) setSelected(index); }}
               onClick={() => void activate(entry)}>
-              <Icon size={18} aria-hidden="true" /><div className="workspace-search-result-content">
+              {entry.model || entry.agentId ? <ModelLogo model={entry.model?.id ?? agents.find(agent => agent.id === entry.agentId)?.config?.model} />
+                : <Icon size={18} aria-hidden="true" />}<div className="workspace-search-result-content">
                 <div className="workspace-search-result-title"><Highlight text={entry.title} query={query} />
                   {entry.category === 'documents' && entry.documentId === currentDoc?.id && entry.versionId === currentDoc.currentVersion && <span>Current</span>}
                 </div>
                 <p className="workspace-search-result-subtitle"><Highlight text={entry.subtitle} query={query} /></p>
                 {!browsing && entry.text && <p className="workspace-search-excerpt"><Highlight text={searchExcerpt(entry.text, query)} query={query} /></p>}
-              </div><span className="workspace-search-kind">{entry.noteId ? 'Note' : entry.category === 'documents' ? 'Document' : entry.category === 'models' ? 'Model' : 'Setting'}</span>
+              </div><span className="workspace-search-kind">{entry.noteId ? 'Note' : entry.category === 'documents' ? 'Document' : entry.category === 'chats' ? 'Chat' : entry.category === 'models' ? 'Model' : 'Setting'}</span>
             </div>;
           })}
         </div>)}
-        {!visible.length && <div className="workspace-search-empty"><Search size={26} /><strong>No results for “{query}”</strong><p>Try fewer words, another category, or a document title, tag, or phrase.</p></div>}
+        {!visible.length && <div className="workspace-search-empty"><Search size={26} /><strong>{scope === 'models' && browsing ? 'No models available' : `No results for “${query}”`}</strong>
+          <p>{scope === 'models' && browsing ? 'Add an API key and load its model catalog to get started.' : 'Try fewer words, another category, or a document title, tag, or phrase.'}</p>
+          {scope === 'models' && browsing && <button type="button" onClick={() => void activate(SEARCH_SETTINGS.find(entry => entry.destination === 'api')!)}>Manage API keys</button>}
+        </div>}
       </div>
       {scope !== 'all' && results.length > visible.length && <button type="button" className="workspace-search-more" onClick={() => setLimit(value => value + 60)}>Show more results ({results.length - visible.length})</button>}
       {!browsing && scope === 'all' && results.length > visible.length && <button type="button" className="workspace-search-more" onClick={() => setLimit(value => value + 60)}>Show more results ({results.length - visible.length})</button>}
       {error && <p role="alert" className="workspace-search-error">{error}</p>}
       <div className="workspace-search-footer"><span><kbd>↑</kbd><kbd>↓</kbd> Navigate <kbd>↵</kbd> Open</span><span role="status" aria-live="polite">{busy ? 'Opening…' : `${results.length} results`}</span></div>
-      <p className="workspace-search-hint">Search stays on this device. Use docs:, settings:, models:, or “an exact phrase”.</p>
+      <p className="workspace-search-hint">Search stays on this device. Use docs:, chats:, settings:, models:, or “an exact phrase”.</p>
       </>}
     </div>
   </div></ModalLayerContext.Provider>, document.body);
@@ -176,16 +190,31 @@ function SearchPalette({ close, select, trigger, destination, clearDestination }
 
 export default function WorkspaceSearch({ navigate }: { navigate: (destination: SettingsDestination) => void }) {
   const menu = useContext(WorkspaceDocumentMenuContext)!;
+  const openAssistant = useContext(WorkspaceAssistantContext);
   const [open, setOpen] = useState(false), [destination, setDestination] = useState<SearchEntry | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const navigation = useRef(0);
   const close = () => { navigation.current++; setOpen(false); menu.setView(null); setDestination(null); };
+  useEffect(() => {
+    const openProfiles = (event: Event) => {
+      const detail = (event as CustomEvent<{ agentId?: string; create?: boolean }>).detail;
+      navigation.current++; menu.setView(null); setDestination({ ...SEARCH_SETTINGS.find(entry => entry.destination === 'agents')!, agentId: detail?.agentId, createAgent: detail?.create }); setOpen(true);
+    };
+    const started = () => { navigation.current++; setOpen(false); menu.setView(null); setDestination(null); };
+    window.addEventListener('fthr-open-agent-profiles', openProfiles);
+    const openApi = () => {
+      navigation.current++; menu.setView(null); setDestination(SEARCH_SETTINGS.find(entry => entry.destination === 'api')!); setOpen(true);
+    };
+    window.addEventListener('fthr-open-api-connections', openApi);
+    window.addEventListener('fthr-agent-chat-started', started);
+    return () => { window.removeEventListener('fthr-open-agent-profiles', openProfiles); window.removeEventListener('fthr-open-api-connections', openApi); window.removeEventListener('fthr-agent-chat-started', started); };
+  }, [menu.setView]);
   useEffect(() => () => { navigation.current++; }, []);
   const mac = /Mac|iPhone|iPad/.test(navigator.platform);
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing || event.repeat || event.altKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
-      const dialogs = document.querySelectorAll('[aria-modal="true"]');
+      const dialogs = document.querySelectorAll('[aria-modal="true"]:not(.workspace-pane)');
       if ((!open && dialogs.length) || dialogs.length > 1) return;
       event.preventDefault(); navigation.current++; menu.setView(null); setDestination(null); setOpen(value => !value);
     };
@@ -194,6 +223,16 @@ export default function WorkspaceSearch({ navigate }: { navigate: (destination: 
   }, [open, menu.setView]);
   const select = async (entry: SearchEntry) => {
     const request = ++navigation.current;
+    if (entry.category === 'chats') {
+      const store = useStore.getState(), conversation = store.conversations.find(item => item.id === entry.conversationId);
+      if (store.generating) throw new Error('Wait for the current response before switching chats.');
+      if (!conversation) throw new Error('This chat no longer exists.');
+      store.setActiveConversationId(conversation.id);
+      store.setSelectedAgentId(conversation.type === 'agent' ? conversation.agentId ?? null : null);
+      store.setEditorAgentsMode('agents');
+      setOpen(false); openAssistant?.();
+      return true;
+    }
     if (entry.category === 'documents') {
       const store = useStore.getState();
       const owner = store.chats?.[store.currentChatIndex];
@@ -222,7 +261,7 @@ export default function WorkspaceSearch({ navigate }: { navigate: (destination: 
     return true;
   };
   return <>
-    <button ref={trigger} type="button" className="workspace-search-trigger" aria-label="Search workspace" aria-haspopup="dialog" aria-expanded={open}
+    <button ref={trigger} type="button" className="workspace-command-trigger workspace-search-trigger" aria-label="Search workspace" aria-haspopup="dialog" aria-expanded={open}
       aria-keyshortcuts="Control+k Meta+k" title={`Search workspace (${mac ? '⌘' : 'Ctrl'}+K)`} onClick={() => { menu.setView(null); setOpen(true); }}>
       <Search size={16} aria-hidden="true" /><span>Search</span><kbd>{mac ? '⌘' : 'Ctrl'} K</kbd>
     </button>

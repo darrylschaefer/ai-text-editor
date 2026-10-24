@@ -8,12 +8,6 @@ import ToolMessage from '@components/Common/ToolMessage';
 import { Close, Hourglass } from '@carbon/icons-react';
 import useUnifiedSubmit from '@hooks/useUnifiedSubmit';
 import useUnifiedChat from '@hooks/useUnifiedChat';
-import { LegacyModels } from '@type/document';
-import { legacyCompletionModels } from '@constants/chat';
-import Input from './Legacy/Input';
-import Output from './Legacy/Output';
-import InputToolbar from './Legacy/InputToolbar';
-import OutputToolbar from './Legacy/OutputToolbar';
 
 const ChatContent = () => {
   const inputRole = useStore((state) => state.inputRole);
@@ -75,7 +69,7 @@ const ChatContent = () => {
 
   return (
     <>
-    {apiEndpoint == "chat_completions"? (
+    {(
     <div className='flex-1 overflow-hidden flex flex-col h-full relative' ref={messageContainerRef}>
       <div className='flex-1 overflow-hidden min-h-0'>
         <ScrollToBottom
@@ -183,66 +177,7 @@ const ChatContent = () => {
           sticky
         />
       </div>
-    </div>) : (
-    <div className='flex-1 overflow-hidden' ref={messageContainerRef}>
-    <ScrollToBottom
-      className='h-full bg-white dark:bg-gray-950'
-      followButtonClassName='hidden'
-    >
-      <ScrollToBottomButton />
-      <div className='flex flex-col items-center text-sm bg-white dark:bg-gray-950 w-full'>
-        <div
-          className='flex flex-col items-center text-sm w-full'
-          ref={saveRef}
-        >
-          {/* {advancedMode && <ChatTitle />} */}
-          {!generating && advancedMode && messages?.length === 0 && (
-            <NewMessageButton messageIndex={-1} />
-          )}
-
-          <InputToolbar />
-
-          {messagesArray.map((message, index) => (
-            <React.Fragment key={index}>
-              {index === 0 ? (
-                <Input
-                  content={message.content}
-                  onContentChange={(newContent) => handleEditMessage(index, newContent)}
-                />
-              ) : (
-                <Output 
-                  content={message.content}
-                  isLastMessage={index === messagesArray.length - 1}
-                  isGenerating={generating}
-                />
-              )}
-            </React.Fragment>
-          ))}
-  
-
-         
-        </div>
-
-        
-        {error !== '' && (
-          <div className='relative py-3 px-4 w-3/5 my-4 max-md:w-11/12 border border-red-500/50 dark:border-red-500/30 bg-red-50 dark:bg-red-900/20 rounded-md'>
-            <div className='text-red-700 dark:text-red-300 text-sm whitespace-pre-wrap pr-6'>
-              {error}
-            </div>
-            <div
-              className='text-red-600 dark:text-red-400 absolute top-2 right-2 cursor-pointer hover:opacity-70 transition-opacity'
-              onClick={() => {
-                setError('');
-              }}
-            >
-              <Close size={16} />
-            </div>
-          </div>
-        )}
-      </div>
-    </ScrollToBottom>
-  </div>
-    )}
+    </div>)}
     </>
   );
 };
