@@ -16,6 +16,8 @@ export default defineConfig({
     // Lexical's development invariants must run here, as they do in Vite.
     env: { NODE_ENV: 'development' },
     environment: 'node',
+    // Lexical/jsdom fixtures are memory intensive; callers can override this.
+    maxWorkers: 2,
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     allowOnly: !process.env.CI,
     passWithNoTests: false,

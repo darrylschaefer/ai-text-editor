@@ -8,7 +8,6 @@ import { modelMaxToken, completionModels } from '@constants/chat';
 import { Settings } from '@carbon/icons-react';
 import { _defaultChatConfig } from '@constants/chat';
 import _, { set } from 'lodash';
-import { FineTuneModel } from '@type/config';
 import { apiEndpointOptions } from '@constants/chat';
 import { ApiEndpointOptions } from '@type/document';
 import { providerOptions } from '@constants/chat';
@@ -42,12 +41,12 @@ export const PromptButtonConfig = (
 
     return (
         <>
-        <div
+        <button type="button" aria-label={`Settings for ${_promptName || 'Unnamed macro'}`}
         onClick={handleClick}
         className="flex items-center justify-center"
         >
             <Settings size={16} />
-            </div>
+            </button>
         {isPromptConfigModalOpen ? (
         <PromptPopup setIsModalOpen={setIsPromptConfigModalOpen} prompt={prompt} index={index} _promptName={_promptName} _setPromptName={_setPromptName} />
         ) : (<></>)
@@ -76,68 +75,20 @@ const PromptPopup = ({
 
     // Determine default config type
     const defaultChatConfig = useStore((state) => state.defaultChatConfig);
-    const defaultLegacyConfig = useStore((state) => state.defaultLegacyConfig);
     const agentApiEndpoint = useStore((state) => state.agentApiEndpoint);
     
     // Determine which default type is currently being used
-    const getDefaultConfigType = (): 'agent' | 'legacy_chat' | 'legacy_completions' | 'custom' => {
-      if (prompt.config == null) {
-        return 'legacy_chat'; // Default when no config
-      }
-      
+    const getDefaultConfigType = (): 'agent' | 'custom' => {
       const config = prompt.config;
-      
-      // Check if config matches agent defaults (compare key fields)
-      if (config.apiEndpoint === agentApiEndpoint && 
-          config.model === defaultChatConfig.model &&
-          config.provider === defaultChatConfig.provider &&
-          config.max_completion_tokens === defaultChatConfig.max_completion_tokens) {
-        // For responses API, check reasoning_effort and verbosity
-        if (agentApiEndpoint === 'responses') {
-          if (config.reasoning_effort === defaultChatConfig.reasoning_effort &&
-              config.verbosity === defaultChatConfig.verbosity) {
-            return 'agent';
-          }
-        } else {
-          // For chat_completions, check temperature, top_p, etc.
-          if (config.temperature === defaultChatConfig.temperature &&
-              config.top_p === defaultChatConfig.top_p &&
-              config.presence_penalty === defaultChatConfig.presence_penalty &&
-              config.frequency_penalty === defaultChatConfig.frequency_penalty) {
-            return 'agent';
-          }
-        }
-      }
-      
-      // Check if config matches legacy chat completions defaults
-      // Legacy chat completions must use 'chat_completions' endpoint
-      if (config.apiEndpoint === 'chat_completions' &&
-          config.model === defaultChatConfig.model &&
-          config.provider === defaultChatConfig.provider &&
-          config.max_completion_tokens === defaultChatConfig.max_completion_tokens &&
-          config.temperature === defaultChatConfig.temperature &&
-          config.top_p === defaultChatConfig.top_p &&
-          config.presence_penalty === defaultChatConfig.presence_penalty &&
-          config.frequency_penalty === defaultChatConfig.frequency_penalty) {
-        return 'legacy_chat';
-      }
-      
-      // Check if config matches legacy completions defaults
-      if (config.apiEndpoint === defaultLegacyConfig.apiEndpoint &&
-          config.model === defaultLegacyConfig.model &&
-          config.provider === defaultLegacyConfig.provider &&
-          (('max_tokens' in config ? config.max_tokens : undefined) === ('max_tokens' in defaultLegacyConfig ? defaultLegacyConfig.max_tokens : undefined) || config.max_completion_tokens === ('max_tokens' in defaultLegacyConfig ? defaultLegacyConfig.max_tokens : undefined)) &&
-          config.temperature === defaultLegacyConfig.temperature &&
-          config.top_p === defaultLegacyConfig.top_p &&
-          config.presence_penalty === defaultLegacyConfig.presence_penalty &&
-          config.frequency_penalty === defaultLegacyConfig.frequency_penalty) {
-        return 'legacy_completions';
-      }
-      
-      return 'custom';
+      if (config == null) return 'agent';
+      return config.apiEndpoint === 'responses' && config.model === defaultChatConfig.model
+        && config.connectionId === defaultChatConfig.connectionId
+        && config.max_completion_tokens === defaultChatConfig.max_completion_tokens
+        && config.reasoning_effort === defaultChatConfig.reasoning_effort
+        && config.verbosity === defaultChatConfig.verbosity ? 'agent' : 'custom';
     };
-    
-    const [defaultConfigType, setDefaultConfigType] = useState<'agent' | 'legacy_chat' | 'legacy_completions' | 'custom'>(getDefaultConfigType());
+
+    const [defaultConfigType, setDefaultConfigType] = useState<'agent' | 'custom'>(getDefaultConfigType());
     const isManuallyChanging = useRef(false);
     
     // Get the current API endpoint from config or default
@@ -162,7 +113,7 @@ useEffect(() => {
     }
     // Otherwise, update to the new type
     setDefaultConfigType(newType);
-}, [prompts, prompt.config, defaultChatConfig, defaultLegacyConfig, agentApiEndpoint, defaultConfigType])
+}, [prompts, prompt.config, defaultChatConfig, agentApiEndpoint, defaultConfigType])
 
 // Convert prompt format when API endpoint changes
 useEffect(() => {
@@ -186,38 +137,16 @@ useEffect(() => {
   }
 }, [prompt.config?.apiEndpoint])
 
-function handleDefaultConfigTypeChange(newType: 'agent' | 'legacy_chat' | 'legacy_completions' | 'custom') {
-    // Mark that we're manually changing the config type
+function handleDefaultConfigTypeChange(newType: 'agent' | 'custom') {
     isManuallyChanging.current = true;
     setDefaultConfigType(newType);
-    let tempPrompts = prompts;
+    const updated = [...prompts];
+    updated[index] = { ...updated[index], config: newType === 'agent'
+      ? { ...defaultChatConfig, apiEndpoint: 'responses' }
+      : { ...(updated[index].config || defaultChatConfig), apiEndpoint: 'responses' } };
+    setPrompts(updated);
     
-    if (newType === 'custom') {
-      // If switching to custom, keep existing config or create a new one
-      if (tempPrompts[index].config == null) {
-        tempPrompts[index].config = { ..._defaultChatConfig };
-      }
-    } else {
-      // Apply the selected default config
-      if (newType === 'agent') {
-        tempPrompts[index].config = {
-          ...defaultChatConfig,
-          apiEndpoint: agentApiEndpoint as ApiEndpointOptions,
-        };
-      } else if (newType === 'legacy_chat') {
-        // For legacy chat, ensure apiEndpoint is 'chat_completions' to distinguish from agent defaults
-        tempPrompts[index].config = {
-          ...defaultChatConfig,
-          apiEndpoint: 'chat_completions' as ApiEndpointOptions,
-        };
-      } else if (newType === 'legacy_completions') {
-        tempPrompts[index].config = { ...defaultLegacyConfig } as any;
-      }
-    }
-    
-    setPrompts(tempPrompts);
-    }
-
+  }
 
   const handleOnFocus = (e: React.FocusEvent<HTMLTextAreaElement, Element>) => {
     e.target.style.height = 'auto';
@@ -502,11 +431,9 @@ const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
                   <select
                     className='w-full pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                     value={defaultConfigType}
-                    onChange={(e) => handleDefaultConfigTypeChange(e.target.value as 'agent' | 'legacy_chat' | 'legacy_completions' | 'custom')}
+                    onChange={(e) => handleDefaultConfigTypeChange(e.target.value as 'agent' | 'custom')}
                   >
                     <option value="agent">Agent Defaults</option>
-                    <option value="legacy_chat">Legacy Chat Completions Defaults</option>
-                    <option value="legacy_completions">Legacy Completions Defaults</option>
                     <option value="custom">Custom</option>
                   </select>
         </div>
@@ -536,7 +463,7 @@ const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         ) : (
           <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Using {defaultConfigType === 'agent' ? 'Agent' : defaultConfigType === 'legacy_chat' ? 'Legacy Chat Completions' : 'Legacy Completions'} defaults. 
+              Using Agent defaults.
               Select "Custom" to configure individual parameters.
             </p>
           </div>
@@ -560,6 +487,7 @@ const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 export const PromptIndividualConfig = ({prompt, index, onApiEndpointChange}:{prompt: any; index: number; onApiEndpointChange?: (newEndpoint: ApiEndpointOptions) => void}) => {
     const [_provider, _setProvider] = useState<ProviderOptions>(prompt.config.provider || "openai");
     const [_apiEndpoint, _setApiEndpoint] = useState<ApiEndpointOptions>(prompt.config.apiEndpoint || "responses");
+    const [_connectionId, _setConnectionId] = useState<string | undefined>(prompt.config?.connectionId);
     const [_model, _setModel] = useState<string>(prompt.config.model);
     const [_maxToken, _setMaxToken] = useState<number>(prompt.config.max_completion_tokens);
     const [_temperature, _setTemperature] = useState<number>(prompt.config.temperature);
@@ -602,19 +530,19 @@ export const PromptIndividualConfig = ({prompt, index, onApiEndpointChange}:{pro
        
        // Only set safe default model when endpoint changes - preserve other custom values
        if (_apiEndpoint === 'completions') {
-         _setModel('davinci-002');
+         _setModel('');
          // Only set max_tokens if it's not already set or if switching from a different endpoint type
          if (prevApiEndpointRef.current !== 'completions' && ('max_tokens' in defaults ? defaults.max_tokens : undefined) !== undefined) {
            _setMaxToken(('max_tokens' in defaults ? defaults.max_tokens : undefined) as number);
          }
        } else if (_apiEndpoint === 'chat_completions') {
-         _setModel('gpt-3.5-turbo');
+         _setModel('');
          // Only set defaults if switching from a different endpoint type
          if (prevApiEndpointRef.current !== 'chat_completions') {
            if ('max_completion_tokens' in defaults && defaults.max_completion_tokens !== undefined) _setMaxToken(defaults.max_completion_tokens as number);
          }
        } else if (_apiEndpoint === 'responses') {
-         _setModel('gpt-4o');
+         _setModel('');
          // Only set defaults if switching from a different endpoint type
          if (prevApiEndpointRef.current !== 'responses') {
            if ('max_completion_tokens' in defaults && defaults.max_completion_tokens !== undefined) _setMaxToken(defaults.max_completion_tokens as number);
@@ -627,7 +555,7 @@ export const PromptIndividualConfig = ({prompt, index, onApiEndpointChange}:{pro
      // Watch for changes in prompt config
          useEffect(() => {
        const config: any = {
-                    model: _model,
+                    model: _model, connectionId: _connectionId,
                     max_completion_tokens: _maxToken,
          apiEndpoint: _apiEndpoint,
                     provider: _provider,
@@ -653,7 +581,7 @@ export const PromptIndividualConfig = ({prompt, index, onApiEndpointChange}:{pro
 
        prompts[index].config = config;
                     setPrompts(prompts);
-     }, [_model, _maxToken, _temperature, _presencePenalty, _topP, _frequencyPenalty, _provider, _apiEndpoint, _reasoningEffort, _verbosity]);
+     }, [_connectionId, _model, _maxToken, _temperature, _presencePenalty, _topP, _frequencyPenalty, _provider, _apiEndpoint, _reasoningEffort, _verbosity]);
 
 
     return (
@@ -665,10 +593,10 @@ export const PromptIndividualConfig = ({prompt, index, onApiEndpointChange}:{pro
                 <ApiEndpointSelector _apiEndpoint={_apiEndpoint} _setApiEndpoint={_setApiEndpoint} />
           </div>
           <div className="mb-4">
-       <ModelSelector _model={_model} _setModel={_setModel} _provider={_provider} _apiEndpoint={_apiEndpoint} />
+       <ModelSelector _connectionId={_connectionId} _setConnectionId={_setConnectionId} _model={_model} _setModel={_setModel} _provider={_provider} _apiEndpoint={_apiEndpoint} />
           </div>
           <div className="mb-4">
-        <MaxTokenSlider
+        <MaxTokenSlider _connectionId={_connectionId}
           _maxToken={_maxToken}
           _setMaxToken={_setMaxToken}
           _model={_model}

@@ -12,7 +12,7 @@ const dbg = debug.tag('embedding-queue');
  */
 
 // Default values (fallback if store not available)
-const DEFAULT_EMBEDDING_MODEL = 'text-embedding-3-small';
+const DEFAULT_EMBEDDING_MODEL = '';
 const DEFAULT_RATE_LIMIT_MS = 1000;
 const DEFAULT_BATCH_SIZE = 5;
 const DEFAULT_EDITING_INACTIVITY_DELAY_MS = 30000;
@@ -23,7 +23,7 @@ const DEFAULT_EDITING_INACTIVITY_DELAY_MS = 30000;
 function getEmbeddingConfig() {
   const state = useStore.getState();
   return {
-    enabled: state.embeddingsEnabled ?? true,
+    enabled: !!state.embeddingsEnabled && !!state.embeddingModel,
     model: state.embeddingModel || DEFAULT_EMBEDDING_MODEL,
     rateLimitMs: state.embeddingRateLimitMs || DEFAULT_RATE_LIMIT_MS,
     batchSize: state.embeddingBatchSize || DEFAULT_BATCH_SIZE,

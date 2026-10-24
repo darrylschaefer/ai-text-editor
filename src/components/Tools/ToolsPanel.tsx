@@ -21,12 +21,12 @@ export default function ToolsPanel() {
   const currentPage = Math.min(page, pageCount - 1), offset = currentPage * PAGE_SIZE;
   const shown = sentences.slice(offset, offset + PAGE_SIZE);
   const active = sentences.find(sentence => sentence.id === rhythm.activeSentence);
-  return <section className="workspace-tools" aria-label="Writing tools">
-    <header className="tools-heading"><h2>Tools</h2><span>Local tools for your prose</span></header>
-    <div className="tools-list"><article className="tools-tool">
+  return <section className="workspace-tools assistant-section" aria-label="Writing tools">
+    <header className="tools-heading assistant-section-heading"><div><h2>Writing tools</h2><p>Local tools for your prose.</p></div></header>
+    <div className="tools-list assistant-section-content"><article className="tools-tool">
     <div className="tools-tool-title"><ChartBar size={18} aria-hidden="true" />
       <div className="tools-tool-copy"><h3>Prose rhythm</h3><p>Sentence lengths and patterns.</p></div>
-      <button type="button" className="tools-enable" aria-pressed={rhythm.enabled}
+      <button type="button" className="tools-enable assistant-section-action" aria-pressed={rhythm.enabled}
         aria-label={`${rhythm.enabled ? 'Disable' : 'Enable'} prose rhythm`}
         onClick={() => rhythm.setEnabled(value => !value)}>{rhythm.enabled ? 'Disable' : 'Enable'}</button>
     </div>

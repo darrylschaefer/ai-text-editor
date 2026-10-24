@@ -10,7 +10,9 @@ import Workspace from '@components/Workspace/Workspace';
 import useInitialiseNewDocument from '@hooks/useInitialiseNewDocument';
 import { DocumentInterface } from '@type/document';
 import { Theme } from '@type/theme';
-import ApiPopup from '@components/FooterMenu/Api/ApiPopup';
+import ConnectionRuntime from '@components/Search/ConnectionRuntime';
+import { migrateLegacyConnection, refreshConnection, useConnections } from '@store/connection-store';
+import { bindWorkspaceConnection } from '@utils/provider-connections';
 import Toast from '@components/Toast';
 import ActionQueue from '@components/ActionQueue';
 import { set } from 'lodash';
@@ -24,7 +26,7 @@ const Home = () => {
   return (
   <>
   <Workspace />
-  <ApiPopup />
+  <ConnectionRuntime />
   <Toast />
   <ActionQueue queue={actionQueue} isVisible={isVisible} />
   </>
@@ -32,7 +34,17 @@ const Home = () => {
 }
 
 function App() {
+  const [hydrated, setHydrated] = useState(useStore.persist.hasHydrated());
+  const connectionStorageError = useConnections(state => state.storageError);
+  useEffect(() => {
+    const unsubscribe = useStore.persist.onFinishHydration(() => { useStore.getState().initializeAgentProfiles(); setHydrated(true); });
+    setHydrated(useStore.persist.hasHydrated());
+    return unsubscribe;
+  }, []);
   const initialiseNewDocument = useInitialiseNewDocument();
+  useEffect(() => {
+    if (hydrated) useStore.getState().initializeAgentProfiles();
+  }, [hydrated]);
   const setChats = useStore((state) => state.setChats);
   const setTheme = useStore((state) => state.setTheme);
   const setApiKey = useStore((state) => state.setApiKey);
@@ -43,6 +55,7 @@ function App() {
 // a useEffect that resets the .edited variables of all items in chats to false
 
 useEffect(() => {
+  if (!hydrated) return;
   const chats = useStore.getState().chats;
   const currentDocumentIndex = useStore.getState().currentChatIndex;
 
@@ -53,7 +66,7 @@ useEffect(() => {
     });
     useStore.getState().setChats(newChats);
   }
-}, []);
+}, [hydrated]);
 
   // useEffect(() => {
 //    document.documentElement.lang = i18n.language;
@@ -63,6 +76,7 @@ useEffect(() => {
   // }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     // legacy local storage
     const oldChats = localStorage.getItem('chats');
     const apiKey = localStorage.getItem('apiKey');
@@ -71,8 +85,11 @@ useEffect(() => {
 
     if (apiKey) {
       // legacy local storage
-      setApiKey(apiKey);
-      localStorage.removeItem('apiKey');
+      void migrateLegacyConnection(apiKey, useStore.getState().apiEndpoint).then(id => {
+        useStore.setState(state => bindWorkspaceConnection(state, id));
+        localStorage.removeItem('apiKey');
+        if (useConnections.getState().connections.find(connection => connection.id === id)?.provider === 'openai') void refreshConnection(id).catch(() => {});
+      }).catch(() => {});
     }
 
     if (theme) {
@@ -109,13 +126,16 @@ useEffect(() => {
         setCurrentChatIndex(0);
       }
     }
-  }, []);
+  }, [hydrated]);
 
   return (
     <div className='w-full h-full relative'>
         <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={hydrated ? <Home /> : <div className="p-6" role="status">
+          {connectionStorageError || 'Loading your workspace…'}
+          {connectionStorageError && <button type="button" className="btn btn-neutral" onClick={() => void useStore.persist.rehydrate()}>Retry loading workspace</button>}
+        </div>} />
         <Route path="/faqs" element={
           <FAQs />
         } />

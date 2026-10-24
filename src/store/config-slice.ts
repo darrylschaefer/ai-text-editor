@@ -2,7 +2,6 @@ import { StoreSlice } from './store';
 import { Theme } from '@type/theme';
 import { ConfigInterface, LegacyConfigInterface, TotalTokenUsed, ModelOptions, AvailableEndpoints } from '@type/document';
 import { _defaultChatConfig, _defaultSystemMessage, _defaultLegacyConfig } from '@constants/chat';
-import { FineTuneModel } from '@type/config';
 import type { DocumentView, MobileDocumentView, PageMeasurementUnit } from '@type/page-setup';
 
 export interface ConfigSlice {
@@ -29,7 +28,6 @@ export interface ConfigSlice {
   countTotalTokens: boolean;
   totalTokenUsed: TotalTokenUsed;
   aiPadding: number;
-  fineTuneModels: FineTuneModel[];
   editorAgentsMode: 'editor' | 'agents';
   enabledTools: string[]; // List of enabled tool names
   agentApiEndpoint: string; // Default API endpoint for agents
@@ -37,6 +35,8 @@ export interface ConfigSlice {
   // Embedding configuration
   embeddingsEnabled: boolean;
   embeddingModel: string;
+  embeddingConnectionId?: string;
+  setEmbeddingConnectionId: (id: string) => void;
   embeddingInactivityDelayMs: number;
   embeddingRateLimitMs: number;
   embeddingBatchSize: number;
@@ -68,7 +68,6 @@ export interface ConfigSlice {
   setCountTotalTokens: (countTotalTokens: boolean) => void;
   setTotalTokenUsed: (totalTokenUsed: TotalTokenUsed) => void;
   setAIPadding: (aiPadding: number) => void;
-  setFineTuneModels: (fineTuneModels: FineTuneModel[]) => void;
   setEditorAgentsMode: (editorAgentsMode: 'editor' | 'agents') => void;
 }
 
@@ -95,7 +94,6 @@ export const createConfigSlice: StoreSlice<ConfigSlice> = (set, get) => ({
   markdownMode: true,
   countTotalTokens: false,
   totalTokenUsed: {},
-  fineTuneModels: [],
   aiPadding: 0,
   editorAgentsMode: 'agents',
   enabledTools: [
@@ -139,8 +137,10 @@ export const createConfigSlice: StoreSlice<ConfigSlice> = (set, get) => ({
     'clip_create': true,
     'clip_update': true,
   },
-  embeddingsEnabled: true,
-  embeddingModel: 'text-embedding-3-small',
+  embeddingsEnabled: false,
+  embeddingModel: '',
+  embeddingConnectionId: undefined,
+  setEmbeddingConnectionId: (embeddingConnectionId: string) => set({ embeddingConnectionId }),
   embeddingInactivityDelayMs: 30000,
   embeddingRateLimitMs: 1000,
   embeddingBatchSize: 5,
@@ -205,12 +205,6 @@ export const createConfigSlice: StoreSlice<ConfigSlice> = (set, get) => ({
       openConfig: openConfig,
     }));
   },
-  setFineTuneModels: (fineTuneModels: FineTuneModel[]) => {
-    set((prev: ConfigSlice) => ({
-      ...prev,
-      fineTuneModels: fineTuneModels,
-    }));
-  },
   setTheme: (theme: Theme) => {
     // Apply theme to DOM immediately to prevent flash
     if (typeof document !== 'undefined') {
@@ -237,6 +231,8 @@ export const createConfigSlice: StoreSlice<ConfigSlice> = (set, get) => ({
     set((prev: ConfigSlice) => ({
       ...prev,
       defaultChatConfig: defaultChatConfig,
+      agents: get().agents.map(agent => agent.id === get().defaultAgentId
+        ? { ...agent, config: { ...defaultChatConfig }, updatedAt: new Date().toISOString() } : agent),
     }));
   },
   setDefaultLegacyConfig: (defaultLegacyConfig: LegacyConfigInterface) => {

@@ -94,15 +94,15 @@ function Checkpoints({ document: doc }: { document: DocumentInterface }) {
   const changes = selected && captured && showChanges ? computeEditorStateDiff(savedState || emptyState, currentState || emptyState) : '';
 
   return (
-    <section className="workspace-history" aria-label="Document history">
-      <div className="workspace-history-heading">
+    <section className="workspace-history assistant-section" aria-label="Document history">
+      <div className="workspace-history-heading assistant-section-heading">
         <div className="workspace-history-heading-row">
         <h2>History <span>{commits.length}</span></h2>
         <CreateCheckpoint documentId={doc.id} />
         </div>
         <p title={doc.title}>{doc.title}</p>
       </div>
-      <div className="workspace-history-content">
+      <div className="workspace-history-content assistant-section-content">
         {error && <div className="workspace-history-error" role="alert"><p>{error}</p>
           {!confirmation && <button type="button" onClick={() => setRetry(value => value + 1)}>Try again</button>}
         </div>}
@@ -123,8 +123,8 @@ function Checkpoints({ document: doc }: { document: DocumentInterface }) {
             <p className="workspace-history-hint">Restoring recovers the saved writing versions, Notes, and metadata. Versions created after this checkpoint stay intact.</p>
             <button type="button" disabled={!captured} className="workspace-history-action" onClick={() => setConfirmation({ action: 'restore', commit: selected })}>Restore checkpoint</button>
           </div>
-        ) : loading ? <p className="workspace-history-empty" role="status">Loading checkpoints…</p> : error ? null : commits.length === 0 ? (
-          <div className="workspace-history-empty"><p>No checkpoints yet</p><p>Create a checkpoint before a rewrite or at a point you want to revisit.</p></div>
+        ) : loading ? <p className="workspace-history-empty assistant-section-empty" role="status">Loading checkpoints…</p> : error ? null : commits.length === 0 ? (
+          <div className="workspace-history-empty assistant-section-empty"><p>No checkpoints yet</p><p>Create a checkpoint before a rewrite or at a point you want to revisit.</p></div>
         ) : (
           <ol className="workspace-checkpoints">
             {commits.map(commit => (
@@ -168,6 +168,6 @@ const emptyState = JSON.stringify({ root: { children: [] } });
 
 export default function DocumentHistory() {
   const doc = useStore(state => state.chats?.[state.currentChatIndex]);
-  if (!doc) return <section className="workspace-history" aria-label="Document history"><p className="workspace-history-empty">Open a document to view its history.</p></section>;
+  if (!doc) return <section className="workspace-history assistant-section" aria-label="Document history"><div className="assistant-section-content"><p className="workspace-history-empty assistant-section-empty">Open a document to view its history.</p></div></section>;
   return <Checkpoints key={`${doc.id}:${doc.currentVersion}`} document={doc} />;
 }

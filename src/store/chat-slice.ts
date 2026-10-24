@@ -1,16 +1,22 @@
 import { StoreSlice } from './store';
 import { MessageInterface, ConfigInterface } from '@type/document';
 import { v4 as uuidv4 } from 'uuid';
+import type { AgentSnapshot } from '@type/agent';
+import type { ContextReport, ContextUsage } from '@type/context-policy';
+import { cancelChatGeneration, generatingConversationId } from '@utils/chat-generation';
 
 export type ChatType = 'regular' | 'agent' | 'completion';
 
 export interface ChatConversation {
+  contextReport?: ContextReport;
+  contextUsage?: ContextUsage;
   id: string;
   type: ChatType;
   title: string;
   messages: MessageInterface[];
   config?: ConfigInterface;
   agentId?: string; // If type is 'agent', this links to the agent
+  agentProfile?: AgentSnapshot;
   documentId?: string; // Optional link to a document
   createdAt: string;
   updatedAt: string;
@@ -89,6 +95,7 @@ export const createChatSlice: StoreSlice<ChatSlice> = (set, get) => ({
   },
   
   deleteConversation: (conversationId: string) => {
+    if (generatingConversationId() === conversationId) get().setGenerating(false);
     set((prev: ChatSlice) => ({
       ...prev,
       conversations: prev.conversations.filter((conv) => conv.id !== conversationId),
@@ -146,6 +153,7 @@ export const createChatSlice: StoreSlice<ChatSlice> = (set, get) => ({
   },
   
   deleteMessage: (conversationId: string, messageIndex: number) => {
+    if (generatingConversationId() === conversationId) get().setGenerating(false);
     set((prev: ChatSlice) => ({
       ...prev,
       conversations: prev.conversations.map((conv) =>
@@ -161,6 +169,7 @@ export const createChatSlice: StoreSlice<ChatSlice> = (set, get) => ({
   },
   
   clearConversation: (conversationId: string) => {
+    if (generatingConversationId() === conversationId) get().setGenerating(false);
     set((prev: ChatSlice) => ({
       ...prev,
       conversations: prev.conversations.map((conv) =>
@@ -176,6 +185,7 @@ export const createChatSlice: StoreSlice<ChatSlice> = (set, get) => ({
   },
   
   setGenerating: (generating: boolean) => {
+    if (!generating) cancelChatGeneration();
     set((prev: ChatSlice) => ({
       ...prev,
       generating: generating,

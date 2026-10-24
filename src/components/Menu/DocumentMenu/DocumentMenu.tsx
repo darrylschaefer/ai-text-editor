@@ -6,7 +6,7 @@ const DocumentMenu = () => {
   const mode = useStore(state => state.editorAgentsMode);
   return (
     <div className="workspace-pane-content">
-      <nav aria-label={mode === 'editor' ? 'Documents' : 'Agents and conversations'}>
+      <nav aria-label={mode === 'editor' ? 'Documents' : 'Chats'}>
         {mode === 'editor' ? <DocumentList /> : <AgentsList />}
       </nav>
     </div>

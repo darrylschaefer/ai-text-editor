@@ -42,3 +42,35 @@ jobs:
       - name: Build the web container
         if: runner.os == 'Linux'
         run: docker build --tag ai-text-editor:ci .
+
+  browser-tests:
+    name: Browser chat journeys
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - name: Check out the proposed code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Node and npm cache
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install locked dependencies
+        run: npm install --global npm@11.19.0 && npm ci
+      - name: Install test browsers and system dependencies
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run desktop and phone browser journeys
+        run: npm run test:e2e
+      - name: Keep browser report and failure traces
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-test-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

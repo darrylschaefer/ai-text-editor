@@ -16,7 +16,7 @@ const AgentSetup = () => {
         onClick={() => setIsModalOpen(true)}
       >
         <Chat className='w-4 h-4' />
-        Agent Setup
+        Agent profiles
       </a>
       {isModalOpen && <AgentSetupMenu setIsModalOpen={setIsModalOpen} />}
     </>

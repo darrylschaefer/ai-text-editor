@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DocumentInterface } from '@type/document';
-import { documentSearchEntries, modelSearchEntries, parseSearchQuery, SEARCH_SETTINGS, searchEditorText,
+import { conversationSearchEntries, documentSearchEntries, modelSearchEntries, parseSearchQuery, SEARCH_SETTINGS, searchEditorText,
   searchExcerpt, searchHighlights, searchWorkspace, type SearchEntry } from '../workspace-search';
 
 function state(...paragraphs: string[]) {
@@ -22,6 +22,19 @@ const documents = () => documentSearchEntries([fixture()], { fiction: { id: 'fic
 const setting = (destination: string) => SEARCH_SETTINGS.find(entry => entry.destination === destination)!;
 
 describe('workspace search', () => {
+  it('indexes chats separately by title, profile, model, and message text, excluding tool output and instructions', () => {
+    const chat = { id: 'chat-one', type: 'agent' as const, title: 'Revision discussion', createdAt: '', updatedAt: '',
+      config: { model: 'gpt-5.2' } as any, agentProfile: { name: 'Copy editor', instructions: 'secret instructions' } as any,
+      messages: [{ role: 'user' as const, content: 'A moonlit observatory.' }, { role: 'assistant' as const, content: 'A silver compass.' },
+        { role: 'tool' as const, content: 'excluded tool output' }] };
+    const entries = conversationSearchEntries([chat]);
+    expect(searchWorkspace(entries, 'chat: observatory')[0]).toMatchObject({ conversationId: 'chat-one', category: 'chats' });
+    expect(searchWorkspace(entries, 'chats: silver')).toHaveLength(1);
+    expect(searchWorkspace(entries, 'revision')).toHaveLength(1); expect(searchWorkspace(entries, 'copy editor')).toHaveLength(1);
+    expect(searchWorkspace(entries, 'gpt-5.2')).toHaveLength(1); expect(searchWorkspace(entries, 'tool output')).toEqual([]);
+    expect(searchWorkspace(entries, 'secret instructions')).toEqual([]); expect(searchWorkspace(entries, '', 'documents')).toEqual([]);
+    expect(conversationSearchEntries([{ ...chat, title: 'Changed' }])[0].title).toBe('Changed');
+  });
   it('indexes saved writing versions, notes, folders, and metadata without assistant conversations', () => {
     const entries = documents();
     expect(entries).toHaveLength(4);

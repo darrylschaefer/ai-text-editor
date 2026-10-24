@@ -55,6 +55,10 @@ function button(name: string) {
 }
 async function settle() { await act(async () => { await tick(); await tick(); }); }
 async function click(name: string) {
+  if (['Chat', 'Notes', 'History', 'Tools', 'Meta', 'Macros'].includes(name)) {
+    const trigger = container.querySelector<HTMLButtonElement>('.workspace-commandbar [aria-label^="Assistant section:"]')!;
+    if (trigger.getAttribute('aria-expanded') !== 'true') await act(async () => { trigger.click(); await tick(); });
+  }
   await act(async () => { const target = button(name); target.focus(); target.click(); await tick(); }); await settle();
 }
 async function openRhythm() {

@@ -9,15 +9,9 @@ import { $resolveDocumentSelection, type DocumentSelection } from '@utils/editor
 import { checkpointSnapshot, copyVersionState, getVersionState, restoreCheckpointVersions, validateVersionName } from '@utils/document-versions';
 import { parsePageSetup } from '@utils/page-layout';
 import type { DocumentPageSetup } from '@type/page-setup';
+import type { Agent } from '@type/agent';
+export type { Agent } from '@type/agent';
 
-export interface Agent {
-  id: string;
-  name: string;
-  description?: string;
-  avatar?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface DocumentSlice {
   documentCurrent: DocumentCurrent;
@@ -76,14 +70,6 @@ export interface DocumentSlice {
   pruneDocumentCommits: (documentId: string, keepLastN?: number) => Promise<number>;
 }
 
-export interface Agent {
-  id: string;
-  name: string;
-  description?: string;
-  avatar?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
   const versionRequests = new Map<string, symbol>();
@@ -497,6 +483,7 @@ export const createDocumentSlice: StoreSlice<DocumentSlice> = (set, get) => {
       ...prev,
       agents: prev.agents.filter((agent) => agent.id !== agentId),
       selectedAgentId: prev.selectedAgentId === agentId ? null : prev.selectedAgentId,
+      defaultAgentId: get().defaultAgentId === agentId ? null : get().defaultAgentId,
     }));
   },
   autosaveStatus: 'idle' as SaveStatus,

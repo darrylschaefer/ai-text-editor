@@ -3,17 +3,7 @@ import useStore from '@store/store';
 import { useOpenAssistant } from '@components/Workspace/WorkspaceContext';
 import { ChatConversation } from '@store/chat-slice';
 import { TrashCan, Close, Edit, Checkmark, Chat, Code } from '@carbon/icons-react';
-
-const ConversationButtonClass = {
-  normal:
-    'flex py-1.5 pr-2 pl-2 items-center gap-2.5 relative bg-transparent hover:bg-gray-100/70 dark:hover:bg-gray-800/30 break-all group transition-colors text-gray-700 dark:text-gray-400 rounded-md',
-  active:
-    'flex py-1.5 pr-2 pl-2 items-center gap-2.5 relative break-all pr-12 bg-gray-100 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 group transition-colors text-gray-900 dark:text-gray-200 rounded-md',
-  normalGradient:
-    'absolute inset-y-0 right-0 w-8 z-10 bg-gradient-to-l from-transparent group-hover:from-gray-100/60 dark:group-hover:from-gray-800/40',
-  activeGradient:
-    'absolute inset-y-0 right-0 w-8 z-10 bg-gradient-to-l from-gray-100/80 dark:from-gray-800/60',
-};
+import { libraryRowClass } from './library-styles';
 
 const ConversationButton = ({ conversation }: { conversation: ChatConversation }) => {
   const activeConversationId = useStore((state) => state.activeConversationId);
@@ -71,8 +61,9 @@ const ConversationButton = ({ conversation }: { conversation: ChatConversation }
 
   return (
     <a
+      title={conversation.title}
       className={`${
-        active ? ConversationButtonClass.active : ConversationButtonClass.normal
+        active ? libraryRowClass.active : libraryRowClass.normal
       } ${
         generating
           ? 'cursor-not-allowed opacity-40'
@@ -97,12 +88,12 @@ const ConversationButton = ({ conversation }: { conversation: ChatConversation }
         }
       }}
     >
-      <Icon size={16} />
-      <div className='flex-1 text-ellipsis max-h-5 overflow-hidden break-all relative'>
+      <Icon size={16} className="shrink-0" />
+      <div className='min-w-0 flex-1 truncate'>
         {isEdit ? (
           <input
             type='text'
-            className='focus:outline-blue-600 text-sm border-none bg-transparent p-0 m-0 w-full'
+            className='focus:outline-blue-600 text-sm border-none bg-transparent p-0 m-0 min-w-0 w-full'
             value={_title}
             onChange={(e) => {
               _setTitle(e.target.value);
@@ -115,40 +106,33 @@ const ConversationButton = ({ conversation }: { conversation: ChatConversation }
           _title
         )}
 
-        {isEdit || (
-          <div
-            className={
-              active
-                ? ConversationButtonClass.activeGradient
-                : ConversationButtonClass.normalGradient
-            }
-          />
-        )}
       </div>
       {active && (
-        <div className='absolute flex right-2 z-10 text-gray-600 dark:text-gray-300 visible'>
+        <div className='flex shrink-0 text-gray-600 dark:text-gray-300' onClick={event => event.stopPropagation()}>
           {isDelete || isEdit ? (
             <>
-              <button className='p-1 hover:text-gray-900 dark:hover:text-white' onClick={handleTick}>
-                <Checkmark />
+              <button type="button" aria-label={isEdit ? 'Confirm rename' : 'Confirm deletion'} className='p-1 hover:text-gray-900 dark:hover:text-white' onClick={handleTick}>
+                <Checkmark size={16} />
               </button>
-              <button className='p-1 hover:text-gray-900 dark:hover:text-white' onClick={handleCross}>
-                <Close />
+              <button type="button" aria-label={isEdit ? 'Cancel rename' : 'Cancel deletion'} className='p-1 hover:text-gray-900 dark:hover:text-white' onClick={handleCross}>
+                <Close size={16} />
               </button>
             </>
           ) : (
             <>
               <button
+                type="button" aria-label="Rename chat"
                 className='p-1 hover:text-gray-900 dark:hover:text-white'
-                onClick={() => setIsEdit(true)}
+                onClick={() => { _setTitle(conversation.title); setIsEdit(true); }}
               >
-                <Edit />
+                <Edit size={16} />
               </button>
               <button
+                type="button" aria-label="Delete chat"
                 className='p-1 hover:text-gray-900 dark:hover:text-white'
                 onClick={() => setIsDelete(true)}
               >
-                <TrashCan />
+                <TrashCan size={16} />
               </button>
             </>
           )}

@@ -1,504 +1,111 @@
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import useStore from '@store/store';
-import { ApiEndpointOptions, ConfigInterface, ModelOptions, ProviderOptions, AvailableEndpoints, ModelMetadata } from '@type/document';
+import { useContext, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { Add, Chat, Checkmark, Copy, Edit, TrashCan } from '@carbon/icons-react';
 import PopupModal from '@components/PopupModal';
-import { toolRegistry, getToolDefinitions, LEGACY_TOOLS, CANONICAL_TOOLS } from '@api/tools';
-import { getModelsList } from '@api/api';
-import {
-  ModelSelector,
-  MaxTokenSlider,
-  TemperatureSlider,
-  TopPSlider,
-  FrequencyPenaltySlider,
-  PresencePenaltySlider,
-  ProviderSelector,
-} from '@components/Configuration/sliders';
-import { ReasoningEffortSelector, ReasoningEffort } from '@components/Configuration/reasoningEffort';
-import { VerbositySelector, Verbosity } from '@components/Configuration/verbosity';
-import { debug } from '@utils/debug';
+import { WorkspaceAssistantContext } from '@components/Workspace/WorkspaceContext';
+import { ModelSelector } from '@components/Configuration/sliders';
+import useStore from '@store/store';
+import { resolveConnectionRequest, useConnections } from '@store/connection-store';
+import type { Agent } from '@type/agent';
+import type { ConfigInterface } from '@type/document';
+import { parseAgent } from '@utils/agent-profiles';
+import { availableAgentTools as availableTools, agentToolLabels as toolLabels } from '@utils/agent-tools';
+import './agent-profiles.css';
 
-const dbg = debug.tag('AgentSetupMenu');
+function createDraft(): Agent {
+  const state = useStore.getState(), now = new Date().toISOString();
+  const source = state.agents.find(agent => agent.id === state.defaultAgentId);
+  return { ...parseAgent({ ...source, id: uuidv4(), name: 'Untitled agent', description: '',
+    instructions: source?.instructions || 'Help the author develop and revise their writing. Preserve their meaning and voice. Explain proposed edits and ask when the intended meaning is unclear.',
+    createdAt: now, updatedAt: now }, state), name: '' };
+}
 
-const AgentSetupMenu = ({
-  setIsModalOpen,
-}: {
-  setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-}) => {
-  const { t } = useTranslation(['main', 'api']);
-
-  const enabledTools = useStore((state) => state.enabledTools);
-  const setEnabledTools = useStore((state) => state.setEnabledTools);
-  const agentApiEndpoint = useStore((state) => state.agentApiEndpoint);
-  const setAgentApiEndpoint = useStore((state) => state.setAgentApiEndpoint);
-  const defaultChatConfig = useStore((state) => state.defaultChatConfig);
-  const setDefaultChatConfig = useStore((state) => state.setDefaultChatConfig);
-  const toolConfirmationSettings = useStore((state) => state.toolConfirmationSettings);
-  const setToolConfirmation = useStore((state) => state.setToolConfirmation);
-  const setToolConfirmationSettings = useStore((state) => state.setToolConfirmationSettings);
-  const fetchedModels = useStore((state) => state.fetchedModels);
-  const setFetchedModels = useStore((state) => state.setFetchedModels);
-
-  const [_enabledTools, _setEnabledTools] = useState<string[]>(enabledTools || []);
-  const [_toolConfirmationSettings, _setToolConfirmationSettings] = useState<Record<string, boolean>>(toolConfirmationSettings || {});
-  // Lock API endpoint to 'responses' for agents
-  const [_agentApiEndpoint] = useState<string>('responses');
-  
-  // Configuration state
-  const [_provider, _setProvider] = useState<ProviderOptions>(
-    defaultChatConfig?.provider || 'openai'
-  );
-  const [_model, _setModel] = useState<ModelOptions>(
-    defaultChatConfig?.model || 'gpt-3.5-turbo'
-  );
-  const [_maxToken, _setMaxToken] = useState<number>(
-    defaultChatConfig?.max_completion_tokens || 1200
-  );
-  const [_temperature, _setTemperature] = useState<number>(
-    defaultChatConfig?.temperature ?? 1
-  );
-  const [_topP, _setTopP] = useState<number>(
-    defaultChatConfig?.top_p ?? 1
-  );
-  const [_presencePenalty, _setPresencePenalty] = useState<number>(
-    defaultChatConfig?.presence_penalty ?? 0
-  );
-  const [_frequencyPenalty, _setFrequencyPenalty] = useState<number>(
-    defaultChatConfig?.frequency_penalty ?? 0
-  );
-  const [_reasoningEffort, _setReasoningEffort] = useState<ReasoningEffort>(
-    (defaultChatConfig?.reasoning_effort as ReasoningEffort) || 'medium'
-  );
-  const [_verbosity, _setVerbosity] = useState<Verbosity>(
-    (defaultChatConfig?.verbosity as Verbosity) || 'medium'
-  );
-
-  // State for update models functionality
-  const [isUpdatingModels, setIsUpdatingModels] = useState<boolean>(false);
-  const [updateModelsMessage, setUpdateModelsMessage] = useState<string>('');
-  const apiKey = useStore((state) => state.apiKey);
-  const apiEndpoint = useStore((state) => state.apiEndpoint);
-
-  // Initialize with all tools enabled if empty
-  useEffect(() => {
-    if (!enabledTools || enabledTools.length === 0) {
-      const allToolNames = Object.keys(toolRegistry);
-      _setEnabledTools(allToolNames);
-    }
-  }, []);
-
-  const handleSave = () => {
-    // Filter out any legacy tools that might have been selected
-    const canonicalOnlyTools = _enabledTools.filter(
-      toolName => !LEGACY_TOOLS.has(toolName) && CANONICAL_TOOLS.has(toolName)
-    );
-    setEnabledTools(canonicalOnlyTools);
-    setAgentApiEndpoint('responses'); // Always set to 'responses' for agents
-    
-    // Save tool confirmation settings
-    setToolConfirmationSettings(_toolConfirmationSettings);
-    
-    // Update default chat config with agent settings
-    if (defaultChatConfig) {
-      const updatedConfig: ConfigInterface = {
-        ...defaultChatConfig,
-        provider: _provider,
-        model: _model,
-        apiEndpoint: 'responses' as ApiEndpointOptions, // Locked to 'responses'
-        max_completion_tokens: _maxToken,
-        // Include Responses API specific parameters
-        reasoning_effort: _reasoningEffort,
-        verbosity: _verbosity,
-      };
-      setDefaultChatConfig(updatedConfig);
-    }
-    
-    setIsModalOpen(false);
+export default function AgentSetupMenu({ setIsModalOpen, initialAgentId, create = false }: {
+  setIsModalOpen: Dispatch<SetStateAction<boolean>>; initialAgentId?: string; create?: boolean;
+}) {
+  const agents = useStore(state => state.agents), defaultId = useStore(state => state.defaultAgentId);
+  const generating = useStore(state => state.generating);
+  useConnections(state => state.connections);
+  const openAssistant = useContext(WorkspaceAssistantContext);
+  const [draft, setDraft] = useState<Agent | null>(() => create ? createDraft() : initialAgentId
+    ? structuredClone(useStore.getState().agents.find(agent => agent.id === initialAgentId) || createDraft()) : null);
+  const [removeId, setRemoveId] = useState<string | null>(null);
+  const [status, setStatus] = useState(''), [error, setError] = useState('');
+  const content = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const body = content.current?.closest('.workspace-search-document-body');
+    if (body) body.scrollTop = 0;
+  }, [draft?.id]);
+  const availability = (agent: Agent) => {
+    if (!agent.config?.model) return 'Choose a model before starting a chat.';
+    try { resolveConnectionRequest(agent.config, 'responses'); return ''; }
+    catch { return 'Model or API connection unavailable. Edit this profile to reconnect.'; }
   };
-
-  const toggleTool = (toolName: string) => {
-    if (_enabledTools.includes(toolName)) {
-      _setEnabledTools(_enabledTools.filter((t) => t !== toolName));
-    } else {
-      _setEnabledTools([..._enabledTools, toolName]);
-    }
+  const update = (changes: Partial<Agent>) => { setDraft(value => value ? { ...value, ...changes } : value); setError(''); };
+  const updateConfig = (changes: Partial<ConfigInterface>) => setDraft(value => value ? { ...value, config: { ...value.config!, ...changes } } : value);
+  const start = (agent: Agent) => {
+    try { useStore.getState().startAgentChat(agent.id); setIsModalOpen(false); openAssistant?.(); window.dispatchEvent(new Event('fthr-agent-chat-started')); }
+    catch (reason) { setError((reason as Error).message); }
   };
-
-  const toggleToolConfirmation = (toolName: string) => {
-    _setToolConfirmationSettings({
-      ..._toolConfirmationSettings,
-      [toolName]: !_toolConfirmationSettings[toolName],
-    });
-  };
-
-  const selectAllTools = () => {
-    // Only select canonical tools (filter out legacy)
-    const canonicalToolNames = Array.from(CANONICAL_TOOLS).filter(
-      toolName => toolName in toolRegistry
-    );
-    _setEnabledTools(canonicalToolNames);
-  };
-
-  const deselectAllTools = () => {
-    _setEnabledTools([]);
-  };
-
-  const handleUpdateModels = async () => {
-    setIsUpdatingModels(true);
-    setUpdateModelsMessage('');
-    
+  const save = () => {
+    if (!draft || generating) return;
     try {
-      const response = await getModelsList(apiEndpoint, apiKey);
-      dbg.log('Models fetched:', response);
-      
-      // The response should have a 'data' array with model objects
-      if (response && response.data && Array.isArray(response.data)) {
-        // Extract full model metadata from API response
-        const modelMetadataList: ModelMetadata[] = response.data
-          .filter((model: any) => model.id) // Only include models with IDs
-          .map((model: any) => {
-            // Extract all relevant fields from the API response
-            const metadata: ModelMetadata = {
-              id: model.id,
-              context_window: model.context_window,
-              max_output_tokens: model.max_output_tokens,
-              max_completion_tokens: model.max_completion_tokens || model.max_output_tokens,
-              created: model.created,
-              owned_by: model.owned_by,
-              // Store any additional fields that might be useful
-              object: model.object,
-              root: model.root,
-              parent: model.parent,
-              // Store the entire permission array if present
-              permission: model.permission,
-            };
-            
-            // Include any other fields from the API response
-            Object.keys(model).forEach(key => {
-              if (!metadata.hasOwnProperty(key)) {
-                metadata[key] = model[key];
-              }
-            });
-            
-            return metadata;
-          });
-        
-        // Organize models by endpoint type with full metadata
-        // Filter models that are likely for responses API (gpt-4, gpt-3.5-turbo, o1, o3, etc.)
-        const responsesModels = modelMetadataList.filter((model: ModelMetadata) => 
-          model.id.startsWith('gpt-') || model.id.startsWith('o1') || model.id.startsWith('o3')
-        );
-        
-        // Filter models for chat_completions (similar but might include more)
-        const chatCompletionsModels = modelMetadataList.filter((model: ModelMetadata) => 
-          model.id.startsWith('gpt-') || model.id.startsWith('o1') || model.id.startsWith('o3')
-        );
-        
-        // Filter legacy completion models
-        const legacyModels = modelMetadataList.filter((model: ModelMetadata) => 
-          model.id.includes('davinci') || model.id.includes('curie') || 
-          model.id.includes('babbage') || model.id.includes('ada')
-        );
-        
-        // Update fetched models in store with full metadata
-        const updatedFetchedModels: AvailableEndpoints[] = [];
-        
-        // Add responses models if we found any
-        if (responsesModels.length > 0) {
-          updatedFetchedModels.push({
-            provider: 'openai',
-            apiEndpoint: 'responses',
-            models: responsesModels
-          });
-        }
-        
-        // Add chat_completions models if we found any
-        if (chatCompletionsModels.length > 0) {
-          updatedFetchedModels.push({
-            provider: 'openai',
-            apiEndpoint: 'chat_completions',
-            models: chatCompletionsModels
-          });
-        }
-        
-        // Add completions models if we found any
-        if (legacyModels.length > 0) {
-          updatedFetchedModels.push({
-            provider: 'openai',
-            apiEndpoint: 'completions',
-            models: legacyModels
-          });
-        }
-        
-        setFetchedModels(updatedFetchedModels);
-        
-        const totalModels = modelMetadataList.length;
-        const responsesCount = responsesModels.length;
-        const modelsWithContextWindow = modelMetadataList.filter(m => m.context_window).length;
-        const modelsWithMaxTokens = modelMetadataList.filter(m => m.max_output_tokens || m.max_completion_tokens).length;
-        
-        setUpdateModelsMessage(
-          `Successfully fetched ${totalModels} models (${responsesCount} for responses API). ` +
-          `${modelsWithContextWindow} with context window, ${modelsWithMaxTokens} with max tokens.`
-        );
-      } else {
-        setUpdateModelsMessage('Models fetched successfully, but response format was unexpected.');
-      }
-    } catch (error: any) {
-      dbg.error('Error fetching models:', error);
-      setUpdateModelsMessage(`Error: ${error.message || 'Failed to fetch models'}`);
-    } finally {
-      setIsUpdatingModels(false);
-    }
+      const connection = useConnections.getState().connections.find(item => item.id === draft.config?.connectionId);
+      const model = connection?.models.find(item => item.id === draft.config?.model);
+      const limit = model?.max_output_tokens ?? model?.max_completion_tokens;
+      if (limit && draft.config!.max_completion_tokens > limit) throw new Error(`This model allows at most ${limit.toLocaleString()} output tokens.`);
+      useStore.getState().saveAgentProfile(draft);
+      if (!useStore.getState().defaultAgentId) useStore.getState().setDefaultAgent(draft.id);
+      setDraft(null); setError(''); setStatus(`Saved ${draft.name.trim()}.`);
+    } catch (reason) { setError((reason as Error).message); }
   };
-
-  // Filter out legacy tools from UI - only show canonical tools
-  // Double-check: exclude any tool that's in LEGACY_TOOLS or not in CANONICAL_TOOLS
-  // Also exclude deprecated search tools (search_text, search_semantic) - replaced by unified 'search' tool
-  // Exclude doc_metadata_get and context_packet_get from UI
-  const deprecatedTools = new Set(['search_text', 'search_semantic', 'doc_metadata_get', 'context_packet_get']);
-  const availableTools = Object.keys(toolRegistry).filter((toolName) => {
-    const isLegacy = LEGACY_TOOLS.has(toolName);
-    const isCanonical = CANONICAL_TOOLS.has(toolName);
-    const isDeprecated = deprecatedTools.has(toolName);
-    // Only include if it's canonical AND not legacy AND not deprecated
-    return !isLegacy && isCanonical && !isDeprecated;
-  });
-  const toolDefinitions = getToolDefinitions().filter(td => td && td.function); // Filter out any undefined or invalid definitions
-
-  return (
-    <PopupModal
-      title="Agent Setup"
-      setIsModalOpen={setIsModalOpen}
-      cancelButton={true}
-      handleConfirm={handleSave}
-    >
-      <div className="p-6 overflow-y-auto max-h-[calc(100vh-200px)]">
-        {/* Provider - Read-only (locked) */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Provider:
-          </label>
-          <div className="px-3 py-2 border border-gray-300 dark:border-gray-700/40 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-            {_provider}
-          </div>
-        </div>
-
-        {/* API Endpoint - Read-only (locked to responses for agents) */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            API Endpoint for Agents
-          </label>
-          <div className="px-3 py-2 border border-gray-300 dark:border-gray-700/40 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-            Responses
-          </div>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            The Responses API is required for agents and function calling support.
-          </p>
-        </div>
-
-        {/* Model Selection - Moved to top, below API Endpoint */}
-        <div className="mb-6 relative">
-          <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Model
-            </label>
-            <button
-              type="button"
-              onClick={handleUpdateModels}
-              disabled={isUpdatingModels}
-              className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded transition-colors duration-200"
-            >
-              {isUpdatingModels ? 'Updating...' : 'Update Models'}
-            </button>
-          </div>
-          {updateModelsMessage && (
-            <div className={`mt-2 text-xs p-2 rounded ${
-              updateModelsMessage.startsWith('Error') 
-                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' 
-                : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-            }`}>
-              {updateModelsMessage}
-            </div>
-          )}
-          <ModelSelector
-            _model={_model}
-            _setModel={_setModel}
-            _provider={_provider}
-            _apiEndpoint={'responses' as ApiEndpointOptions}
-          />
-        </div>
-
-        {/* Responses API Specific Settings */}
-        <div className="mb-6 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            Responses API Settings
-          </h3>
-          
-          <MaxTokenSlider
-            _maxToken={_maxToken}
-            _setMaxToken={_setMaxToken}
-            _model={_model}
-            _provider={_provider}
-            _apiEndpoint={'responses' as ApiEndpointOptions}
-          />
-          
-          <ReasoningEffortSelector
-            _reasoningEffort={_reasoningEffort}
-            _setReasoningEffort={_setReasoningEffort}
-          />
-          
-          <VerbositySelector
-            _verbosity={_verbosity}
-            _setVerbosity={_setVerbosity}
-          />
-        </div>
-
-        {/* Tool Selection */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Available Tools
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={selectAllTools}
-                className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-700 dark:text-gray-200"
-              >
-                Select All
-              </button>
-              <button
-                type="button"
-                onClick={deselectAllTools}
-                className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-700 dark:text-gray-200"
-              >
-                Deselect All
-              </button>
-            </div>
-          </div>
-          
-          <div className="space-y-4 max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-800/30 rounded-md p-3">
-            {/* Group tools by category */}
-            {(() => {
-              // Categorize canonical tools only
-              const selectionMetaTools = ['selection_read', 'meta_read', 'meta_write', 'doc_metadata_get'];
-              const searchContextTools = ['search', 'context_packet_get', 'doc_structure_get', 'doc_read'];
-              const projectTools = ['project_get_tree'];
-              const patchTools = ['edit_preview', 'edit_apply'];
-              const documentTools = ['doc_create', 'doc_rename', 'doc_move'];
-              const snippetTools = ['clip_list', 'clip_read', 'clip_create', 'clip_update'];
-              const revisionTools = ['revision_list', 'revision_get', 'revision_diff'];
-              
-              const categorizeTool = (toolName: string): string => {
-                if (selectionMetaTools.includes(toolName)) return 'selection-meta';
-                if (searchContextTools.includes(toolName)) return 'search-context';
-                if (projectTools.includes(toolName)) return 'project';
-                if (patchTools.includes(toolName)) return 'patch';
-                if (documentTools.includes(toolName)) return 'document';
-                if (snippetTools.includes(toolName)) return 'snippet';
-                if (revisionTools.includes(toolName)) return 'revision';
-                return 'other';
-              };
-              
-              const categorized = availableTools.reduce((acc, toolName) => {
-                // Double-check: never categorize legacy tools
-                if (LEGACY_TOOLS.has(toolName) || !CANONICAL_TOOLS.has(toolName)) {
-                  dbg.warn(`Skipping non-canonical tool: ${toolName}`);
-                  return acc;
-                }
-                const category = categorizeTool(toolName);
-                if (!acc[category]) acc[category] = [];
-                acc[category].push(toolName);
-                return acc;
-              }, {} as Record<string, string[]>);
-              
-              const categoryLabels: Record<string, string> = {
-                'selection-meta': 'Selection & Metadata Tools',
-                'search-context': 'Search & Context Tools',
-                'project': 'Project Navigation',
-                'patch': 'Patch Operations',
-                'document': 'Document Management',
-                'snippet': 'Snippet Tools',
-                'revision': 'Revision History',
-                'other': 'Other Tools',
-              };
-              
-              return Object.entries(categorized)
-                .filter(([category, tools]) => tools.length > 0) // Don't show empty categories
-                .map(([category, tools]) => (
-                <div key={category} className="space-y-2">
-                  <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                    {categoryLabels[category] || category}
-                  </h4>
-                  {tools.map((toolName) => {
-                    // Final safeguard: skip legacy tools
-                    if (LEGACY_TOOLS.has(toolName) || !CANONICAL_TOOLS.has(toolName)) {
-                      return null;
-                    }
-                    // Get tool definition from registry directly to avoid undefined issues
-                    const registryEntry = toolRegistry[toolName];
-                    const toolDef = registryEntry?.definition;
-                    const isEnabled = _enabledTools.includes(toolName);
-                    const requiresConfirmation = _toolConfirmationSettings[toolName] ?? false;
-                    
-                    return (
-                      <div
-                        key={toolName}
-                        className="flex items-start gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded ml-2"
-                      >
-                        <input
-                          type="checkbox"
-                          id={`tool-${toolName}`}
-                          checked={isEnabled}
-                          onChange={() => toggleTool(toolName)}
-                          className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <label
-                              htmlFor={`tool-${toolName}`}
-                              className="block text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer"
-                            >
-                              {toolName}
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <label
-                                htmlFor={`confirm-${toolName}`}
-                                className="text-xs text-gray-600 dark:text-gray-400 cursor-pointer"
-                              >
-                                Require confirmation
-                              </label>
-                              <input
-                                type="checkbox"
-                                id={`confirm-${toolName}`}
-                                checked={requiresConfirmation}
-                                onChange={() => toggleToolConfirmation(toolName)}
-                                className="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                              />
-                            </div>
-                          </div>
-                          {toolDef?.function?.description && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {toolDef.function.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ));
-            })()}
-          </div>
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Select which tools the AI can use during conversations. Tools allow the AI to interact with your documents.
-          </p>
-        </div>
-      </div>
-    </PopupModal>
-  );
-};
-
-export default AgentSetupMenu;
-
+  return <PopupModal title="Agent profiles" setIsModalOpen={setIsModalOpen} cancelButton={false} fullWidth>
+    <div className="agent-profiles" ref={content}>
+      {!draft ? <>
+        <div className="agent-profiles-intro"><div><p className="agent-profiles-eyebrow">YOUR WRITING TEAM</p>
+          <h3>A familiar assistant for every task</h3><p>Save a model, instructions, and tools together. Start a fresh conversation whenever you need them.</p></div>
+          <button type="button" className="btn btn-primary" disabled={generating} onClick={() => { setDraft(createDraft()); setStatus(''); setError(''); }}><Add size={16} />New profile</button></div>
+        <div className="agent-profile-list">{agents.map(agent => {
+          const unavailable = availability(agent);
+          return <article key={agent.id}>
+            <div className="agent-profile-heading"><div className="agent-profile-avatar"><Chat size={19} /></div><div><h4>{agent.name}</h4><p>{agent.description || 'Writing agent'}</p></div>
+              {defaultId === agent.id && <span className="agent-profile-badge"><Checkmark size={12} />Default</span>}</div>
+            <p className="agent-profile-model">{agent.config?.model || 'No model selected'} · {(agent.enabledTools || []).filter(name => availableTools.includes(name)).length} tools</p>
+            {unavailable && <p className="agent-profile-help">{unavailable}</p>}
+            <div className="agent-profile-actions">
+              <button type="button" disabled={generating || !!unavailable} onClick={() => start(agent)}><Chat size={14} />Start chat</button>
+              <button type="button" disabled={generating} onClick={() => { setDraft(structuredClone(agent)); setStatus(''); setError(''); }}><Edit size={14} />Edit</button>
+              <button type="button" disabled={generating} onClick={() => { const id = useStore.getState().duplicateAgentProfile(agent.id); setStatus(`Created ${useStore.getState().agents.find(item => item.id === id)?.name}.`); }}><Copy size={14} />Duplicate</button>
+              {defaultId !== agent.id && <button type="button" disabled={generating} onClick={() => { useStore.getState().setDefaultAgent(agent.id); setStatus(`${agent.name} is the default for new agent chats and inherited model settings.`); }}>Set default</button>}
+              <button type="button" aria-label={`Delete ${agent.name}`} disabled={generating} onClick={() => setRemoveId(agent.id)}><TrashCan size={14} /></button></div>
+            {removeId === agent.id && <div className="agent-profile-delete"><p>Delete this profile? Its conversations keep their messages and settings.{defaultId === agent.id ? ' Choose another default after deleting.' : ''}</p>
+              <button type="button" disabled={generating} onClick={() => { useStore.getState().deleteAgent(agent.id); setRemoveId(null); setStatus('Profile deleted.'); }}>Delete profile</button><button type="button" onClick={() => setRemoveId(null)}>Keep profile</button></div>}
+          </article>;
+        })}</div>
+        {!agents.length && <p>No profiles yet. Create your first writing assistant.</p>}
+        <p className="agent-profile-help">The default starts new agent chats and supplies model settings to macros that use defaults. Existing chats and custom macros keep their settings. Starting a chat sends no request until you submit a message.</p>
+      </> : <form onSubmit={event => { event.preventDefault(); save(); }}>
+        <p className="agent-profiles-eyebrow">PROFILE SETTINGS</p><h3>{agents.some(agent => agent.id === draft.id) ? 'Edit agent profile' : 'Create an agent profile'}</h3>
+        <label>Profile name<input autoFocus aria-label="Profile name" required maxLength={80} value={draft.name} placeholder="e.g. Copy editor" onChange={event => update({ name: event.target.value })} /></label>
+        <label>Description<input aria-label="Profile description" maxLength={240} value={draft.description || ''} placeholder="What this agent helps you do" onChange={event => update({ description: event.target.value })} /></label>
+        <label>Instructions<textarea aria-label="Agent instructions" rows={5} value={draft.instructions || ''} onChange={event => update({ instructions: event.target.value })} placeholder="Describe its role, approach, and how it should respond." /></label>
+        <fieldset><legend>Model & response</legend><ModelSelector _model={draft.config?.model || ''} _provider={draft.config?.provider || 'openai'} _apiEndpoint="responses"
+          _connectionId={draft.config?.connectionId} _setConnectionId={value => setDraft(previous => previous ? { ...previous, config: { ...previous.config!, connectionId: typeof value === 'function' ? value(previous.config?.connectionId) : value } } : previous)}
+          _setModel={value => setDraft(previous => previous ? { ...previous, config: { ...previous.config!, model: typeof value === 'function' ? value(previous.config?.model || '') : value } } : previous)} />
+          <div className="agent-profile-response-grid"><label>Maximum output tokens<input aria-label="Maximum output tokens" type="number" min={16} step={1} required value={draft.config?.max_completion_tokens ?? 1200} onChange={event => updateConfig({ max_completion_tokens: Number(event.target.value) })} /></label>
+          <label>Reasoning effort<select aria-label="Reasoning effort" value={draft.config?.reasoning_effort || ''} onChange={event => updateConfig({ reasoning_effort: (event.target.value || undefined) as ConfigInterface['reasoning_effort'] })}><option value="">Model default</option>{['none', 'low', 'medium', 'high', 'xhigh'].map(value => <option key={value} value={value}>{value}</option>)}</select></label>
+          <label>Response detail<select aria-label="Response detail" value={draft.config?.verbosity || ''} onChange={event => updateConfig({ verbosity: (event.target.value || undefined) as ConfigInterface['verbosity'] })}><option value="">Model default</option>{['low', 'medium', 'high'].map(value => <option key={value} value={value}>{value}</option>)}</select></label></div>
+          <p className="agent-profile-help">Support varies by model. “Model default” omits optional settings. Profiles without an available model can be saved and configured later.</p></fieldset>
+        <details className="agent-profile-tools"><summary>Document tools <span>{(draft.enabledTools || []).filter(name => availableTools.includes(name)).length} enabled</span></summary>
+          <p className="agent-profile-help">Choose what this agent can access. Mark tools “Ask first” to require confirmation.</p>
+          <div className="agent-profile-actions"><button type="button" onClick={() => update({ enabledTools: [...availableTools] })}>Enable all</button><button type="button" onClick={() => update({ enabledTools: [] })}>Disable all</button></div>
+          {availableTools.map(name => <div className="agent-profile-tool" key={name}><label><input type="checkbox" checked={draft.enabledTools?.includes(name) || false} onChange={event => update({ enabledTools: event.target.checked ? [...(draft.enabledTools || []), name] : draft.enabledTools?.filter(tool => tool !== name) })} /><span>{toolLabels[name]?.[0] || name}<small>{toolLabels[name]?.[1]}</small></span></label>
+            <label className="agent-profile-confirm"><input type="checkbox" aria-label={`Ask before ${toolLabels[name]?.[0].toLowerCase() || name}`} checked={draft.toolConfirmationSettings?.[name] ?? false} onChange={event => update({ toolConfirmationSettings: { ...draft.toolConfirmationSettings, [name]: event.target.checked } })} />Ask first</label></div>)}</details>
+        <p className="agent-profile-help">Changes apply to future chats. Existing agent conversations can explicitly apply an updated profile. Cancel discards this draft.</p>
+        <div className="agent-profile-save"><button type="button" className="btn btn-neutral" onClick={() => { setDraft(null); setError(''); }}>Cancel</button><button type="submit" className="btn btn-primary" disabled={generating || !draft.name.trim()}>Save profile</button></div>
+      </form>}
+      {generating && <p role="status">Wait for the current response before changing profiles.</p>}
+      {error && <p role="alert" className="agent-profile-error">{error}</p>}{status && <p role="status">{status}</p>}
+    </div>
+  </PopupModal>;
+}

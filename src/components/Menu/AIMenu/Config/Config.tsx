@@ -82,7 +82,7 @@ const ConfigMenu = () => {
               }) as React.Dispatch<React.SetStateAction<ApiEndpointOptions>>}
             />
 
-            <ModelSelector
+            <ModelSelector _connectionId={_config.config.connectionId} _setConnectionId={value => updateConfigField('connectionId', typeof value === 'function' ? value(_config.config?.connectionId) : value)}
               _model={_config.config.model as ModelOptions}
               _setModel={((model: ModelOptions | ((prev: ModelOptions) => ModelOptions)) => {
                 const value = typeof model === 'function' ? model(_config.config!.model as ModelOptions) : model;
@@ -92,7 +92,7 @@ const ConfigMenu = () => {
               _apiEndpoint={_config.config.apiEndpoint}
             />
 
-            <MaxTokenSlider
+            <MaxTokenSlider _connectionId={_config.config.connectionId}
               _maxToken={('max_completion_tokens' in _config.config ? _config.config.max_completion_tokens : undefined) ?? 0}
               _setMaxToken={((tokens: number | ((prev: number) => number)) => {
                 const value = typeof tokens === 'function' ? tokens(('max_completion_tokens' in _config.config! ? _config.config!.max_completion_tokens : undefined) ?? 0) : tokens;

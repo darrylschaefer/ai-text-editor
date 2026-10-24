@@ -7,6 +7,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import useStore, { type StoreState } from '@store/store';
 import type { DocumentInterface } from '@type/document';
 import Workspace from '../Workspace';
+import { useConnections } from '@store/connection-store';
 // Resolve the lazy settings module during collection. These tests exercise
 // navigation and controls, without timing module transformation under load.
 import '@components/Search/SearchDestinations';
@@ -14,17 +15,19 @@ import '@components/Search/SearchDestinations';
 vi.mock('@store/store', async () => {
   const { create } = await import('zustand');
   const { createDocumentSlice } = await import('@store/document-slice');
+  const { createChatSlice } = await import('@store/chat-slice');
   return { default: create<StoreState>()((set, get) => ({
-    ...createDocumentSlice(set, get), hideSideMenu: false, hideSideAIMenu: false,
+    ...createDocumentSlice(set, get), ...createChatSlice(set, get), hideSideMenu: false, hideSideAIMenu: false,
     setHideSideMenu: (hidden: boolean) => set({ hideSideMenu: hidden }), setHideSideAIMenu: (hidden: boolean) => set({ hideSideAIMenu: hidden }),
+    setEditorAgentsMode: (editorAgentsMode: StoreState['editorAgentsMode']) => set({ editorAgentsMode }),
     theme: 'dark', setTheme: (theme: StoreState['theme']) => set({ theme }), documentView: 'continuous', mobileDocumentView: 'screen', pageMeasurementUnit: 'in',
     setDocumentView: (documentView: StoreState['documentView']) => set({ documentView }), setPageMeasurementUnit: (pageMeasurementUnit: StoreState['pageMeasurementUnit']) => set({ pageMeasurementUnit }),
     fetchedModels: [], defaultChatConfig: { model: 'original-model', provider: 'openai', apiEndpoint: 'responses', max_completion_tokens: 1200,
       temperature: 1, presence_penalty: 0, frequency_penalty: 0, top_p: 1, notes: [] },
     defaultLegacyConfig: { model: 'legacy-model', provider: 'openai', apiEndpoint: 'completions' },
     setDefaultChatConfig: (defaultChatConfig: StoreState['defaultChatConfig']) => set({ defaultChatConfig }), setDefaultLegacyConfig: (defaultLegacyConfig: StoreState['defaultLegacyConfig']) => set({ defaultLegacyConfig }),
+    agentApiEndpoint: 'responses', setAgentApiEndpoint: (agentApiEndpoint: string) => set({ agentApiEndpoint }),
     prompts: [], setPrompts: (prompts: StoreState['prompts']) => set({ prompts }),
-    fineTuneModels: [], setFineTuneModels: (fineTuneModels: StoreState['fineTuneModels']) => set({ fineTuneModels }),
     totalTokenUsed: {}, countTotalTokens: false, setCountTotalTokens: (countTotalTokens: boolean) => set({ countTotalTokens }), firstVisit: false,
     getActiveConversation: () => null, setToastMessage: vi.fn(), setToastShow: vi.fn(), setToastStatus: vi.fn(),
   } as unknown as StoreState)) };
@@ -35,8 +38,9 @@ vi.mock('@utils/block-index-updater', () => ({ updateBlockIndexForSection: vi.fn
 vi.mock('@utils/print-layout', () => ({ createPrintLayout: vi.fn(async () => { throw new Error('Print layout is verified in the browser.'); }), flowingHtml: vi.fn(), printDocument: vi.fn() }));
 vi.mock('@components/Menu/DocumentMenu', () => ({ default: () => <p>Library fixture</p> }));
 vi.mock('@components/Menu/AIMenu/AIMenu', () => ({ default: ({ activeMenu }: { activeMenu: string }) => <p data-test-view>{activeMenu}</p> }));
-vi.mock('@components/FooterMenu/Api/ApiMenu', () => ({ default: () => <p>API settings fixture</p> }));
-vi.mock('@components/FooterMenu/AgentSetup/AgentSetupMenu', () => ({ default: () => <p>Agent setup fixture</p> }));
+vi.mock('@components/Search/ApiConnections', () => ({ default: () => <p>API settings fixture</p> }));
+vi.mock('idb-keyval', () => ({ getMany: async () => [], setMany: async () => {} }));
+vi.mock('@components/FooterMenu/AgentSetup/AgentSetupMenu', () => ({ default: ({ initialAgentId }: { initialAgentId?: string }) => <p data-agent-id={initialAgentId}>Agent setup fixture</p> }));
 vi.mock('@components/FooterMenu/EmbeddingsSettings/EmbeddingsSettingsMenu', () => ({ default: () => <p>Embedding settings fixture</p> }));
 vi.mock('@components/FooterMenu/ImportExportChat/ImportChat', () => ({ default: () => null }));
 vi.mock('@components/FooterMenu/ImportExportChat/ExportChat', () => ({ default: () => null }));
@@ -81,6 +85,7 @@ async function key(value: string, options: KeyboardEventInit = {}) {
 }
 beforeEach(() => {
   compact = false; localStorage.clear();
+  useConnections.setState({ connections: [], credentials: {}, activeConnectionId: null, hydrated: true });
   useStore.setState({ ...initial, chats: [fixture('Alpha', 'A lighthouse keeper.'), fixture('Beta', 'A forest path.')], currentChatIndex: 0 }, true);
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
@@ -97,6 +102,43 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => { root?.unmount(); await tick(); }); root = undefined; container.remove(); modal.remove(); vi.unstubAllGlobals(); });
 
 describe('workspace search palette', () => {
+  it.each(['library', 'assistant'])('opens Ctrl+K above the mobile %s drawer and returns focus on Escape', async pane => {
+    compact = true; await mount(); await click(`Show ${pane} pane`);
+    const drawer = container.querySelector<HTMLElement>(`#workspace-${pane}`)!;
+    expect(drawer.getAttribute('aria-modal')).toBe('true');
+    const opener = drawer.querySelector<HTMLButtonElement>('button')!; opener.focus();
+    await key('k', { ctrlKey: true }); expect(search()).not.toBeNull(); expect(document.activeElement).toBe(search());
+    await key('Escape'); expect(search()).toBeNull(); expect(drawer.hidden).toBe(false);
+    expect(drawer.contains(document.activeElement)).toBe(true);
+  });
+  it('finds chat titles and message text from the header and opens the existing chat without changing writing', async () => {
+    useStore.setState({ conversations: [{ id: 'chat-one', type: 'agent', title: 'Revision discussion', agentId: 'editor',
+      createdAt: '', updatedAt: '', messages: [{ role: 'user', content: 'A moonlit observatory.' }] }], activeConversationId: null });
+    await mount(); const writing = JSON.stringify(useStore.getState().chats), editor = manuscript();
+    await click('Search workspace'); await query('chats: observatory');
+    expect(results()).toHaveLength(1); expect(results()[0].textContent).toContain('Revision discussion');
+    await key('Enter');
+    expect(search()).toBeNull(); expect(useStore.getState().activeConversationId).toBe('chat-one');
+    expect(useStore.getState().selectedAgentId).toBe('editor'); expect(useStore.getState().editorAgentsMode).toBe('agents');
+    expect(useStore.getState().hideSideAIMenu).toBe(false);
+    expect(JSON.stringify(useStore.getState().chats)).toBe(writing); expect(manuscript()).toBe(editor);
+  });
+  it('keeps chats in the header searchable during generation but prevents switching', async () => {
+    useStore.setState({ conversations: [{ id: 'chat-one', type: 'regular', title: 'Moonlit revision', createdAt: '', updatedAt: '', messages: [] }],
+      generating: true, activeConversationId: 'current' });
+    await mount(); await click('Search workspace'); await query('chats: moonlit'); await key('Enter');
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain('before switching chats');
+    expect(useStore.getState().activeConversationId).toBe('current'); expect(search()).not.toBeNull();
+  });
+  it('finds saved agents by name and opens their profile inside Search', async () => {
+    useStore.setState({ agents: [{ id: 'line-editor', name: 'Line editor', description: 'Careful prose revisions', createdAt: '', updatedAt: '' }] });
+    await mount(); const editor = manuscript();
+    await click('Search workspace'); await query('Line editor'); expect(results()).toHaveLength(1);
+    expect(results()[0].textContent).toContain('Agent profile'); await key('Enter'); await dialogContains('Agent setup fixture');
+    expect(document.querySelector('[data-agent-id="line-editor"]')).not.toBeNull();
+    expect(manuscript()).toBe(editor);
+    await key('Escape'); expect(search()).not.toBeNull();
+  });
   it('opens from the top bar, focuses the query, and restores focus without editing the manuscript', async () => {
     await mount(); const editor = manuscript(), saved = JSON.stringify(useStore.getState().chats);
     await click('Search workspace');
@@ -177,13 +219,19 @@ describe('workspace search palette', () => {
     expect(document.activeElement?.getAttribute('aria-label')).toBe('Search workspace');
   });
   it('opens model details without changing defaults until the explicit action is selected', async () => {
-    useStore.setState({ fetchedModels: [{ provider: 'test-provider', apiEndpoint: 'responses', models: [{ id: 'test-model', name: 'Test Model', context_window: 9999 }] }] });
+    useConnections.setState({ connections: [{ id: 'test-connection', name: 'Test key', provider: 'openai', baseUrl: 'https://api.openai.com/v1', revision: 1, status: 'ready',
+      models: [{ id: 'gpt-5.2', name: 'Test Model', context_window: 9999 }], endpointOverrides: {} }], credentials: { 'test-connection': 'synthetic-key' }, activeConnectionId: 'test-connection' });
     await mount(); const before = useStore.getState().defaultChatConfig;
     await click('Search workspace'); await query('models: Test Model'); await key('Enter'); await dialogContains('9,999');
     expect(useStore.getState().defaultChatConfig).toBe(before);
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain('9,999');
-    await click('Use as default'); expect(useStore.getState().defaultChatConfig.model).toBe('test-model');
-    expect(useStore.getState().defaultChatConfig.provider).toBe('test-provider');
+    expect(document.querySelector('[aria-label="Model API"]')).toBeNull();
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain('API: Responses');
+    await click('Use as default'); expect(useStore.getState().defaultChatConfig.model).toBe('gpt-5.2');
+    expect(useStore.getState().defaultChatConfig.provider).toBe('openai');
+    expect(useStore.getState().defaultChatConfig.connectionId).toBe('test-connection');
+    expect(useStore.getState().defaultChatConfig.apiEndpoint).toBe('responses');
+    expect(useStore.getState().agentApiEndpoint).toBe('responses');
     expect(document.querySelector('[role="dialog"] [role="status"]')?.textContent).toContain('Default model set');
     await key('k', { ctrlKey: true }); expect(search()).toBeNull();
   });
@@ -196,11 +244,9 @@ describe('workspace search palette', () => {
     await click('Clear recent'); expect(localStorage.getItem('fthr-search-recent')).toBeNull();
   });
   it.each([
-    ['settings: credentials', 'API key and connection', 'API settings fixture'],
+    ['settings: credentials', 'Manage API keys', 'API settings fixture'],
     ['settings: embeddings', 'Embeddings settings', 'Embedding settings fixture'],
     ['settings: macro library', 'Macro library', 'New Macro'],
-    ['settings: legacy config', 'Legacy model settings', 'Default Chat Settings'],
-    ['settings: fine-tune', 'Fine-tune models', 'New Fine-Tune Model'],
     ['settings: about', 'About fthr', 'aboutTitle'],
     ['settings: usage', 'Token usage', 'No token usage recorded.'],
   ])('opens migrated %s in the same menu with working back navigation', async (value, label, text) => {
@@ -208,6 +254,12 @@ describe('workspace search palette', () => {
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(label);
     await click('Back to search'); expect(search().value).toBe(value); expect(document.activeElement).toBe(search());
+  });
+  it('removes retired settings and macro default choices without changing saved writing', async () => {
+    await mount(); const before = JSON.stringify(useStore.getState().chats);
+    await click('Search workspace'); await query('settings: legacy config'); expect(results()).toHaveLength(0);
+    await query('settings: fine-tune'); expect(results()).toHaveLength(0);
+    expect(JSON.stringify(useStore.getState().chats)).toBe(before);
   });
   it('keeps document deletion behind confirmation and leaves all writing intact on cancellation', async () => {
     await mount(); const before = JSON.stringify(useStore.getState().chats);
@@ -220,6 +272,13 @@ describe('workspace search palette', () => {
     await mount(); await click('Search workspace'); await query('settings: macro library'); await key('Enter'); await dialogContains('New Macro');
     await click('Configure macro Revise');
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(2);
+    expect([...document.querySelectorAll('option')].map(option => option.textContent)).not.toContain('Legacy Chat Completions Defaults');
+    expect([...document.querySelectorAll('option')].map(option => option.textContent)).not.toContain('Legacy Completions Defaults');
+    const source = [...document.querySelectorAll<HTMLSelectElement>('select')].find(select => select.querySelector('option[value="agent"]'))!;
+    expect([...source.options].map(option => option.value)).toEqual(['agent', 'custom']);
+    await act(async () => { source.value = 'custom'; source.dispatchEvent(new Event('change', { bubbles: true })); });
+    expect(useStore.getState().prompts[0].config?.apiEndpoint).toBe('responses');
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain('API: Responses');
     expect(document.querySelector('.workspace-search-palette')?.closest('[inert]')).not.toBeNull();
     await key('k', { ctrlKey: true }); expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(2);
     await key('Escape'); expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);

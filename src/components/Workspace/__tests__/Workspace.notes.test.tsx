@@ -71,6 +71,11 @@ function button(label: string) {
   return target;
 }
 async function click(label: string) {
+  if (['Chat', 'Notes', 'History', 'Tools', 'Meta', 'Macros'].includes(label)) {
+    const heading = compact ? '#workspace-assistant .workspace-mobile-pane-heading' : '.workspace-commandbar';
+    const trigger = document.querySelector<HTMLButtonElement>(`${heading} [aria-label^="Assistant section:"]`)!;
+    if (trigger.getAttribute('aria-expanded') !== 'true') await act(async () => { trigger.click(); await tick(); });
+  }
   if (label === 'v1 Version' || label === 'v2 Version') {
     const chooser = document.querySelector<HTMLButtonElement>('[aria-label="Choose document version"]')!;
     if (chooser.getAttribute('aria-expanded') !== 'true') await click('Choose document version');

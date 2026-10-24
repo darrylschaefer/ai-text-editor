@@ -13,6 +13,7 @@ import {
 import { DocumentInterface, Folder, FolderCollection } from '@type/document';
 import { ExportBase } from '@type/export';
 import { importDocumentCopy } from '@utils/import-document-copy';
+import { prepareAgentImport } from '@utils/agent-profiles';
 
 const ImportChat = () => {
   const { t } = useTranslation();
@@ -40,6 +41,9 @@ const ImportChat = () => {
 
         try {
           const parsedData = JSON.parse(data);
+          // Validate every profile before changing the current workspace. New
+          // IDs make repeated imports safe and preserve existing chat links.
+          const importedProfiles = prepareAgentImport(parsedData, useStore.getState());
 
           // A document export is imported as a new copy, including on repeated
           // imports into its source workspace. Never reuse its document ID.
@@ -52,7 +56,7 @@ const ImportChat = () => {
           }
 
           // import folders
-          parsedData.folders;
+          parsedData.folders = parsedData.folders || {};
           // increment the order of existing folders
           const offset = Object.keys(parsedData.folders).length;
 
@@ -90,9 +94,12 @@ const ImportChat = () => {
                setPrompts(parsedData.prompts);
              }
            }
-
-
-
+           const state = useStore.getState();
+           if (importedProfiles.agents.length) {
+             importedProfiles.agents.forEach(agent => state.saveAgentProfile(agent));
+             if (!state.defaultAgentId && importedProfiles.defaultAgentId) useStore.getState().setDefaultAgent(importedProfiles.defaultAgentId);
+           }
+           setAlert({ message: `Imported workspace${importedProfiles.agents.length ? ` and ${importedProfiles.agents.length} agent profiles` : ''}. Profiles keep saved model references; reconnect unavailable API connections in Agent profiles.`, success: true });
         } catch (error: unknown) {
           setAlert({ message: (error as Error).message, success: false });
         }

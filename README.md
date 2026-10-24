@@ -27,7 +27,7 @@ Keep your documents local in your browser, and connect your own API key for AI a
 
 ## Design philosophy
 
-Search is a central part of fthr's design: one place to find your writing, models, settings, and actions. All settings options are being folded into the Search menu, including page setup and document export, to keep the writing workspace clear and make controls easy to find by name.
+Search is a central part of fthr's design: the header Search is the single place to find your writing, chats, models, settings, and actions. The library has no separate search. All settings options are being folded into the Search menu, including page setup and document export, to keep the writing workspace clear and make controls easy to find by name.
 
 Open **Search** or press **Ctrl/Cmd+K** to search directly or browse **Settings**. Settings should be discoverable through this shared menu as the application grows.
 
@@ -36,27 +36,27 @@ Open **Search** or press **Ctrl/Cmd+K** to search directly or browse **Settings*
 | Feature | What you can do |
 | --- | --- |
 | Instant macros and selection sending | Run saved prompts against a selected passage, with individual model settings for each macro. |
-| AI agents with document tools | Configure agents with your own instructions and model settings, with tools for reading, searching, and editing documents. |
+| Saved agent profiles | Name writing assistants, save their instructions, model settings, tools, and approval preferences, and choose a default. Start fresh chats from any profile. |
 | Context-aware prompts | Include selected text, named notes, and document metadata in your prompts, using references that pull in the relevant content. |
 | Writing versions and notes | Create, copy, rename, and switch between writing versions within a document, with shared notes in the right sidebar. Organize documents into folders. |
-| Workspace search | Open Search or press Ctrl/Cmd+K to find document text, writing versions, notes, settings, and models in one command palette. Search runs locally. |
+| Workspace search | Open Search or press Ctrl/Cmd+K to find document text, writing versions, notes, chat titles and messages, profiles, settings, and models in one command palette. Search runs locally. |
 | Custom document metadata | Keep tags, descriptions, and custom fields with a document, and reference those fields in AI prompts. |
 | Semantic and hybrid search | Search by keyword, by meaning through embeddings, or combine both approaches to retrieve relevant passages. Embedding search requires configuration. |
 | Checkpoints and version diffs | Save named checkpoints in the History sidebar, preview saved text, and compare it with your current writing. |
 
 ## Try it
 
-Open **[fthr.vercel.app](https://fthr.vercel.app/)** to start writing. You can dismiss the API-key prompt to use the editor without AI.
+Open **[fthr.vercel.app](https://fthr.vercel.app/)** to start writing. AI assistance is optional; the editor works without an API key.
 
-To use AI, open **Search → Settings → API key and connection** and enter your key. Agent, appearance, page setup, export, and embedding options are available in the same menu. Use **Ctrl/Cmd+K** to open it from the keyboard. API usage is billed by your configured provider.
+To use AI, open **Search → Settings → Manage API keys**, add a named OpenAI connection, and load its chat models. New workspaces start with an empty model catalog. Open **Search → Agent profiles** to create a named assistant, choose its model and settings, and set a default. Profiles are searchable by name and appear at the top of **New chat** (Ctrl+M), followed by available models. The Chats tab lists conversations. Each chat keeps a copy of its profile settings; profile changes affect future chats unless you explicitly apply an update. See [Agent profiles](docs/agent-profiles.md). API usage is billed by your configured provider.
 
 ## Your writing and data
 
-Documents, preferences, and your API key are stored in your browser, primarily through IndexedDB. They belong to that site's browser profile; opening another browser, device, or local installation does not automatically bring them across.
+Documents and preferences are stored in your browser, primarily through IndexedDB. API keys and cached model catalogs use separate device storage and are excluded from workspace exports and Google Drive sync. This browser storage is accessible to the application and is not an encrypted vault. Data belongs to that site's browser profile; opening another browser, device, or local installation does not automatically bring it across. See [API connections and catalogs](docs/api-connections.md).
 
 AI features send relevant text and context to the configured API provider. Embedding requests also send text when enabled. Local storage does not mean AI processing stays on your device.
 
-Use **Search → Settings → Import / Export workspace** to download a JSON export regularly, especially before clearing site data or changing browsers. The current export includes documents, folders, prompts, and the default chat configuration. Separate agent conversations and checkpoint history are **not included**, so it is not a complete workspace backup.
+Use **Search → Settings → Import / Export workspace** to download a JSON export regularly, especially before clearing site data or changing browsers. The current export includes documents, folders, prompts, the default chat configuration, and agent profiles with the default profile choice. Imported profiles are added as new copies; an existing default is preserved. API credentials remain on their original device, so restored profiles may need to be reconnected. Separate agent conversations and checkpoint history are **not included**, so it is not a complete workspace backup.
 
 ## Run locally
 
@@ -79,11 +79,13 @@ No environment file is required for the default setup. Optional configuration is
 | --- | --- |
 | `npm run dev` | Start the development server. |
 | `npm run check` | Type-check the application and tests, run the test suite, and build the web app. |
+| `npm run test:e2e` | Build and run desktop and phone browser chat journeys. Install browsers first with `npx playwright install chromium firefox webkit`. |
+| `npm run check:all` | Run all type checks, unit/integration tests, the production build, and browser tests. |
 | `npm run test:watch` | Run tests while making changes. |
 | `npm run build` | Create the production web build in `dist/`. |
 | `npm run preview` | Serve the production build locally after building it. |
 
-Pull requests and updates to `main` run validation on Linux and Windows. The Linux job also builds the web Docker image. See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch/PR workflow, individual checks, Docker, and desktop development notes.
+Pull requests and updates to `main` run validation on Linux and Windows. The Linux validation job also builds the web Docker image; a separate Linux browser job runs the chat journeys across desktop and phone projects. See [browser testing](e2e/README.md) for setup and diagnostics, and [CONTRIBUTING.md](CONTRIBUTING.md) for the branch/PR workflow, individual checks, Docker, and desktop development notes.
 
 ## Project status
 

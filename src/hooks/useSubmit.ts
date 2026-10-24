@@ -1,7 +1,7 @@
 import useStore from '@store/store';
 import { useTranslation } from 'react-i18next';
 import { DocumentInterface, MessageInterface, ConfigInterface, LegacyConfigInterface } from '@type/document';
-import { getChatCompletion, getChatCompletionStream, getLegacyCompletion, getLegacyCompletionStream } from '@api/api';
+import { getResponse, getChatCompletion, getChatCompletionStream, getLegacyCompletion, getLegacyCompletionStream } from '@api/api';
 import { parseEventSource } from '@api/helper';
 import { limitMessageTokens, updateTotalTokenUsed } from '@utils/messageUtils';
 import { _defaultChatConfig, _defaultLegacyConfig } from '@constants/chat';
@@ -10,6 +10,7 @@ import useUpdateHistory from './useUpdateHistory';
 import { LegacyModels } from '@type/document';
 import { legacyCompletionModels } from '@constants/chat';
 import { constructEndpointUrl, removeProviderAndApiEndpoint } from '@utils/api';
+import { resolveConnectionRequest } from '@store/connection-store';
 
 
 const useSubmit = () => {
@@ -26,32 +27,13 @@ const useSubmit = () => {
   const model = documentCurrent.config?.model; // might be string
   const isLegacy = legacyCompletionModels.includes(model as LegacyModels);
 
-  const generateTitle = async (
-    message: MessageInterface[]
-  ): Promise<string> => {
-    let data;
-    if (!apiKey || apiKey.length === 0) {
-      // official endpoint
-      if (apiEndpoint === officialAPIEndpoint) {
-        throw new Error(t('noApiKeyWarning') as string);
-      }
-
-      // other endpoints
-      data = await getChatCompletion(
-        useStore.getState().apiEndpoint,
-        message,
-        _defaultChatConfig
-      );
-    } else if (apiKey) {
-      // own apikey
-      data = await getChatCompletion(
-        useStore.getState().apiEndpoint,
-        message,
-        _defaultChatConfig,
-        apiKey
-      );
-    }
-    return data.choices[0].message.content;
+  const generateTitle = async (message: MessageInterface[]): Promise<string> => {
+    const config = useStore.getState().defaultChatConfig;
+    const { endpoint, apiKey } = resolveConnectionRequest(config, 'responses');
+    const data = await getResponse(endpoint, message, config, apiKey);
+    return (data.output || []).flatMap((item: any) => item.type === 'message' ? (item.content || []) : [])
+      .filter((part: any) => part.type === 'output_text' && typeof part.text === 'string')
+      .map((part: any) => part.text).join('');
   };
 
 
@@ -77,6 +59,8 @@ const useSubmit = () => {
     setGenerating(true);
 
     try {
+      const resolved = resolveConnectionRequest(documentCurrent.config || defaultChatConfig, isLegacy ? 'completions' : 'chat_completions');
+      const apiKey = resolved.apiKey;
       let stream;
       if (chats[currentChatIndex].messageCurrent.messages.length === 0)
         throw new Error('No messages submitted!');

@@ -1,0 +1,4 @@
+.model-logo { display: inline-block; width: 16px; height: 16px; flex: none; vertical-align: middle; }
+.model-logo-brand { background: currentColor; mask-repeat: no-repeat; mask-position: center; mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: contain; }
+.workspace-search-result > .model-logo { margin-top: 2px; color: var(--search-muted); }
+.workspace-search-result[aria-selected="true"] > .model-logo { color: var(--search-accent); }

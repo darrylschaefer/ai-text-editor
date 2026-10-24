@@ -1,6 +1,8 @@
-.workspace-search-trigger { display: inline-flex; align-items: center; gap: 9px; flex: none; width: 190px; height: 31px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); background: var(--surface); font-size: 12px; cursor: pointer; }
-.workspace-search-trigger:hover { color: var(--ink); border-color: var(--muted); }
-.workspace-search-trigger kbd { margin-left: auto; font-size: 10px; border: 1px solid var(--line); padding: 1px 4px; border-radius: 3px; }
+.workspace-command-trigger { display: inline-flex; align-items: center; gap: 9px; flex: none; width: 190px; height: 31px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); background: var(--surface); font-size: 12px; line-height: 1.5; cursor: pointer; }
+.workspace-command-trigger:hover:not(:disabled) { color: var(--ink); border-color: var(--muted); }
+.workspace-command-trigger:focus-visible { outline: 2px solid var(--accent, #8385d9); outline-offset: 2px; }
+.workspace-command-trigger:disabled { opacity: .4; }
+.workspace-command-trigger kbd { margin-left: auto; font-size: 10px; font-weight: 400; line-height: 1.5; border: 1px solid var(--line); padding: 1px 4px; border-radius: 3px; }
 .workspace-search-overlay { --search-surface: #fff; --search-hover: #f1f1fa; --search-ink: #303740; --search-muted: #687282; --search-line: #e2e5e9; --search-accent: #5c54b6; position: fixed; inset: 0; z-index: 1000; display: flex; align-items: flex-start; justify-content: center; padding: clamp(24px, 15vh, 150px) 20px 24px; color: var(--search-ink); }
 .dark .workspace-search-overlay { --search-surface: #0e1013; --search-hover: #20202f; --search-ink: #e8e8ee; --search-muted: #9696a5; --search-line: #282932; --search-accent: #b7acff; }
 .workspace-search-backdrop { position: absolute; inset: 0; background: #0008; }

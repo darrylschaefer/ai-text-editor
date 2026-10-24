@@ -14,105 +14,28 @@ export const _defaultSystemMessage =
   import.meta.env.VITE_DEFAULT_SYSTEM_MESSAGE ??
   `Hello! How can I assist you with your writing today?`;
 
-export const completionModels: ModelOptions[] = [
-  'gpt-3.5-turbo',
-  'gpt-3.5-turbo-16k',
-  'gpt-4',
-  'gpt-4-32k',
-  'gpt-4-turbo',
-  'gpt-4o',
-  'gpt-4o-mini',
-  'o1',
-  'o1-mini',
-  'o3',
-  'o3-mini'
-  // 'gpt-3.5-turbo-0301',
-  // 'gpt-4-0314',
-  // 'gpt-4-32k-0314',
-  // 'gpt-4.5-preview', // Deprecated
-];
+export const completionModels: ModelOptions[] = [];
 
 // Models specifically optimized for Responses API
-export const responsesModels: ModelOptions[] = [
-  'gpt-5.2',
-  'gpt-5-mini',
-  'gpt-5-nano',
-  'gpt-5',
-  'gpt-4o',
-  'gpt-4o-mini',
-  'gpt-4-turbo',
-  'gpt-4',
-  'gpt-3.5-turbo',
-  'o1',
-  'o1-mini',
-  'o3',
-  'o3-mini'
-];
+export const responsesModels: ModelOptions[] = [];
 
 export const legacyCompletionModels: LegacyModels[] = ['davinci-002', 'curie-001'];
 
 
 // These two should probably be removed at some point
-export const defaultModel = 'gpt-3.5-turbo';
-export const defaultResponsesModel = 'gpt-5.2'; // Default for Responses API
-export const defaultLegacyModel = 'davinci-002';
+export const defaultModel = '';
+export const defaultResponsesModel = ''; // Default for Responses API
+export const defaultLegacyModel = '';
 
   export const providerOptions: ProviderOptions[] = ['openai'];
   
-  export const apiEndpointOptions: ApiEndpointOptions[] = ['completions', 'chat_completions', 'responses'];
+  export const apiEndpointOptions: ApiEndpointOptions[] = ['responses'];
 
-  export const modelOptions: AvailableEndpoints[] =
-  [
-    {
-      'provider': "openai",
-      'apiEndpoint': "chat_completions",
-      'models': completionModels
-    },
-    {
-      'provider': "openai",
-      'apiEndpoint': "completions",
-      'models': legacyCompletionModels
-    },
-    {
-      'provider': "openai",
-      'apiEndpoint': "responses",
-      'models': responsesModels
-    }
-  ];
+  export const modelOptions: AvailableEndpoints[] = [];
 
 
-      // For automatically setting an api endpoint / model after adjusting the provider setting
-      export const providerDefault = 
-      [
-      { 'provider': "openai",
-      'apiEndpoint': 'chat_completions',
-      'model': 'gpt-3.5-turbo'
-      },
-      { 'provider': "openai",
-        'apiEndpoint': 'completions',
-        'model': 'davinci-002'
-        },
-      { 'provider': "openai",
-        'apiEndpoint': 'responses',
-        'model': 'gpt-5.2'
-        }
-      ];
-
-      //For automatically setting a model after adjusting the api endpoint setting
-      export const apiEndpointDefault = [
-      { 'provider': "openai",
-      'apiEndpoint': 'chat_completions',
-      'model': 'gpt-3.5-turbo'
-      },
-      { 'provider': "openai",
-        'apiEndpoint': 'completions',
-        'model': 'davinci-002'
-        },
-      { 'provider': "openai",
-        'apiEndpoint': 'responses',
-        'model': 'gpt-5.2'
-        }
-      ];
+export const providerDefault = [{ provider: 'openai', apiEndpoint: 'responses', model: '' }];
+export const apiEndpointDefault = [{ provider: 'openai', apiEndpoint: 'responses', model: '' }];
 
     
 
@@ -172,7 +95,7 @@ export const modelCost = {
 export const defaultUserMaxToken = 1200;
 
 export const _defaultChatConfig: ConfigInterface = {
-  model: 'gpt-5.2', // Updated default for responses API
+  model: '', // Updated default for responses API
   max_completion_tokens: defaultUserMaxToken,
   temperature: 1,
   presence_penalty: 0,

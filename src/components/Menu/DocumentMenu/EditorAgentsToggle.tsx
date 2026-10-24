@@ -6,7 +6,7 @@ const EditorAgentsToggle = () => {
   return (
     <div className="workspace-tabs" role="group" aria-label="Library view">
       <button type="button" aria-pressed={mode === 'editor'} onClick={() => setMode('editor')}>Documents</button>
-      <button type="button" aria-pressed={mode === 'agents'} onClick={() => setMode('agents')}>Agents</button>
+      <button type="button" aria-pressed={mode === 'agents'} onClick={() => setMode('agents')}>Chats</button>
     </div>
   );
 };

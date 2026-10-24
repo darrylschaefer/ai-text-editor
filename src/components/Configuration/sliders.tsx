@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useId, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ConfigInterface, ModelOptions, ModelMetadata, ApiEndpointOptions, ProviderOptions, LegacyModels } from '@type/document';
@@ -8,118 +8,40 @@ import { apiEndpointOptions } from '@constants/chat';
 import { providerOptions, providerDefault, modelOptions } from '@constants/chat';
 import { apiEndpointDefault } from '@constants/chat';
 import useStore from '@store/store';
+import { useConnections } from '@store/connection-store';
+import { catalogAvailable, modelApis, type ModelApi } from '@utils/provider-connections';
 
 
-export const ModelSelector = ({
-  _model,
-  _setModel,
-  _provider,
-  _apiEndpoint,
-}: {
-  _model: ModelOptions;
-  _setModel: React.Dispatch<React.SetStateAction<ModelOptions>>;
-  _provider: ProviderOptions;
-  _apiEndpoint: ApiEndpointOptions;
+export const ModelSelector = ({ _model, _setModel, _provider, _apiEndpoint, _connectionId, _setConnectionId, _showModelLabel = false }: {
+  _model: ModelOptions; _setModel: React.Dispatch<React.SetStateAction<ModelOptions>>;
+  _provider: ProviderOptions; _apiEndpoint: ApiEndpointOptions;
+  _connectionId?: string; _setConnectionId?: React.Dispatch<React.SetStateAction<string | undefined>>;
+  _showModelLabel?: boolean;
 }) => {
-  const [dropDown, setDropDown] = useState<boolean>(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const fetchedModels = useStore((state) => state.fetchedModels);
-
-  /* Merge constant models with fetched models for the currently
-     selected provider + endpoint. Falls back to [] if none found. */
-  const availableModels = useMemo(() => {
-    // Get constant models
-    const constantModels = modelOptions.find(
-      (o) => o.provider === _provider && o.apiEndpoint === _apiEndpoint,
-    )?.models ?? [];
-    
-    // Get fetched models for the same provider/endpoint
-    const fetchedModelsForEndpoint = fetchedModels.find(
-      (o) => o.provider === _provider && o.apiEndpoint === _apiEndpoint,
-    )?.models ?? [];
-    
-    // Extract model IDs from fetched models (they might be ModelMetadata objects)
-    const fetchedModelIds = fetchedModelsForEndpoint.map((model: any) => 
-      typeof model === 'string' ? model : (model as ModelMetadata).id
-    );
-    
-    // Merge and deduplicate (fetched models take precedence)
-    const modelSet = new Set([...constantModels, ...fetchedModelIds]);
-    return Array.from(modelSet) as ModelOptions[];
-  }, [_provider, _apiEndpoint, fetchedModels]);
-  
-  // Get model metadata map for the current endpoint
-  const modelMetadataMap = useMemo(() => {
-    const fetchedModelsForEndpoint = fetchedModels.find(
-      (o) => o.provider === _provider && o.apiEndpoint === _apiEndpoint,
-    );
-    
-    if (!fetchedModelsForEndpoint) return new Map<string, ModelMetadata>();
-    
-    const metadataMap = new Map<string, ModelMetadata>();
-    fetchedModelsForEndpoint.models.forEach((model: any) => {
-      if (typeof model === 'object' && model.id) {
-        metadataMap.set(model.id, model as ModelMetadata);
-      }
-    });
-    return metadataMap;
-  }, [_provider, _apiEndpoint, fetchedModels]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropDown(false);
-      }
-    };
-
-    if (dropDown) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [dropDown]);
-
-  return (
-    <div className='relative' ref={dropdownRef}>
-      <button
-        className='w-full px-3 py-2 border border-gray-300 dark:border-gray-700/40 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors'
-        type='button'
-        onClick={() => setDropDown((prev) => !prev)}
-      >
-        <span className='text-sm'>{_model}</span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${dropDown ? 'rotate-180' : ''}`} />
-      </button>
-
-      <div
-        id='dropdown'
-        className={`${
-          dropDown ? '' : 'hidden'
-        } absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-gray-800/30 text-gray-800 dark:text-gray-100 overflow-hidden`}
-      >
-        <ul className='text-sm p-1 m-0 max-h-64 overflow-y-auto'>
-          {availableModels.map((m) => (
-            <li
-              key={m}
-              className={`px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-150 rounded-md mx-1 ${
-                _model === m ? 'bg-gray-100 dark:bg-gray-700 font-medium' : ''
-              }`}
-              onClick={() => {
-                _setModel(m);
-                setDropDown(false);
-              }}
-            >
-              {m}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
+  const modelId = useId();
+  const connections = useConnections(state => state.connections);
+  const active = useConnections(state => state.activeConnectionId);
+  const connectionId = _connectionId ?? active ?? '';
+  const connection = connections.find(item => item.id === connectionId);
+  const models = connection && catalogAvailable(connection) ? connection.models.filter(model => modelApis(connection, model.id).includes(_apiEndpoint as ModelApi)) : [];
+  const available = models.some(model => model.id === _model);
+  return <div className="space-y-2">
+    {_setConnectionId && <label className="block text-xs">API connection
+      <select aria-label="API connection" className="w-full mt-1 p-2 border rounded bg-transparent" value={connectionId} onChange={event => { _setConnectionId(event.target.value || undefined); _setModel(''); }}>
+        <option value="">Choose a connection</option>{connectionId && !connection && <option value={connectionId}>Saved connection unavailable</option>}{connections.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+      </select>
+    </label>}
+    {_showModelLabel && <label htmlFor={modelId}>Model</label>}
+    <select id={modelId} aria-label="Model" className="w-full p-2 border rounded bg-transparent" value={_model} disabled={!models.length} onChange={event => {
+      _setModel(event.target.value); if (connectionId) _setConnectionId?.(connectionId);
+    }}>
+      <option value="">{models.length ? 'Choose a model' : 'No models available'}</option>
+      {_model && !available && <option value={_model} disabled>{_model} — unavailable</option>}
+      {models.map(model => <option value={model.id} key={model.id}>{model.id}</option>)}
+    </select>
+    {!models.length && <p className="text-xs opacity-70">Open Search → Manage API keys to load Responses models.</p>}
+  </div>;
 };
-
 
 export const MaxTokenSlider = ({
   _maxToken,
@@ -128,6 +50,7 @@ export const MaxTokenSlider = ({
   _label,
   _provider,
   _apiEndpoint,
+  _connectionId,
 }: {
   _maxToken: number;
   _setMaxToken: React.Dispatch<React.SetStateAction<number>>;
@@ -135,47 +58,16 @@ export const MaxTokenSlider = ({
   _label?: string;
   _provider?: ProviderOptions;
   _apiEndpoint?: ApiEndpointOptions;
+  _connectionId?: string;
 }) => {
   const { t } = useTranslation('model');
   const inputRef = useRef<HTMLInputElement>(null);
-  const fetchedModels = useStore((state) => state.fetchedModels);
-
-  // Get max tokens from fetched model metadata if available
-  // Only use slider if we have max_output_tokens or max_completion_tokens from API
-  const maxTokens = useMemo(() => {
-    if (_provider && _apiEndpoint) {
-      const fetchedModelsForEndpoint = fetchedModels.find(
-        (o) => o.provider === _provider && o.apiEndpoint === _apiEndpoint,
-      );
-      
-      if (fetchedModelsForEndpoint && Array.isArray(fetchedModelsForEndpoint.models)) {
-        const modelsArray = fetchedModelsForEndpoint.models as (ModelOptions | LegacyModels | ModelMetadata)[];
-        const modelMetadata = modelsArray.find(
-          (m: any) => (typeof m === 'object' && m.id === _model) || m === _model
-        ) as ModelMetadata | undefined;
-        
-        if (modelMetadata && typeof modelMetadata === 'object') {
-          // Only use slider if we have max_output_tokens or max_completion_tokens from API
-          // Don't use context_window as it's not the same as max completion tokens
-          return modelMetadata.max_output_tokens || modelMetadata.max_completion_tokens || null;
-        }
-      }
-    }
-    // Don't fall back to constants for fetched models - use input field instead
-    return null;
-  }, [_model, _provider, _apiEndpoint, fetchedModels]);
-
-  // Check if we have max completion tokens from API metadata
-  const hasMaxTokensFromApi = maxTokens !== null && maxTokens !== undefined;
-  
-  // For non-fetched models, check if we have constant max tokens
-  const hasConstantMaxTokens = modelMaxToken[_model as string] !== undefined;
-  
-  // Use slider only if we have max tokens from API OR we have constant max tokens and no fetched models
-  const useSlider = hasMaxTokensFromApi || (hasConstantMaxTokens && (!_provider || !_apiEndpoint || fetchedModels.length === 0));
-  
-  // Get the actual max value to use (from API or constant)
-  const actualMaxTokens = hasMaxTokensFromApi ? maxTokens : (hasConstantMaxTokens ? modelMaxToken[_model as string] : null);
+  const connections = useConnections(state => state.connections);
+  const active = useConnections(state => state.activeConnectionId);
+  const connection = connections.find(item => item.id === (_connectionId ?? active));
+  const metadata = connection?.models.find(model => model.id === _model);
+  const actualMaxTokens = metadata?.max_output_tokens ?? metadata?.max_completion_tokens ?? null;
+  const useSlider = typeof actualMaxTokens === 'number' && actualMaxTokens > 0;
 
   useEffect(() => {
     // Only auto-update if we have a valid max tokens value and using slider
@@ -365,50 +257,16 @@ export const FrequencyPenaltySlider = ({
   );
 };
 
-export const ApiEndpointSelector = ({
-  _apiEndpoint,
-  _setApiEndpoint,
-  }: {
+export const ApiEndpointSelector = ({ _apiEndpoint, _setApiEndpoint }: {
   _apiEndpoint: ApiEndpointOptions;
   _setApiEndpoint: React.Dispatch<React.SetStateAction<ApiEndpointOptions>>;
-  }) => {
-  const [dropDown, setDropDown] = useState<boolean>(false);
-  
-  return (
-  <div className="mb-4 relative">
-    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-  API Endpoint:
-  </label>
-  <button
-  className="btn btn-neutral btn-small flex gap-1"
-  type="button"
-  onClick={() => setDropDown((prev) => !prev)}
-  >
-  {_apiEndpoint}
-  <ChevronDown />
-  </button>
-  <div
-  className={`${dropDown ? '' : 'hidden'         } absolute top-12 z-10 bg-white rounded-lg shadow-xl border-b border-black/10 dark:border-gray-900/50 text-gray-800 dark:text-gray-100 group dark:bg-gray-800 opacity-90`}
-  >
-  <ul className="text-sm text-gray-700 dark:text-gray-200 p-0 m-0">
-  {apiEndpointOptions.map((endpoint) => (
-  <li
-  key={endpoint}
-  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
-  onClick={() => {
-  _setApiEndpoint(endpoint);
-  setDropDown(false);
-  }}
-  >
-  {endpoint}
-  </li>
-  ))}
-  </ul>
-  </div>
-  </div>
-  );
-  };
-
+}) => <div className="mb-4 text-sm">
+  <p>API: Responses</p>
+  {_apiEndpoint !== 'responses' && <div role="status">
+    <p>This saved configuration uses a retired API in fthr. Choose a Responses model to continue.</p>
+    <button type="button" className="btn btn-neutral" onClick={() => _setApiEndpoint('responses')}>Use Responses</button>
+  </div>}
+</div>;
 
   export const ProviderSelector = ({
     _provider,

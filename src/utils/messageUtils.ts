@@ -43,6 +43,10 @@ const countTokens = (messages: MessageInterface[], model: ModelOptions) => {
   return getChatGPTEncoding(messages, model).length;
 };
 
+// cl100k is a local estimate for newer model families, not provider billing.
+// Include a margin here in addition to the planner's context-window reserve.
+export const estimateContextTokens = (text: string) => text ? Math.ceil(encoder.encode(text, [], []).length * 1.15) + 8 : 0;
+
 export const limitMessageTokens = (
   messages: MessageInterface[],
   limit: number = 4096,

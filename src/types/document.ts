@@ -3,6 +3,7 @@ import { Prompt } from './prompt';
 import { Theme } from './theme';
 import { SectionState } from './revision';
 import type { DocumentPageSetup } from './page-setup';
+import type { ContextPolicy } from './context-policy';
 
 export type Role = 'user' | 'assistant' | 'system' | 'developer' | 'tool';
 export const roles: Role[] = ['user', 'assistant', 'system', 'developer', 'tool'];
@@ -158,6 +159,8 @@ export interface Folder {
 
 
 export interface ConfigInterface {
+  contextPolicy?: ContextPolicy;
+  connectionId?: string;
   model: string;
   max_completion_tokens: number;
   temperature: number;
@@ -175,6 +178,7 @@ export interface ConfigInterface {
 
 
 export interface LegacyConfigInterface {
+  connectionId?: string;
   model: string;
   max_tokens?: number;
   temperature?: number;
